@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"time"
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
 
@@ -115,49 +116,180 @@ func (r *crudRepository) GetAllMessageByAppUserId(ctx context.Context, appUserId
 
 func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Response, error) {
 	f := models.Received{}
+	w := models.WhatsappConfiguration{}
+	fb := models.FacebookConfiguration{}
 	jsondata := json.Unmarshal(body, &f)
 	fmt.Println(jsondata, f)
+	s := int64(f.Messages[0].Received)
+	myDate := time.Unix(s, 0)
+	fmt.Println(myDate)
 
-	u := models.ReceiveUserDetails{
-		Trigger:                  f.Trigger,
-		Version:                  f.Version,
-		AppId:                    f.App.ID,
-		AppUserId:                f.AppUser.ID,
-		Surname:                  f.AppUser.Surname,
-		GivenName:                f.AppUser.GivenName,
-		SignedUpAt:               f.AppUser.SignedUpAt,
-		ConversationStarted:      f.AppUser.ConversationStarted,
-		Conversation_id:          f.Conversation.ID,
-		Type:                     f.Messages[0].Type,
-		Text:                     f.Messages[0].Text,
-		Role:                     f.Messages[0].Role,
-		Received:                 f.Messages[0].Received,
-		Name:                     f.Messages[0].Name,
-		AuthorID:                 f.Messages[0].AuthorID,
-		Message_id:               f.Messages[0].ID,
-		OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-		OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-		Source_Type:              f.Messages[0].Source.Type,
-		IntegrationID:            f.Messages[0].Source.IntegrationID,
-	}
-	if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-		db := r.DBConn.Create(&u)
+	if f.Messages[0].Source.Type == "messenger" {
+		db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
 		if db.Error != nil {
+			fmt.Println("error")
 
 		}
-		td := models.Tenant_details{}
-		DB := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Or("fb_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&td)
-		fmt.Println(DB)
-		p := models.User{
-			Role: "appMaker",
-			Type: "text",
-			Text: "How can i help you.",
+		if string(myDate.Hour()) <= fb.WorkingHourStartTime && string(myDate.Hour()) >= fb.WorkingHourEndTime {
+			p := models.User{
+				Role: "appMaker",
+				Type: "text",
+				Text: "Hello! Welcome to Uvoice digital communication platform!. This is not our working hours we will reach out to you at our working time.",
+			}
+			r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+			return &models.Response{Received: &f}, nil
+		} else {
+			u := models.ReceiveUserDetails{
+				Trigger:                  f.Trigger,
+				Version:                  f.Version,
+				AppId:                    f.App.ID,
+				AppUserId:                f.AppUser.ID,
+				Surname:                  f.AppUser.Surname,
+				GivenName:                f.AppUser.GivenName,
+				SignedUpAt:               f.AppUser.SignedUpAt,
+				ConversationStarted:      f.AppUser.ConversationStarted,
+				Conversation_id:          f.Conversation.ID,
+				Type:                     f.Messages[0].Type,
+				Text:                     f.Messages[0].Text,
+				Role:                     f.Messages[0].Role,
+				Received:                 f.Messages[0].Received,
+				Name:                     f.Messages[0].Name,
+				AuthorID:                 f.Messages[0].AuthorID,
+				Message_id:               f.Messages[0].ID,
+				OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
+				OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
+				Source_Type:              f.Messages[0].Source.Type,
+				IntegrationID:            f.Messages[0].Source.IntegrationID,
+			}
+			if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+				db := r.DBConn.Create(&u)
+				if db.Error != nil {
+
+				}
+				//td := models.Tenant_details{}
+				//DB := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Or("fb_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&td)
+				//fmt.Println(DB)
+				p := models.User{
+					Role: "appMaker",
+					Type: "text",
+					Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+				}
+				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+				return &models.Response{Received: &f}, nil
+			}
+			fmt.Println("appUserId already exist.")
+			return &models.Response{Msg: "Userid already exist."}, nil
+
 		}
-		r.PostMessage(ctx, td.AppId, f.AppUser.ID, p)
-		return &models.Response{Received: &f}, nil
+	} else if f.Messages[0].Source.Type == "whatsapp" {
+		db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
+		if db.Error != nil {
+			fmt.Println("error")
+		}
+		if string(myDate.Hour()) <= w.WorkingHourStartTime && string(myDate.Hour()) >= w.WorkingHourEndTime {
+			p := models.User{
+				Role: "appMaker",
+				Type: "text",
+				Text: "Hello! Welcome to Uvoice digital communication platform!. This is not our working hours we will reach out to you at our working time.",
+			}
+			r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+			return &models.Response{Received: &f}, nil
+		} else {
+			u := models.ReceiveUserDetails{
+				Trigger:                  f.Trigger,
+				Version:                  f.Version,
+				AppId:                    f.App.ID,
+				AppUserId:                f.AppUser.ID,
+				Surname:                  f.AppUser.Surname,
+				GivenName:                f.AppUser.GivenName,
+				SignedUpAt:               f.AppUser.SignedUpAt,
+				ConversationStarted:      f.AppUser.ConversationStarted,
+				Conversation_id:          f.Conversation.ID,
+				Type:                     f.Messages[0].Type,
+				Text:                     f.Messages[0].Text,
+				Role:                     f.Messages[0].Role,
+				Received:                 f.Messages[0].Received,
+				Name:                     f.Messages[0].Name,
+				AuthorID:                 f.Messages[0].AuthorID,
+				Message_id:               f.Messages[0].ID,
+				OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
+				OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
+				Source_Type:              f.Messages[0].Source.Type,
+				IntegrationID:            f.Messages[0].Source.IntegrationID,
+			}
+			if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+				db := r.DBConn.Create(&u)
+				if db.Error != nil {
+
+				}
+				//td := models.Tenant_details{}
+				//DB := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Or("fb_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&td)
+				//fmt.Println(DB)
+				p := models.User{
+					Role: "appMaker",
+					Type: "text",
+					Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+				}
+				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+				return &models.Response{Received: &f}, nil
+			}
+			fmt.Println("appUserId already exist.")
+			return &models.Response{Msg: "Userid already exist."}, nil
+
+		}
+		// if string(myDate.Hour()) <= w.WorkingHourStartTime && string(myDate.Hour()) >= w.WorkingHourEndTime || string(myDate.Hour()) <= fb.WorkingHourStartTime && string(myDate.Hour()) >= fb.WorkingHourEndTime {
+		// 	p := models.User{
+		// 		Role: "appMaker",
+		// 		Type: "text",
+		// 		Text: "Hello! Welcome to Uvoice digital communication platform!. This is not our working hours we will reach out to you at our working time.",
+		// 	}
+		// 	r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+		// 	return &models.Response{Received: &f}, nil
+		// }
+
+		// u := models.ReceiveUserDetails{
+		// 	Trigger:                  f.Trigger,
+		// 	Version:                  f.Version,
+		// 	AppId:                    f.App.ID,
+		// 	AppUserId:                f.AppUser.ID,
+		// 	Surname:                  f.AppUser.Surname,
+		// 	GivenName:                f.AppUser.GivenName,
+		// 	SignedUpAt:               f.AppUser.SignedUpAt,
+		// 	ConversationStarted:      f.AppUser.ConversationStarted,
+		// 	Conversation_id:          f.Conversation.ID,
+		// 	Type:                     f.Messages[0].Type,
+		// 	Text:                     f.Messages[0].Text,
+		// 	Role:                     f.Messages[0].Role,
+		// 	Received:                 f.Messages[0].Received,
+		// 	Name:                     f.Messages[0].Name,
+		// 	AuthorID:                 f.Messages[0].AuthorID,
+		// 	Message_id:               f.Messages[0].ID,
+		// 	OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
+		// 	OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
+		// 	Source_Type:              f.Messages[0].Source.Type,
+		// 	IntegrationID:            f.Messages[0].Source.IntegrationID,
+		// }
+		// if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+		// 	db := r.DBConn.Create(&u)
+		// 	if db.Error != nil {
+
+		// 	}
+		// 	//td := models.Tenant_details{}
+		// 	//DB := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Or("fb_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&td)
+		// 	//fmt.Println(DB)
+		// 	p := models.User{
+		// 		Role: "appMaker",
+		// 		Type: "text",
+		// 		Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+		// 	}
+		// 	r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+		// 	return &models.Response{Received: &f}, nil
+		// }
+		// fmt.Println("appUserId already exist.")
+		// return &models.Response{Msg: "Userid already exist."}, nil
+	} else {
+		return &models.Response{Msg: "Userid already exist."}, nil
 	}
-	fmt.Println("appUserId already exist.")
-	return &models.Response{Msg: "Userid already exist."}, nil
 }
 
 /**************************************************Get By Id****************************************************/
@@ -250,12 +382,14 @@ func (r crudRepository) Update_AppUser(ctx context.Context, appUserId string, ap
 
 /****************************************SmoochConfiguration*********************************************/
 func (r crudRepository) Add_Smooch_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
+
 	td := models.Tenant_details{
 		Domain_uuid: domain_uuid,
 		AppId:       appId,
 		AppKey:      appKey,
 		AppSecret:   appSecret,
 	}
+
 	if db := r.DBConn.Table("tenant_details").Where("app_id = ?", appId).Find(&td).Error; db != nil {
 		st := r.DBConn.Create(&td)
 		if st.Error != nil {
@@ -294,6 +428,9 @@ func (r crudRepository) Update_Smooch_configuration(ctx context.Context, id int6
 
 /***************************************Get smooch configuration*****************************************/
 func (r crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	s := int64(1595414844)
+	myDate := time.Unix(s, 0)
+	fmt.Println(myDate, myDate.Hour(), myDate.Day(), myDate.Weekday(), "vjhwvhj")
 	list := make([]models.Tenant_details, 0)
 	row, err := r.DBConn.Raw("select id, domain_uuid,app_id, app_key, app_secret from tenant_details WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
@@ -326,14 +463,19 @@ func (r crudRepository) Delete_Smooch_configuration(ctx context.Context, id int6
 }
 
 /****************************************Save tenant details*********************************************/
-func (r crudRepository) Add_Whatsapp_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string, WhatsappIntegrationID string) (*models.Response, error) {
+func (r crudRepository) Add_Whatsapp_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string, WhatsappIntegrationID string, WorkingHourStartTime string, WorkingHourEndTime string, workingDays string) (*models.Response, error) {
+	var slice = make([]string, 10)
 	td := models.WhatsappConfiguration{
 		Domain_uuid:           domain_uuid,
 		AppId:                 appId,
 		AppKey:                appKey,
 		AppSecret:             appSecret,
 		WhatsappIntegrationID: WhatsappIntegrationID,
+		WorkingDays:           workingDays,
+		WorkingHourStartTime:  WorkingHourStartTime,
+		WorkingHourEndTime:    WorkingHourEndTime,
 	}
+	slice = append(slice, workingDays)
 	if db := r.DBConn.Table("whatsapp_configurations").Where("whatsapp_integration_id = ?", WhatsappIntegrationID).Find(&td).Error; db != nil {
 		st := r.DBConn.Create(&td)
 		if st.Error != nil {
@@ -396,14 +538,19 @@ func (r crudRepository) Delete_Whatsapp_configuration(ctx context.Context, id in
 }
 
 /*******************************************Add facebook configuration*******************************/
-func (r crudRepository) Add_Facebook_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string, FacebookIntegrationId string) (*models.Response, error) {
+func (r crudRepository) Add_Facebook_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string, FacebookIntegrationId string, WorkingHourStartTime string, WorkingHourEndTime string, workingDays string) (*models.Response, error) {
+	var slice = make([]string, 10)
 	td := models.FacebookConfiguration{
 		Domain_uuid:           domain_uuid,
 		AppId:                 appId,
 		AppKey:                appKey,
 		AppSecret:             appSecret,
 		FacebookIntegrationID: FacebookIntegrationId,
+		WorkingDays:           workingDays,
+		WorkingHourStartTime:  WorkingHourStartTime,
+		WorkingHourEndTime:    WorkingHourEndTime,
 	}
+	slice = append(slice, workingDays)
 	if db := r.DBConn.Table("facebook_configurations").Where("facebook_integration_id = ?", FacebookIntegrationId).Find(&td).Error; db != nil {
 		st := r.DBConn.Create(&td)
 		if st.Error != nil {

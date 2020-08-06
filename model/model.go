@@ -215,6 +215,7 @@ type Tenant_details struct {
 	AppKey      string `json:"app_key,omitempty"`
 	AppSecret   string `json:"app_secret,omitempty"`
 }
+
 type WhatsappConfiguration struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
 	Domain_uuid           string `json:"domain_uuid,omitempty"`
@@ -222,6 +223,9 @@ type WhatsappConfiguration struct {
 	AppKey                string `json:"app_key,omitempty"`
 	AppSecret             string `json:"app_secret,omitempty"`
 	WhatsappIntegrationID string `json:"whatsapp_integration_id,omitempty"`
+	WorkingDays           string `json:"working_days,omitempty"`
+	WorkingHourStartTime  string `json:"working_hour_start_time,omitempty"`
+	WorkingHourEndTime    string `json:"working_hour_end_time,omitempty"`
 }
 type FacebookConfiguration struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
@@ -230,7 +234,11 @@ type FacebookConfiguration struct {
 	AppKey                string `json:"app_key,omitempty"`
 	AppSecret             string `json:"app_secret,omitempty"`
 	FacebookIntegrationID string `json:"facebook_integration_id,omitempty"`
+	WorkingDays           string `json:"working_days,omitempty"`
+	WorkingHourStartTime  string `json:"working_hour_start_time,omitempty"`
+	WorkingHourEndTime    string `json:"working_hour_end_time,omitempty"`
 }
+
 type Link struct {
 	Type         string       `json:"type,omitempty"`
 	Confirmation Confirmation `json:"confirmation,omitempty"`

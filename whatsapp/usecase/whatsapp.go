@@ -110,8 +110,11 @@ func (r *crudUsecase) Add_Whatsapp_configuration(ctx context.Context, flow map[s
 	appKey := fmt.Sprintf("%v", flow["appKey"])
 	appSecret := fmt.Sprintf("%v", flow["appSecret"])
 	WhatsappIntegrationID := fmt.Sprintf("%v", flow["whatsapp_integration_id"])
+	WorkingHourStartTime := fmt.Sprintf("%v", flow["WorkingHourStartTime"])
+	WorkingHourEndTime := fmt.Sprintf("%v", flow["WorkingHourEndTime"])
+	workingDays := fmt.Sprintf("%v", flow["working_days"])
 
-	return r.repository.Add_Whatsapp_configuration(ctx, domain_uuid, appId, appKey, appSecret, WhatsappIntegrationID)
+	return r.repository.Add_Whatsapp_configuration(ctx, domain_uuid, appId, appKey, appSecret, WhatsappIntegrationID, WorkingHourStartTime, WorkingHourEndTime, workingDays)
 }
 
 /*******************************************Get Tenant AppId*********************************************/
@@ -143,8 +146,11 @@ func (r *crudUsecase) Add_Facebook_configuration(ctx context.Context, flow map[s
 	appKey := fmt.Sprintf("%v", flow["appKey"])
 	appSecret := fmt.Sprintf("%v", flow["appSecret"])
 	FacebookIntegrationId := fmt.Sprintf("%v", flow["facebook_integration_id"])
+	WorkingHourStartTime := fmt.Sprintf("%v", flow["WorkingHourStartTime"])
+	WorkingHourEndTime := fmt.Sprintf("%v", flow["WorkingHourEndTime"])
+	workingDays := fmt.Sprintf("%v", flow["working_days"])
 
-	return r.repository.Add_Facebook_configuration(ctx, domain_uuid, appId, appKey, appSecret, FacebookIntegrationId)
+	return r.repository.Add_Facebook_configuration(ctx, domain_uuid, appId, appKey, appSecret, FacebookIntegrationId, WorkingHourStartTime, WorkingHourEndTime, workingDays)
 }
 
 /*******************************************Get Tenant AppId*********************************************/
