@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
@@ -607,15 +608,15 @@ func (r *CRUDController) Send_Carousel_Message(c echo.Context) error {
 
 }
 
-/***********************************************Save Tenant_Details***************************************/
-func (r *CRUDController) Save_Tenant_details(c echo.Context) error {
-	var tenantdetails map[string]interface{}
-	c.Bind(&tenantdetails)
+/*****************************************Add Smooch AccountInfo******************************************/
+func (r *CRUDController) Add_Smooch_configuration(c echo.Context) error {
+	var Add_Smooch_configuration map[string]interface{}
+	c.Bind(&Add_Smooch_configuration)
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Save_Tenant_details(ctx, tenantdetails)
+	authResponse, _ := r.usecase.Add_Smooch_configuration(ctx, Add_Smooch_configuration)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -624,27 +625,16 @@ func (r *CRUDController) Save_Tenant_details(c echo.Context) error {
 
 }
 
-/*********************************************** Get Tenant appId******************************************/
-func (r *CRUDController) Get_Tenant_appId(c echo.Context) error {
+/**********************************************Update Smooch configuration***********************************/
+func (r *CRUDController) Update_Smooch_configuration(c echo.Context) error {
 	domain_uuid := c.Param("domain_uuid")
-	ctx := c.Request().Context()
-	if ctx == nil {
-		ctx = context.Background()
+	idP, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, err)
 	}
-	authResponse, _ := r.usecase.Get_Tenant_appId(ctx, domain_uuid)
-
-	if authResponse == nil {
-		return c.JSON(http.StatusUnauthorized, authResponse)
-	}
-	return c.JSON(http.StatusOK, authResponse)
-
-}
-
-/**********************************************Update tenant details**************************************/
-func (r *CRUDController) Update_Tenant_details(c echo.Context) error {
-	domain_uuid := c.Param("domain_uuid")
-	var tenantdetails map[string]interface{}
-	err1 := json.NewDecoder(c.Request().Body).Decode(&tenantdetails)
+	id := int64(idP)
+	var Update_Smooch_configuration map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&Update_Smooch_configuration)
 	if err1 != nil {
 		fmt.Println("err= ", err1)
 	} else {
@@ -654,7 +644,105 @@ func (r *CRUDController) Update_Tenant_details(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Update_Tenant_details(ctx, domain_uuid, tenantdetails)
+	authResponse, _ := r.usecase.Update_Smooch_configuration(ctx, id, domain_uuid, Update_Smooch_configuration)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/***********************************************Delete Smooch configuration*********************************/
+func (r *CRUDController) Delete_Smooch_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, err)
+	}
+	id := int64(idP)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Delete_Smooch_configuration(ctx, id, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/***********************************************Get Smooch Configuration*************************************/
+func (r *CRUDController) Get_Smooch_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Smooch_configuration(ctx, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/***********************************************Save wghatsappconfiguration***************************************/
+func (r *CRUDController) Add_Whatsapp_configuration(c echo.Context) error {
+	var addWhatsappConfiguration map[string]interface{}
+	c.Bind(&addWhatsappConfiguration)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Add_Whatsapp_configuration(ctx, addWhatsappConfiguration)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/*********************************************** Get Whatsapp configuration******************************************/
+func (r *CRUDController) Get_Whatsapp_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Whatsapp_configuration(ctx, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/**********************************************Update tenant details**************************************/
+func (r *CRUDController) Update_Whatsapp_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, err)
+	}
+	id := int64(idP)
+	var Update_Whatsapp_configuration map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&Update_Whatsapp_configuration)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	} else {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Update_Whatsapp_configuration(ctx, id, domain_uuid, Update_Whatsapp_configuration)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -664,13 +752,100 @@ func (r *CRUDController) Update_Tenant_details(c echo.Context) error {
 }
 
 /***********************************************Delete Tenant details**************************************/
-func (r *CRUDController) Delete_Tenant_details(c echo.Context) error {
+func (r *CRUDController) Delete_Whatsapp_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, err)
+	}
+	id := int64(idP)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Delete_Whatsapp_configuration(ctx, id, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/*********************************************Add Facebook configuration**********************************/
+func (r *CRUDController) Add_Facebook_configuration(c echo.Context) error {
+	var addWhatsappConfiguration map[string]interface{}
+	c.Bind(&addWhatsappConfiguration)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Add_Facebook_configuration(ctx, addWhatsappConfiguration)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/*********************************************** Get facebook configuration******************************************/
+func (r *CRUDController) Get_Facebook_configuration(c echo.Context) error {
 	domain_uuid := c.Param("domain_uuid")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Delete_Tenant_details(ctx, domain_uuid)
+	authResponse, _ := r.usecase.Get_Facebook_configuration(ctx, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/**********************************************Update Facebook configuration**************************************/
+func (r *CRUDController) Update_Facebook_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, err)
+	}
+	id := int64(idP)
+	var Update_Whatsapp_configuration map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&Update_Whatsapp_configuration)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	} else {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Update_Facebook_configuration(ctx, id, domain_uuid, Update_Whatsapp_configuration)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/***********************************************Delete Facebook configuration*******************************/
+func (r *CRUDController) Delete_Facebook_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, err)
+	}
+	id := int64(idP)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Delete_Facebook_configuration(ctx, id, domain_uuid)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -827,10 +1002,22 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("send_messages/:appId/:appUserId", handler.Message_Action_Types)
 	e.POST("quickreply_message/:appId/:appUserId", handler.Quickreply_Message)
 	e.POST("send_carousel_message/:appId/:appUserId", handler.Send_Carousel_Message)
-	e.POST("save_tenant_details", handler.Save_Tenant_details)
-	e.GET("get_tenant_appId/:domain_uuid", handler.Get_Tenant_appId)
-	e.POST("update_tenant_details/:domain_uuid", handler.Update_Tenant_details)
-	e.DELETE("delete_tenant_details/:domain_uuid", handler.Delete_Tenant_details)
+
+	e.POST("add_smoochConfiguration", handler.Add_Smooch_configuration)
+	e.GET("get_smoochConfiguration/:domain_uuid", handler.Get_Smooch_configuration)
+	e.POST("update_smoochConfiguration/:id/:domain_uuid", handler.Update_Smooch_configuration)
+	e.DELETE("delete_smoochConfiguration/:id/:domain_uuid", handler.Delete_Smooch_configuration)
+
+	e.POST("add_whatsappConfiguration", handler.Add_Whatsapp_configuration)
+	e.GET("get_whatsappConfiguration/:domain_uuid", handler.Get_Whatsapp_configuration)
+	e.POST("update_whatsappConfiguration/:id/:domain_uuid", handler.Update_Whatsapp_configuration)
+	e.DELETE("delete_whatsappConfiguration/:id/:domain_uuid", handler.Delete_Whatsapp_configuration)
+
+	e.POST("add_facebookConfiguration", handler.Add_Facebook_configuration)
+	e.GET("get_facebookConfiguration/:domain_uuid", handler.Get_Facebook_configuration)
+	e.POST("update_facebookConfiguration/:id/:domain_uuid", handler.Update_Facebook_configuration)
+	e.DELETE("delete_facebookConfiguration/:id/:domain_uuid", handler.Delete_Facebook_configuration)
+
 	e.GET("list_integration/:appId", handler.List_integration)
 	e.POST("link_appUser_to_channel/:appId/:appUserId", handler.Link_appUser_to_Channel)
 	e.DELETE("unlink_appUser_to_channel/:appId/:appUserId/:channel", handler.Unlink_appUser_to_Channel)

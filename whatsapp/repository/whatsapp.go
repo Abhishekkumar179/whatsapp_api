@@ -248,61 +248,222 @@ func (r crudRepository) Update_AppUser(ctx context.Context, appUserId string, ap
 	}
 }
 
-/****************************************Save tenant details*********************************************/
-func (r crudRepository) Save_Tenant_details(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string, WhatsappIntegrationID string, fbIntegrationId string, twilioIntegrationId string) (*models.Response, error) {
+/****************************************SmoochConfiguration*********************************************/
+func (r crudRepository) Add_Smooch_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
 	td := models.Tenant_details{
+		Domain_uuid: domain_uuid,
+		AppId:       appId,
+		AppKey:      appKey,
+		AppSecret:   appSecret,
+	}
+	if db := r.DBConn.Table("tenant_details").Where("app_id = ?", appId).Find(&td).Error; db != nil {
+		st := r.DBConn.Create(&td)
+		if st.Error != nil {
+			return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
+		}
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration saved successfully."}, nil
+
+	}
+	return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId  Already Exist."}, nil
+}
+
+/***************************************Add smooch configuration*****************************************/
+func (r crudRepository) Update_Smooch_configuration(ctx context.Context, id int64, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
+	w := models.Tenant_details{}
+	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Find(&w)
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
+	}
+	if appId != w.AppId {
+		if err := r.DBConn.Where("id = ?", id).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
+		}
+		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+	} else {
+		if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret}).Error; db != nil {
+			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+		}
+
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
+	}
+
+}
+
+/***************************************Get smooch configuration*****************************************/
+func (r crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	list := make([]models.Tenant_details, 0)
+	row, err := r.DBConn.Raw("select id, domain_uuid,app_id, app_key, app_secret from tenant_details WHERE domain_uuid = ?", domain_uuid).Rows()
+	if err != nil {
+		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
+	}
+	defer row.Close()
+	for row.Next() {
+		f := models.Tenant_details{}
+		if err := row.Scan(&f.Id, &f.AppId, &f.AppKey, &f.AppSecret); err != nil {
+
+			return nil, err
+		}
+
+		list = append(list, f)
+	}
+	return &models.Response{Status: "1", Msg: "Record Found", ResponseCode: 200, Tenant_list: list}, nil
+}
+
+/**************************************************Delete Smooch configuration***************************/
+func (r crudRepository) Delete_Smooch_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+	td := models.Tenant_details{}
+	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Delete(&td)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Table not deleted", ResponseCode: 404}, nil
+	}
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Smooch Configuration deleted.", ResponseCode: 200}, nil
+}
+
+/****************************************Save tenant details*********************************************/
+func (r crudRepository) Add_Whatsapp_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string, WhatsappIntegrationID string) (*models.Response, error) {
+	td := models.WhatsappConfiguration{
 		Domain_uuid:           domain_uuid,
 		AppId:                 appId,
 		AppKey:                appKey,
 		AppSecret:             appSecret,
 		WhatsappIntegrationID: WhatsappIntegrationID,
-		FbIntegrationId:       fbIntegrationId,
-		TwilioIntegrationId:   twilioIntegrationId,
 	}
-	if db := r.DBConn.Table("tenant_details").Where("app_id = ?", appId).Or("domain_uuid = ?", domain_uuid).Find(&td).Error; db != nil {
+	if db := r.DBConn.Table("whatsapp_configurations").Where("whatsapp_integration_id = ?", WhatsappIntegrationID).Find(&td).Error; db != nil {
 		st := r.DBConn.Create(&td)
 		if st.Error != nil {
 			return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
 		}
-		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Tenant Data is saved successfully."}, nil
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp configuration saved successfully."}, nil
 
 	}
-	return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId Already Exist."}, nil
+	return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Whatsapp Integration Id  Already Exist."}, nil
 }
 
 /**********************************************Get appID by tenant_domain_uuid******************************/
-func (r crudRepository) Get_Tenant_appId(ctx context.Context, domain_uuid string) (*models.Response, error) {
-	td := models.Tenant_details{
-		Domain_uuid: domain_uuid,
+func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	list := make([]models.WhatsappConfiguration, 0)
+	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, whatsapp_integration_id from whatsapp_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	if err != nil {
+		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 	}
-	row := r.DBConn.First(&td)
-	if row.RowsAffected == 0 {
-		return &models.Response{Status: "0", Msg: "Record Not found", ResponseCode: 404}, nil
+	defer row.Close()
+	for row.Next() {
+		f := models.WhatsappConfiguration{}
+		if err := row.Scan(&f.Id, &f.AppId, &f.AppKey, &f.AppSecret, &f.WhatsappIntegrationID); err != nil {
 
+			return nil, err
+		}
+
+		list = append(list, f)
 	}
-	fmt.Println("asdbncbv", row.Value, row.RowsAffected, row.Error)
-	return &models.Response{Status: "1", Msg: "Record Found", ResponseCode: 200, Tenant_details: &td}, nil
+	return &models.Response{Status: "1", Msg: "Record Found", ResponseCode: 200, List: list}, nil
 }
 
 /**********************************************Update Tenant details*************************************/
-func (r crudRepository) Update_Tenant_details(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string, WhatsappIntegrationID string, fbIntegrationId string, twilioIntegrationId string) (*models.Response, error) {
-
-	if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ?", domain_uuid).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret, "whatsapp_integration_id": WhatsappIntegrationID, "fb_integration_id": fbIntegrationId, "twilio_integration_id": twilioIntegrationId}).Error; db != nil {
-		return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+func (r crudRepository) Update_Whatsapp_configuration(ctx context.Context, id int64, domain_uuid string, appId string, appKey string, appSecret string, WhatsappIntegrationID string) (*models.Response, error) {
+	w := models.WhatsappConfiguration{}
+	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Find(&w)
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
+	if err := r.DBConn.Where("whatsapp_integration_id = ?", WhatsappIntegrationID).Find(&w).Error; err != nil {
+		if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret, "whatsapp_integration_id": WhatsappIntegrationID}).Error; db != nil {
+			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+		}
 
-	return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Tenant details Updated successfully."}, nil
-
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
+	}
+	return &models.Response{ResponseCode: 409, Status: "0", Msg: "Whatsapp id already exist."}, nil
 }
 
 /**********************************************Delete Tenant details*************************************/
-func (r crudRepository) Delete_Tenant_details(ctx context.Context, domain_uuid string) (*models.Response, error) {
-	td := models.Tenant_details{}
-	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Delete(&td)
+func (r crudRepository) Delete_Whatsapp_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+	td := models.WhatsappConfiguration{}
+	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Delete(&td)
 	if db.Error != nil {
 		return &models.Response{Status: "0", Msg: "Table not deleted", ResponseCode: 404}, nil
 	}
-	return &models.Response{Status: "1", Msg: "Tenant details deleted.", ResponseCode: 200}, nil
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Whatsapp Configuration deleted.", ResponseCode: 200}, nil
+}
+
+/*******************************************Add facebook configuration*******************************/
+func (r crudRepository) Add_Facebook_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string, FacebookIntegrationId string) (*models.Response, error) {
+	td := models.FacebookConfiguration{
+		Domain_uuid:           domain_uuid,
+		AppId:                 appId,
+		AppKey:                appKey,
+		AppSecret:             appSecret,
+		FacebookIntegrationID: FacebookIntegrationId,
+	}
+	if db := r.DBConn.Table("facebook_configurations").Where("facebook_integration_id = ?", FacebookIntegrationId).Find(&td).Error; db != nil {
+		st := r.DBConn.Create(&td)
+		if st.Error != nil {
+			return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
+		}
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook configuration saved successfully."}, nil
+
+	}
+	return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Facebook Integration Id  Already Exist."}, nil
+}
+
+/**********************************************Get appID by tenant_domain_uuid******************************/
+func (r crudRepository) Get_Facebook_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	list := make([]models.FacebookConfiguration, 0)
+	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, facebook_integration_id from facebook_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	if err != nil {
+		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
+	}
+	defer row.Close()
+	for row.Next() {
+		f := models.FacebookConfiguration{}
+		if err := row.Scan(&f.Id, &f.AppId, &f.AppKey, &f.AppSecret, &f.FacebookIntegrationID); err != nil {
+
+			return nil, err
+		}
+
+		list = append(list, f)
+	}
+	return &models.Response{Status: "1", Msg: "Record Found", ResponseCode: 200, Fb: list}, nil
+}
+
+/**********************************************Update Tenant details*************************************/
+func (r crudRepository) Update_Facebook_configuration(ctx context.Context, id int64, domain_uuid string, appId string, appKey string, appSecret string, FacebookIntegrationId string) (*models.Response, error) {
+	w := models.FacebookConfiguration{}
+	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Find(&w)
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
+	}
+	if err := r.DBConn.Where("facebook_integration_id = ?", FacebookIntegrationId).Find(&w).Error; err != nil {
+		if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret, "facebook_integration_id": FacebookIntegrationId}).Error; db != nil {
+			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+		}
+
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
+	}
+	return &models.Response{ResponseCode: 409, Status: "0", Msg: "Facebook id already exist."}, nil
+}
+
+/**********************************************Delete Tenant details*************************************/
+func (r crudRepository) Delete_Facebook_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+	td := models.FacebookConfiguration{}
+	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Delete(&td)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Table not deleted", ResponseCode: 404}, nil
+	}
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Facebook Configuration deleted.", ResponseCode: 200}, nil
 }
 
 /**********************************************List integration**************************************/

@@ -72,40 +72,101 @@ func (r *crudUsecase) Update_AppUser(ctx context.Context, appUserId string, appI
 	return r.repository.Update_AppUser(ctx, appUserId, appId, surname, givenName)
 }
 
+/***************************************Add SmoochConfiguration**************************************/
+func (r *crudUsecase) Add_Smooch_configuration(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
+	appId := fmt.Sprintf("%v", flow["appId"])
+	appKey := fmt.Sprintf("%v", flow["appKey"])
+	appSecret := fmt.Sprintf("%v", flow["appSecret"])
+
+	return r.repository.Add_Smooch_configuration(ctx, domain_uuid, appId, appKey, appSecret)
+}
+
+/***************************************Update SmoochConfiguration*************************************/
+func (r *crudUsecase) Update_Smooch_configuration(ctx context.Context, id int64, domain_uuid string, flow map[string]interface{}) (*models.Response, error) {
+	appId := fmt.Sprintf("%v", flow["appId"])
+	appKey := fmt.Sprintf("%v", flow["appKey"])
+	appSecret := fmt.Sprintf("%v", flow["appSecret"])
+
+	return r.repository.Update_Smooch_configuration(ctx, id, domain_uuid, appId, appKey, appSecret)
+}
+
+/**************************************Delete smooch configuration************************************/
+func (r *crudUsecase) Delete_Smooch_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+
+	return r.repository.Delete_Smooch_configuration(ctx, id, domain_uuid)
+}
+
+/***************************************Get Smooch configuration****************************************/
+func (r *crudUsecase) Get_Smooch_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+
+	return r.repository.Get_Smooch_configuration(ctx, domain_uuid)
+}
+
 /***************************************save tenant details*******************************************/
-func (r *crudUsecase) Save_Tenant_details(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+func (r *crudUsecase) Add_Whatsapp_configuration(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
 	domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
 	appId := fmt.Sprintf("%v", flow["appId"])
 	appKey := fmt.Sprintf("%v", flow["appKey"])
 	appSecret := fmt.Sprintf("%v", flow["appSecret"])
 	WhatsappIntegrationID := fmt.Sprintf("%v", flow["whatsapp_integration_id"])
-	fbIntegrationId := fmt.Sprintf("%v", flow["facebook_integration_id"])
-	twilioIntegrationId := fmt.Sprintf("%v", flow["twilio_integration_id"])
-	return r.repository.Save_Tenant_details(ctx, domain_uuid, appId, appKey, appSecret, WhatsappIntegrationID, fbIntegrationId, twilioIntegrationId)
+
+	return r.repository.Add_Whatsapp_configuration(ctx, domain_uuid, appId, appKey, appSecret, WhatsappIntegrationID)
 }
 
 /*******************************************Get Tenant AppId*********************************************/
-func (r *crudUsecase) Get_Tenant_appId(ctx context.Context, domain_uuid string) (*models.Response, error) {
+func (r *crudUsecase) Get_Whatsapp_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
 
-	return r.repository.Get_Tenant_appId(ctx, domain_uuid)
+	return r.repository.Get_Whatsapp_configuration(ctx, domain_uuid)
 }
 
 /***************************************Update_tenant_details********************************************/
-func (r *crudUsecase) Update_Tenant_details(ctx context.Context, domain_uuid string, flow map[string]interface{}) (*models.Response, error) {
+func (r *crudUsecase) Update_Whatsapp_configuration(ctx context.Context, id int64, domain_uuid string, flow map[string]interface{}) (*models.Response, error) {
 	appId := fmt.Sprintf("%v", flow["appId"])
 	appKey := fmt.Sprintf("%v", flow["appKey"])
 	appSecret := fmt.Sprintf("%v", flow["appSecret"])
 	WhatsappIntegrationID := fmt.Sprintf("%v", flow["whatsapp_integration_id"])
-	fbIntegrationId := fmt.Sprintf("%v", flow["facebook_integration_id"])
-	twilioIntegrationId := fmt.Sprintf("%v", flow["twilio_integration_id"])
 
-	return r.repository.Update_Tenant_details(ctx, domain_uuid, appId, appKey, appSecret, WhatsappIntegrationID, fbIntegrationId, twilioIntegrationId)
+	return r.repository.Update_Whatsapp_configuration(ctx, id, domain_uuid, appId, appKey, appSecret, WhatsappIntegrationID)
 }
 
 /***************************************Delete Tenant details******************************************/
-func (r *crudUsecase) Delete_Tenant_details(ctx context.Context, domain_uuid string) (*models.Response, error) {
+func (r *crudUsecase) Delete_Whatsapp_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
 
-	return r.repository.Delete_Tenant_details(ctx, domain_uuid)
+	return r.repository.Delete_Whatsapp_configuration(ctx, id, domain_uuid)
+}
+
+/***************************************Add facebook configuration************************************/
+func (r *crudUsecase) Add_Facebook_configuration(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
+	appId := fmt.Sprintf("%v", flow["appId"])
+	appKey := fmt.Sprintf("%v", flow["appKey"])
+	appSecret := fmt.Sprintf("%v", flow["appSecret"])
+	FacebookIntegrationId := fmt.Sprintf("%v", flow["facebook_integration_id"])
+
+	return r.repository.Add_Facebook_configuration(ctx, domain_uuid, appId, appKey, appSecret, FacebookIntegrationId)
+}
+
+/*******************************************Get Tenant AppId*********************************************/
+func (r *crudUsecase) Get_Facebook_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+
+	return r.repository.Get_Facebook_configuration(ctx, domain_uuid)
+}
+
+/***************************************Update_tenant_details********************************************/
+func (r *crudUsecase) Update_Facebook_configuration(ctx context.Context, id int64, domain_uuid string, flow map[string]interface{}) (*models.Response, error) {
+	appId := fmt.Sprintf("%v", flow["appId"])
+	appKey := fmt.Sprintf("%v", flow["appKey"])
+	appSecret := fmt.Sprintf("%v", flow["appSecret"])
+	FacebookIntegrationId := fmt.Sprintf("%v", flow["facebook_integration_id"])
+
+	return r.repository.Update_Facebook_configuration(ctx, id, domain_uuid, appId, appKey, appSecret, FacebookIntegrationId)
+}
+
+/***************************************Delete Tenant details******************************************/
+func (r *crudUsecase) Delete_Facebook_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+
+	return r.repository.Delete_Facebook_configuration(ctx, id, domain_uuid)
 }
 
 /***************************************Delete All Message*******************************************/
