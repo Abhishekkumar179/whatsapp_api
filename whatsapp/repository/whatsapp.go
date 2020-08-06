@@ -275,14 +275,13 @@ func (r crudRepository) Update_Smooch_configuration(ctx context.Context, id int6
 		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
 	if appId != w.AppId {
-		if err := r.DBConn.Where("id = ?", id).Find(&w).Error; err != nil {
-			if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret}).Error; db != nil {
-				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
-			}
 
-			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
+		if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret}).Error; db != nil {
+			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 		}
-		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
+
 	} else {
 		if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret}).Error; db != nil {
 			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
@@ -303,7 +302,7 @@ func (r crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uui
 	defer row.Close()
 	for row.Next() {
 		f := models.Tenant_details{}
-		if err := row.Scan(&f.Id, &f.AppId, &f.AppKey, &f.AppSecret); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret); err != nil {
 
 			return nil, err
 		}
@@ -356,7 +355,7 @@ func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_u
 	defer row.Close()
 	for row.Next() {
 		f := models.WhatsappConfiguration{}
-		if err := row.Scan(&f.Id, &f.AppId, &f.AppKey, &f.AppSecret, &f.WhatsappIntegrationID); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.WhatsappIntegrationID); err != nil {
 
 			return nil, err
 		}
@@ -426,7 +425,7 @@ func (r crudRepository) Get_Facebook_configuration(ctx context.Context, domain_u
 	defer row.Close()
 	for row.Next() {
 		f := models.FacebookConfiguration{}
-		if err := row.Scan(&f.Id, &f.AppId, &f.AppKey, &f.AppSecret, &f.FacebookIntegrationID); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.FacebookIntegrationID); err != nil {
 
 			return nil, err
 		}
