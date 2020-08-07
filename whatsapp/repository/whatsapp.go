@@ -9,6 +9,7 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"strconv"
 	"time"
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
@@ -123,6 +124,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	s := int64(f.Messages[0].Received)
 	myDate := time.Unix(s, 0)
 	fmt.Println(myDate)
+	hour := strconv.Itoa(myDate.Hour())
 
 	if f.Messages[0].Source.Type == "messenger" {
 		db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
@@ -131,7 +133,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 		}
 		if myDate.Weekday().String() == fb.Day1 {
-			if string(myDate.Hour()) <= fb.Workstart1 && string(myDate.Hour()) >= fb.Workend1 {
+			if hour <= fb.Workstart1 && hour >= fb.Workend1 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -181,7 +183,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day2 {
-			if string(myDate.Hour()) <= fb.Workstart2 && string(myDate.Hour()) >= fb.Workend2 {
+			if hour <= fb.Workstart2 && hour >= fb.Workend2 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -231,7 +233,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			}
 
 		} else if myDate.Weekday().String() == fb.Day3 {
-			if string(myDate.Hour()) <= fb.Workstart3 && string(myDate.Hour()) >= fb.Workend3 {
+			if hour <= fb.Workstart3 && hour >= fb.Workend3 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -281,7 +283,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day4 {
-			if string(myDate.Hour()) <= fb.Workstart4 && string(myDate.Hour()) >= fb.Workend4 {
+			if hour <= fb.Workstart4 && hour >= fb.Workend4 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -331,7 +333,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day5 {
-			if string(myDate.Hour()) <= fb.Workstart5 && string(myDate.Hour()) >= fb.Workend5 {
+			if hour <= fb.Workstart5 && hour >= fb.Workend5 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -380,7 +382,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day6 {
-			if string(myDate.Hour()) <= fb.Workstart6 && string(myDate.Hour()) >= fb.Workend6 {
+			if hour <= fb.Workstart6 && hour >= fb.Workend6 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -429,7 +431,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day7 {
-			if string(myDate.Hour()) <= fb.Workstart7 && string(myDate.Hour()) >= fb.Workend7 {
+			if hour <= fb.Workstart7 && hour >= fb.Workend7 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -484,7 +486,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			fmt.Println("error")
 		}
 		if myDate.Weekday().String() == w.Day1 {
-			if string(myDate.Hour()) <= w.Workstart1 && string(myDate.Hour()) >= w.Workend1 {
+			if hour <= w.Workstart1 && hour >= w.Workend1 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -534,7 +536,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day2 {
-			if string(myDate.Hour()) <= w.Workstart2 && string(myDate.Hour()) >= w.Workend2 {
+			if hour <= w.Workstart2 && hour >= w.Workend2 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -584,7 +586,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			}
 
 		} else if myDate.Weekday().String() == w.Day3 {
-			if string(myDate.Hour()) <= w.Workstart3 && string(myDate.Hour()) >= w.Workend3 {
+			if hour <= w.Workstart3 && hour >= w.Workend3 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -634,7 +636,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day4 {
-			if string(myDate.Hour()) <= w.Workstart4 && string(myDate.Hour()) >= w.Workend4 {
+			if hour <= w.Workstart4 && hour >= w.Workend4 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -684,7 +686,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day5 {
-			if string(myDate.Hour()) <= w.Workstart5 && string(myDate.Hour()) >= w.Workend5 {
+			if hour <= w.Workstart5 && hour >= w.Workend5 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -733,7 +735,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day6 {
-			if string(myDate.Hour()) <= w.Workstart6 && string(myDate.Hour()) >= w.Workend6 {
+			if hour <= w.Workstart6 && hour >= w.Workend6 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -782,7 +784,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day7 {
-			if string(myDate.Hour()) <= w.Workstart7 && string(myDate.Hour()) >= w.Workend7 {
+			if hour <= w.Workstart7 && hour >= w.Workend7 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -1051,10 +1053,6 @@ func (r crudRepository) Add_Whatsapp_configuration(ctx context.Context, td model
 
 /**********************************************Get appID by tenant_domain_uuid******************************/
 func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
-	s := int64(1595091683)
-	myDate := time.Unix(s, 0)
-	fmt.Println(myDate.Weekday().String())
-
 	w := models.WhatsappConfiguration{}
 	list := make([]models.WhatsappConfiguration, 0)
 	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
