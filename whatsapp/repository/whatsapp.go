@@ -130,7 +130,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
 		if db.Error != nil {
 			fmt.Println("error")
-
 		}
 		if myDate.Weekday().String() == fb.Day1 {
 			if hour <= fb.Workstart1 && hour >= fb.Workend1 {
@@ -479,8 +478,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else {
-
 		}
 	} else if f.Messages[0].Source.Type == "whatsapp" {
 		db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
@@ -834,11 +831,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else {
-
 		}
-	} else {
-
 	}
 	return &models.Response{Msg: "Userid already exist."}, nil
 }
