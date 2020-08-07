@@ -692,13 +692,32 @@ func (r *CRUDController) Get_Smooch_configuration(c echo.Context) error {
 
 /***********************************************Save wghatsappconfiguration***************************************/
 func (r *CRUDController) Add_Whatsapp_configuration(c echo.Context) error {
-	var addWhatsappConfiguration map[string]interface{}
-	c.Bind(&addWhatsappConfiguration)
+	u := models.WhatsappConfigurations{}
+	if err := c.Bind(&u); err != nil {
+		return err
+	}
+	td := models.WhatsappConfigurations{
+		Domain_uuid:           u.Domain_uuid,
+		AppId:                 u.AppId,
+		AppKey:                u.AppKey,
+		Message:               u.Message,
+		AppSecret:             u.AppSecret,
+		WhatsappIntegrationID: u.WhatsappIntegrationID,
+		WorkingDays: []models.WorkingDays{
+			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
+			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
+			{Day: u.WorkingDays[2].Day, WorkingHourStartTime: u.WorkingDays[2].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[2].WorkingHourEndTime},
+			{Day: u.WorkingDays[3].Day, WorkingHourStartTime: u.WorkingDays[3].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[3].WorkingHourEndTime},
+			{Day: u.WorkingDays[4].Day, WorkingHourStartTime: u.WorkingDays[4].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[4].WorkingHourEndTime},
+			{Day: u.WorkingDays[5].Day, WorkingHourStartTime: u.WorkingDays[5].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[5].WorkingHourEndTime},
+			{Day: u.WorkingDays[6].Day, WorkingHourStartTime: u.WorkingDays[6].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[6].WorkingHourEndTime},
+		},
+	}
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Add_Whatsapp_configuration(ctx, addWhatsappConfiguration)
+	authResponse, _ := r.usecase.Add_Whatsapp_configuration(ctx, td)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -731,18 +750,32 @@ func (r *CRUDController) Update_Whatsapp_configuration(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, err)
 	}
 	id := int64(idP)
-	var Update_Whatsapp_configuration map[string]interface{}
-	err1 := json.NewDecoder(c.Request().Body).Decode(&Update_Whatsapp_configuration)
-	if err1 != nil {
-		fmt.Println("err= ", err1)
-	} else {
-		fmt.Println("err= ", err1)
+	u := models.WhatsappConfigurations{}
+	if err := c.Bind(&u); err != nil {
+		return err
+	}
+	td := models.WhatsappConfigurations{
+		Domain_uuid:           u.Domain_uuid,
+		AppId:                 u.AppId,
+		AppKey:                u.AppKey,
+		AppSecret:             u.AppSecret,
+		Message:               u.Message,
+		WhatsappIntegrationID: u.WhatsappIntegrationID,
+		WorkingDays: []models.WorkingDays{
+			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
+			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
+			{Day: u.WorkingDays[2].Day, WorkingHourStartTime: u.WorkingDays[2].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[2].WorkingHourEndTime},
+			{Day: u.WorkingDays[3].Day, WorkingHourStartTime: u.WorkingDays[3].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[3].WorkingHourEndTime},
+			{Day: u.WorkingDays[4].Day, WorkingHourStartTime: u.WorkingDays[4].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[4].WorkingHourEndTime},
+			{Day: u.WorkingDays[5].Day, WorkingHourStartTime: u.WorkingDays[5].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[5].WorkingHourEndTime},
+			{Day: u.WorkingDays[6].Day, WorkingHourStartTime: u.WorkingDays[6].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[6].WorkingHourEndTime},
+		},
 	}
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Update_Whatsapp_configuration(ctx, id, domain_uuid, Update_Whatsapp_configuration)
+	authResponse, _ := r.usecase.Update_Whatsapp_configuration(ctx, id, domain_uuid, td)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -774,13 +807,32 @@ func (r *CRUDController) Delete_Whatsapp_configuration(c echo.Context) error {
 
 /*********************************************Add Facebook configuration**********************************/
 func (r *CRUDController) Add_Facebook_configuration(c echo.Context) error {
-	var addWhatsappConfiguration map[string]interface{}
-	c.Bind(&addWhatsappConfiguration)
+	u := models.FacebookConfigurations{}
+	if err := c.Bind(&u); err != nil {
+		return err
+	}
+	td := models.FacebookConfigurations{
+		Domain_uuid:           u.Domain_uuid,
+		AppId:                 u.AppId,
+		AppKey:                u.AppKey,
+		Message:               u.Message,
+		AppSecret:             u.AppSecret,
+		FacebookIntegrationID: u.FacebookIntegrationID,
+		WorkingDays: []models.WorkingDays{
+			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
+			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
+			{Day: u.WorkingDays[2].Day, WorkingHourStartTime: u.WorkingDays[2].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[2].WorkingHourEndTime},
+			{Day: u.WorkingDays[3].Day, WorkingHourStartTime: u.WorkingDays[3].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[3].WorkingHourEndTime},
+			{Day: u.WorkingDays[4].Day, WorkingHourStartTime: u.WorkingDays[4].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[4].WorkingHourEndTime},
+			{Day: u.WorkingDays[5].Day, WorkingHourStartTime: u.WorkingDays[5].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[5].WorkingHourEndTime},
+			{Day: u.WorkingDays[6].Day, WorkingHourStartTime: u.WorkingDays[6].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[6].WorkingHourEndTime},
+		},
+	}
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Add_Facebook_configuration(ctx, addWhatsappConfiguration)
+	authResponse, _ := r.usecase.Add_Facebook_configuration(ctx, td)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -813,18 +865,32 @@ func (r *CRUDController) Update_Facebook_configuration(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, err)
 	}
 	id := int64(idP)
-	var Update_Whatsapp_configuration map[string]interface{}
-	err1 := json.NewDecoder(c.Request().Body).Decode(&Update_Whatsapp_configuration)
-	if err1 != nil {
-		fmt.Println("err= ", err1)
-	} else {
-		fmt.Println("err= ", err1)
+	u := models.FacebookConfigurations{}
+	if err := c.Bind(&u); err != nil {
+		return err
+	}
+	td := models.FacebookConfigurations{
+		Domain_uuid:           u.Domain_uuid,
+		AppId:                 u.AppId,
+		AppKey:                u.AppKey,
+		AppSecret:             u.AppSecret,
+		Message:               u.Message,
+		FacebookIntegrationID: u.FacebookIntegrationID,
+		WorkingDays: []models.WorkingDays{
+			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
+			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
+			{Day: u.WorkingDays[2].Day, WorkingHourStartTime: u.WorkingDays[2].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[2].WorkingHourEndTime},
+			{Day: u.WorkingDays[3].Day, WorkingHourStartTime: u.WorkingDays[3].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[3].WorkingHourEndTime},
+			{Day: u.WorkingDays[4].Day, WorkingHourStartTime: u.WorkingDays[4].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[4].WorkingHourEndTime},
+			{Day: u.WorkingDays[5].Day, WorkingHourStartTime: u.WorkingDays[5].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[5].WorkingHourEndTime},
+			{Day: u.WorkingDays[6].Day, WorkingHourStartTime: u.WorkingDays[6].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[6].WorkingHourEndTime},
+		},
 	}
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Update_Facebook_configuration(ctx, id, domain_uuid, Update_Whatsapp_configuration)
+	authResponse, _ := r.usecase.Update_Facebook_configuration(ctx, id, domain_uuid, td)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)

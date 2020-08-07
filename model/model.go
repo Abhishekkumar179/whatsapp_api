@@ -216,29 +216,91 @@ type Tenant_details struct {
 	AppSecret   string `json:"app_secret,omitempty"`
 }
 
+type WhatsappConfigurations struct {
+	Id                    int64         `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	Domain_uuid           string        `json:"domain_uuid,omitempty"`
+	AppId                 string        `json:"appId,omitempty"`
+	AppKey                string        `json:"appKey,omitempty"`
+	AppSecret             string        `json:"appSecret,omitempty"`
+	Message               string        `json:"message,omitempty"`
+	WhatsappIntegrationID string        `json:"whatsapp_integration_id,omitempty"`
+	WorkingDays           []WorkingDays `json:"working_days,omitempty"`
+}
+type WorkingDays struct {
+	Day                  string `json:"day,omitempty"`
+	WorkingHourStartTime string `json:"workingHourStartTime,omitempty"`
+	WorkingHourEndTime   string `json:"workingHourEndTime,omitempty"`
+}
 type WhatsappConfiguration struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
 	Domain_uuid           string `json:"domain_uuid,omitempty"`
-	AppId                 string `json:"app_id,omitempty"`
-	AppKey                string `json:"app_key,omitempty"`
-	AppSecret             string `json:"app_secret,omitempty"`
+	AppId                 string `json:"appId,omitempty"`
+	AppKey                string `json:"appKey,omitempty"`
+	AppSecret             string `json:"appSecret,omitempty"`
+	Message               string `json:"message,omitempty"`
 	WhatsappIntegrationID string `json:"whatsapp_integration_id,omitempty"`
-	WorkingDays           string `json:"working_days,omitempty"`
-	WorkingHourStartTime  string `json:"working_hour_start_time,omitempty"`
-	WorkingHourEndTime    string `json:"working_hour_end_time,omitempty"`
+	Day1                  string `json:"day_1,omitempty"`
+	Day2                  string `json:"day_2,omitempty"`
+	Day3                  string `json:"day_3,omitempty"`
+	Day4                  string `json:"day_4,omitempty"`
+	Day5                  string `json:"day_5,omitempty"`
+	Day6                  string `json:"day_6,omitempty"`
+	Day7                  string `json:"day_7,omitempty"`
+	Workstart1            string `json:"workstart_1,omitempty"`
+	Workstart2            string `json:"workstart_2,omitempty"`
+	Workstart3            string `json:"workstart_3,omitempty"`
+	Workstart4            string `json:"workstart_4,omitempty"`
+	Workstart5            string `json:"workstart_5,omitempty"`
+	Workstart6            string `json:"workstart_6,omitempty"`
+	Workstart7            string `json:"workstart_7,omitempty"`
+	Workend1              string `json:"workend_1,omitempty"`
+	Workend2              string `json:"workend_2,omitempty"`
+	Workend3              string `json:"workend_3,omitempty"`
+	Workend4              string `json:"workend_4,omitempty"`
+	Workend5              string `json:"workend_5,omitempty"`
+	Workend6              string `json:"workend_6,omitempty"`
+	Workend7              string `json:"workend_7,omitempty"`
+}
+type FacebookConfigurations struct {
+	Id                    int64         `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	Domain_uuid           string        `json:"domain_uuid,omitempty"`
+	AppId                 string        `json:"app_id,omitempty"`
+	AppKey                string        `json:"app_key,omitempty"`
+	AppSecret             string        `json:"app_secret,omitempty"`
+	FacebookIntegrationID string        `json:"facebook_integration_id,omitempty"`
+	Message               string        `json:"message,omitempty"`
+	WorkingDays           []WorkingDays `json:"working_days,omitempty"`
 }
 type FacebookConfiguration struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
 	Domain_uuid           string `json:"domain_uuid,omitempty"`
-	AppId                 string `json:"app_id,omitempty"`
-	AppKey                string `json:"app_key,omitempty"`
-	AppSecret             string `json:"app_secret,omitempty"`
+	AppId                 string `json:"appId,omitempty"`
+	AppKey                string `json:"appKey,omitempty"`
+	AppSecret             string `json:"appSecret,omitempty"`
+	Message               string `json:"message,omitempty"`
 	FacebookIntegrationID string `json:"facebook_integration_id,omitempty"`
-	WorkingDays           string `json:"working_days,omitempty"`
-	WorkingHourStartTime  string `json:"working_hour_start_time,omitempty"`
-	WorkingHourEndTime    string `json:"working_hour_end_time,omitempty"`
+	Day1                  string `json:"day_1,omitempty"`
+	Day2                  string `json:"day_2,omitempty"`
+	Day3                  string `json:"day_3,omitempty"`
+	Day4                  string `json:"day_4,omitempty"`
+	Day5                  string `json:"day_5,omitempty"`
+	Day6                  string `json:"day_6,omitempty"`
+	Day7                  string `json:"day_7,omitempty"`
+	Workstart1            string `json:"workstart_1,omitempty"`
+	Workstart2            string `json:"workstart_2,omitempty"`
+	Workstart3            string `json:"workstart_3,omitempty"`
+	Workstart4            string `json:"workstart_4,omitempty"`
+	Workstart5            string `json:"workstart_5,omitempty"`
+	Workstart6            string `json:"workstart_6,omitempty"`
+	Workstart7            string `json:"workstart_7,omitempty"`
+	Workend1              string `json:"workend_1,omitempty"`
+	Workend2              string `json:"workend_2,omitempty"`
+	Workend3              string `json:"workend_3,omitempty"`
+	Workend4              string `json:"workend_4,omitempty"`
+	Workend5              string `json:"workend_5,omitempty"`
+	Workend6              string `json:"workend_6,omitempty"`
+	Workend7              string `json:"workend_7,omitempty"`
 }
-
 type Link struct {
 	Type         string       `json:"type,omitempty"`
 	Confirmation Confirmation `json:"confirmation,omitempty"`
