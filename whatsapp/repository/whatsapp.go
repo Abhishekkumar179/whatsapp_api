@@ -479,6 +479,8 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
+		} else {
+
 		}
 	} else if f.Messages[0].Source.Type == "whatsapp" {
 		db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
@@ -832,7 +834,11 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
+		} else {
+
 		}
+	} else {
+
 	}
 	return &models.Response{Msg: "Userid already exist."}, nil
 }
