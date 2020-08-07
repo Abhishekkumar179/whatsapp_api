@@ -130,7 +130,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			fmt.Println("error")
 
 		}
-		if string(myDate.Weekday()) == fb.Day1 {
+		if myDate.Weekday().String() == fb.Day1 {
 			if string(myDate.Hour()) <= fb.Workstart1 && string(myDate.Hour()) >= fb.Workend1 {
 				p := models.User{
 					Role: "appMaker",
@@ -180,7 +180,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == fb.Day2 {
+		} else if myDate.Weekday().String() == fb.Day2 {
 			if string(myDate.Hour()) <= fb.Workstart2 && string(myDate.Hour()) >= fb.Workend2 {
 				p := models.User{
 					Role: "appMaker",
@@ -230,7 +230,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 
-		} else if string(myDate.Weekday()) == fb.Day3 {
+		} else if myDate.Weekday().String() == fb.Day3 {
 			if string(myDate.Hour()) <= fb.Workstart3 && string(myDate.Hour()) >= fb.Workend3 {
 				p := models.User{
 					Role: "appMaker",
@@ -280,7 +280,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == fb.Day4 {
+		} else if myDate.Weekday().String() == fb.Day4 {
 			if string(myDate.Hour()) <= fb.Workstart4 && string(myDate.Hour()) >= fb.Workend4 {
 				p := models.User{
 					Role: "appMaker",
@@ -330,7 +330,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == fb.Day5 {
+		} else if myDate.Weekday().String() == fb.Day5 {
 			if string(myDate.Hour()) <= fb.Workstart5 && string(myDate.Hour()) >= fb.Workend5 {
 				p := models.User{
 					Role: "appMaker",
@@ -379,7 +379,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == fb.Day6 {
+		} else if myDate.Weekday().String() == fb.Day6 {
 			if string(myDate.Hour()) <= fb.Workstart6 && string(myDate.Hour()) >= fb.Workend6 {
 				p := models.User{
 					Role: "appMaker",
@@ -428,7 +428,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == fb.Day7 {
+		} else if myDate.Weekday().String() == fb.Day7 {
 			if string(myDate.Hour()) <= fb.Workstart7 && string(myDate.Hour()) >= fb.Workend7 {
 				p := models.User{
 					Role: "appMaker",
@@ -483,7 +483,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		if db.Error != nil {
 			fmt.Println("error")
 		}
-		if string(myDate.Weekday()) == w.Day1 {
+		if myDate.Weekday().String() == w.Day1 {
 			if string(myDate.Hour()) <= w.Workstart1 && string(myDate.Hour()) >= w.Workend1 {
 				p := models.User{
 					Role: "appMaker",
@@ -533,7 +533,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == w.Day2 {
+		} else if myDate.Weekday().String() == w.Day2 {
 			if string(myDate.Hour()) <= w.Workstart2 && string(myDate.Hour()) >= w.Workend2 {
 				p := models.User{
 					Role: "appMaker",
@@ -583,7 +583,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 
-		} else if string(myDate.Weekday()) == w.Day3 {
+		} else if myDate.Weekday().String() == w.Day3 {
 			if string(myDate.Hour()) <= w.Workstart3 && string(myDate.Hour()) >= w.Workend3 {
 				p := models.User{
 					Role: "appMaker",
@@ -633,7 +633,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == w.Day4 {
+		} else if myDate.Weekday().String() == w.Day4 {
 			if string(myDate.Hour()) <= w.Workstart4 && string(myDate.Hour()) >= w.Workend4 {
 				p := models.User{
 					Role: "appMaker",
@@ -683,7 +683,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == w.Day5 {
+		} else if myDate.Weekday().String() == w.Day5 {
 			if string(myDate.Hour()) <= w.Workstart5 && string(myDate.Hour()) >= w.Workend5 {
 				p := models.User{
 					Role: "appMaker",
@@ -732,7 +732,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == w.Day6 {
+		} else if myDate.Weekday().String() == w.Day6 {
 			if string(myDate.Hour()) <= w.Workstart6 && string(myDate.Hour()) >= w.Workend6 {
 				p := models.User{
 					Role: "appMaker",
@@ -781,7 +781,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else if string(myDate.Weekday()) == w.Day7 {
+		} else if myDate.Weekday().String() == w.Day7 {
 			if string(myDate.Hour()) <= w.Workstart7 && string(myDate.Hour()) >= w.Workend7 {
 				p := models.User{
 					Role: "appMaker",
@@ -1051,6 +1051,10 @@ func (r crudRepository) Add_Whatsapp_configuration(ctx context.Context, td model
 
 /**********************************************Get appID by tenant_domain_uuid******************************/
 func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	s := int64(1595091683)
+	myDate := time.Unix(s, 0)
+	fmt.Println(myDate.Weekday().String())
+
 	w := models.WhatsappConfiguration{}
 	list := make([]models.WhatsappConfiguration, 0)
 	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
