@@ -27,6 +27,12 @@ func (r *crudUsecase) Delete_AppUser(ctx context.Context, appUserId string, appI
 	return r.repository.Delete_AppUser(ctx, appUserId, appId)
 }
 
+/*************************************************Delete AppUser Profile*****************************************/
+func (r *crudUsecase) Delete_AppUser_Profile(ctx context.Context, appId string, appUserId string) (*models.Response, error) {
+
+	return r.repository.Delete_AppUser_Profile(ctx, appId, appUserId)
+}
+
 /**************************************************Get User***************************************************/
 
 func (r *crudUsecase) GetAllMessageByAppUserId(ctx context.Context, appUserId string, appId string) ([]byte, error) {

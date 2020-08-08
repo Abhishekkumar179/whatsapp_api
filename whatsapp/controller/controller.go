@@ -477,12 +477,28 @@ func (r *CRUDController) Send_Notification(c echo.Context) error {
 /**********************************************Delete AppUser*********************************************/
 func (r *CRUDController) Delete_AppUser(c echo.Context) error {
 	appUserId := c.Param("appUserId")
-	appId := ("appId")
+	appId := c.Param("appId")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
 	authResponse, _ := r.usecase.Delete_AppUser(ctx, appUserId, appId)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/*********************************************Delete AppUser Profile****************************************/
+func (r *CRUDController) Delete_AppUser_Profile(c echo.Context) error {
+	appId := c.Param("appId")
+	appUserId := c.Param("appUserId")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Delete_AppUser_Profile(ctx, appId, appUserId)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -1064,6 +1080,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("send_location/:appId/:appUserId", handler.Send_Location)
 	e.POST("send_notification/:appId", handler.Send_Notification)
 	e.DELETE("delete_appUser/:appId/:appUserId", handler.Delete_AppUser)
+	e.DELETE("delete_appUser_profile/:appId/:appUserId", handler.Delete_AppUser_Profile)
 	e.PUT("update_appUser/:appId/:appUserId", handler.Update_AppUser)
 	e.POST("send_messages/:appId/:appUserId", handler.Message_Action_Types)
 	e.POST("quickreply_message/:appId/:appUserId", handler.Quickreply_Message)

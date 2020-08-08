@@ -67,6 +67,46 @@ func (r *crudRepository) Delete_AppUser(ctx context.Context, appUserId string, a
 
 }
 
+/**************************************************Delete AppUser Profile****************************************/
+func (r *crudRepository) Delete_AppUser_Profile(ctx context.Context, appId string, appUserId string) (*models.Response, error) {
+
+	td := models.Tenant_details{}
+	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
+	if db.Error != nil {
+		return nil, db.Error
+	}
+	res, err := http.NewRequest("DELETE", "https://api.smooch.io/v1.1/apps/"+appId+"/appusers/"+appUserId+"/profile", nil)
+	res.Header.Set("Content-Type", "application/json")
+	res.SetBasicAuth(td.AppKey, td.AppSecret)
+
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data))
+		us := models.Appuser{}
+		re := models.ReceiveUserDetails{}
+		st := r.DBConn.Where("id = ?", appUserId).Delete(&us)
+		if st.Error != nil {
+		}
+		db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Find(&re)
+		if db.Error != nil {
+			return &models.Response{ResponseCode: 409, Status: "Error", Msg: "UserId Not Found"}, nil
+		}
+		del := r.DBConn.Where("app_user_id = ?", appUserId).Delete(&re)
+		if del.RowsAffected == 0 {
+			return &models.Response{ResponseCode: 404, Status: "Not Deleted", Msg: "User Profile  Not Deleted."}, nil
+		}
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "User Profile Deleted successfully."}, nil
+
+	}
+
+	return &models.Response{ResponseCode: 404, Status: "Failed", Msg: "User NOT Found1."}, nil
+
+}
+
 /**************************************************Getall Id***************************************************/
 
 func (r *crudRepository) Get_allId(ctx context.Context) (*models.Response, error) {
@@ -1663,6 +1703,7 @@ func (r crudRepository) Upload_Attachments(ctx context.Context, appId string, ap
 	td := models.Tenant_details{
 		AppId: appId,
 	}
+	fmt.Println(td.AppId, td.AppKey)
 	db := r.DBConn.Table("tenant_details").Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
 		return nil, db.Error
