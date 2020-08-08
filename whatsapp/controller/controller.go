@@ -81,6 +81,23 @@ func (r *CRUDController) GetAllMessageByAppUserId(c echo.Context) error {
 
 }
 
+/**********************************************Get AppUser Details***********************************************/
+func (r *CRUDController) GetAppUserDetails(c echo.Context) error {
+	appUserId := c.Param("appUserId")
+	appId := c.Param("appId")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.GetAppUserDetails(ctx, appUserId, appId)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+
+}
+
 /**************************************************Delete Message***************************************************/
 func (r *CRUDController) DeleteMessage(c echo.Context) error {
 	appUserId := c.Param("appUserId")
@@ -1068,6 +1085,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.DELETE("delete_message/:appId/:appUserId/:messageId", handler.DeleteMessage)
 	e.POST("/messages", handler.App_user)
 	e.GET("/getall_appUserId/:appId", handler.Get_allId)
+	e.GET("/get_appUser_details/:appId/:appUserId", handler.GetAppUserDetails)
 	e.POST("/create_text_template/:appId", handler.Create_Text_Template)
 	e.POST("/create_compound_template/:appId", handler.Create_Compound_Template)
 	e.POST("/create_carousel_template/:appId", handler.Create_Carousel_Template)

@@ -40,6 +40,12 @@ func (r *crudUsecase) GetAllMessageByAppUserId(ctx context.Context, appUserId st
 	return r.repository.GetAllMessageByAppUserId(ctx, appUserId, appId)
 }
 
+/************************************************Get AppUser Details*******************************************/
+func (r *crudUsecase) GetAppUserDetails(ctx context.Context, appUserId string, appId string) ([]byte, error) {
+
+	return r.repository.GetAppUserDetails(ctx, appUserId, appId)
+}
+
 /**************************************************Update User***************************************************/
 
 func (r *crudUsecase) Get_allId(ctx context.Context) (*models.Response, error) {

@@ -10,6 +10,7 @@ type Usecase interface {
 	Delete_AppUser(ctx context.Context, appUserId string, appId string) (*models.Response, error)
 	Delete_AppUser_Profile(ctx context.Context, appId string, appUserId string) (*models.Response, error)
 	GetAllMessageByAppUserId(ctx context.Context, appUserId string, appId string) ([]byte, error)
+	GetAppUserDetails(ctx context.Context, appUserId string, appId string) ([]byte, error)
 	Get_allId(ctx context.Context) (*models.Response, error)
 	App_user(ctx context.Context, body []byte) (*models.Response, error)
 	Pre_createUser(ctx context.Context, appId string, flow map[string]interface{}) (*models.Response, error)

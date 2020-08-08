@@ -153,6 +153,28 @@ func (r *crudRepository) GetAllMessageByAppUserId(ctx context.Context, appUserId
 	return nil, err
 }
 
+/*************************************************Get AppUser Details*****************************************/
+func (r *crudRepository) GetAppUserDetails(ctx context.Context, appUserId string, appId string) ([]byte, error) {
+	td := models.Tenant_details{}
+	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
+	if db.Error != nil {
+
+	}
+	res, err := http.NewRequest("GET", "https://api.smooch.io/v1.1/apps/"+appId+"/appusers/"+appUserId, nil)
+	res.Header.Set("Content-Type", "application/json")
+	res.SetBasicAuth(td.AppKey, td.AppSecret)
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	return nil, err
+}
+
 /**************************************************App User***************************************************/
 
 func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Response, error) {
