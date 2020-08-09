@@ -183,6 +183,28 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	fb := models.FacebookConfiguration{}
 	jsondata := json.Unmarshal(body, &f)
 	fmt.Println(jsondata, f)
+	u := models.ReceiveUserDetails{
+		Trigger:                  f.Trigger,
+		Version:                  f.Version,
+		AppId:                    f.App.ID,
+		AppUserId:                f.AppUser.ID,
+		Surname:                  f.AppUser.Surname,
+		GivenName:                f.AppUser.GivenName,
+		SignedUpAt:               f.AppUser.SignedUpAt,
+		ConversationStarted:      f.AppUser.ConversationStarted,
+		Conversation_id:          f.Conversation.ID,
+		Type:                     f.Messages[0].Type,
+		Text:                     f.Messages[0].Text,
+		Role:                     f.Messages[0].Role,
+		Received:                 f.Messages[0].Received,
+		Name:                     f.Messages[0].Name,
+		AuthorID:                 f.Messages[0].AuthorID,
+		Message_id:               f.Messages[0].ID,
+		OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
+		OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
+		Source_Type:              f.Messages[0].Source.Type,
+		IntegrationID:            f.Messages[0].Source.IntegrationID,
+	}
 	s := int64(f.Messages[0].Received)
 	myDate := time.Unix(s, 0)
 	fmt.Println(myDate)
@@ -194,43 +216,29 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			fmt.Println("error")
 		}
 		if myDate.Weekday().String() == fb.Day1 {
-			if hour <= fb.Workstart1 && hour >= fb.Workend1 {
+			if hour <= fb.Workstart1 || hour >= fb.Workend1 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: fb.Message,
 				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
-				}
+
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				return &models.Response{Msg: "Userid already exist."}, nil
+			} else {
 
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
@@ -244,37 +252,24 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day2 {
-			if hour <= fb.Workstart2 && hour >= fb.Workend2 {
+			if hour <= fb.Workstart2 || hour >= fb.Workend2 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: fb.Message,
 				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
+
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
 				}
+				return &models.Response{Msg: "Userid already exist."}, nil
+			} else {
+
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
@@ -292,45 +287,30 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-
 		} else if myDate.Weekday().String() == fb.Day3 {
-			if hour <= fb.Workstart3 && hour >= fb.Workend3 {
+			if hour <= fb.Workstart3 || hour >= fb.Workend3 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: fb.Message,
 				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
-				}
+
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				return &models.Response{Msg: "Userid already exist."}, nil
+			} else {
 
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
@@ -344,43 +324,29 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day4 {
-			if hour <= fb.Workstart4 && hour >= fb.Workend4 {
+			if hour <= fb.Workstart4 || hour >= fb.Workend4 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: fb.Message,
 				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
-				}
+
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				return &models.Response{Msg: "Userid already exist."}, nil
+			} else {
 
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
@@ -394,37 +360,24 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day5 {
-			if hour <= fb.Workstart5 && hour >= fb.Workend5 {
+			if hour <= fb.Workstart5 || hour >= fb.Workend5 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: fb.Message,
 				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
+
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
 				}
+				return &models.Response{Msg: "Userid already exist."}, nil
+			} else {
+
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
@@ -443,37 +396,24 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day6 {
-			if hour <= fb.Workstart6 && hour >= fb.Workend6 {
+			if hour <= fb.Workstart6 || hour >= fb.Workend6 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: fb.Message,
 				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
+
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
 				}
+				return &models.Response{Msg: "Userid already exist."}, nil
+			} else {
+
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
@@ -492,37 +432,24 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day7 {
-			if hour <= fb.Workstart7 && hour >= fb.Workend7 {
+			if hour <= fb.Workstart7 || hour >= fb.Workend7 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: fb.Message,
 				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
+
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
 				}
+				return &models.Response{Msg: "Userid already exist."}, nil
+			} else {
+
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
@@ -547,37 +474,24 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			fmt.Println("error")
 		}
 		if myDate.Weekday().String() == w.Day1 {
-			if hour <= w.Workstart1 && hour >= w.Workend1 {
+			if hour <= w.Workstart1 || hour >= w.Workend1 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: w.Message,
 				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
 				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
@@ -597,42 +511,30 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day2 {
-			if hour <= w.Workstart2 && hour >= w.Workend2 {
+			if hour <= w.Workstart2 || hour >= w.Workend2 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
 				}
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
+					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
@@ -645,39 +547,25 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-
 		} else if myDate.Weekday().String() == w.Day3 {
-			if hour <= w.Workstart3 && hour >= w.Workend3 {
+			if hour <= w.Workstart3 || hour >= w.Workend3 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: w.Message,
 				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
 				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
@@ -697,37 +585,24 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day4 {
-			if hour <= w.Workstart4 && hour >= w.Workend4 {
+			if hour <= w.Workstart4 || hour >= w.Workend4 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: w.Message,
 				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
 				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
@@ -747,42 +622,30 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day5 {
-			if hour <= w.Workstart5 && hour >= w.Workend5 {
+			if hour <= w.Workstart5 || hour >= w.Workend5 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
 				}
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
+					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
@@ -796,42 +659,30 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day6 {
-			if hour <= w.Workstart6 && hour >= w.Workend6 {
+			if hour <= w.Workstart6 || hour >= w.Workend6 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
 				}
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
+					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
@@ -845,42 +696,30 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day7 {
-			if hour <= w.Workstart7 && hour >= w.Workend7 {
+			if hour <= w.Workstart7 || hour >= w.Workend7 {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
 					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				return &models.Response{Received: &f}, nil
-			} else {
-				u := models.ReceiveUserDetails{
-					Trigger:                  f.Trigger,
-					Version:                  f.Version,
-					AppId:                    f.App.ID,
-					AppUserId:                f.AppUser.ID,
-					Surname:                  f.AppUser.Surname,
-					GivenName:                f.AppUser.GivenName,
-					SignedUpAt:               f.AppUser.SignedUpAt,
-					ConversationStarted:      f.AppUser.ConversationStarted,
-					Conversation_id:          f.Conversation.ID,
-					Type:                     f.Messages[0].Type,
-					Text:                     f.Messages[0].Text,
-					Role:                     f.Messages[0].Role,
-					Received:                 f.Messages[0].Received,
-					Name:                     f.Messages[0].Name,
-					AuthorID:                 f.Messages[0].AuthorID,
-					Message_id:               f.Messages[0].ID,
-					OriginalMessageID:        f.Messages[0].Source.OriginalMessageID,
-					OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
-					Source_Type:              f.Messages[0].Source.Type,
-					IntegrationID:            f.Messages[0].Source.IntegrationID,
 				}
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
+					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
@@ -894,6 +733,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		}
+
 	}
 	return &models.Response{Msg: "Userid already exist."}, nil
 }
@@ -1249,14 +1089,14 @@ func (r crudRepository) Update_Facebook_configuration(ctx context.Context, id in
 		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
 	if td.FacebookIntegrationID == w.FacebookIntegrationID {
-		if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+		if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
 			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 		}
 
 		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
 	} else if td.FacebookIntegrationID != w.FacebookIntegrationID {
 		if err := r.DBConn.Where("facebook_integration_id = ?", td.FacebookIntegrationID).Find(&w).Error; err != nil {
-			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
 				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 			}
 
