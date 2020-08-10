@@ -876,8 +876,14 @@ func (r crudRepository) Update_Smooch_configuration(ctx context.Context, id int6
 func (r crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	s := int64(1595414844)
 	myDate := time.Unix(s, 0)
+	w := models.Tenant_details{}
 	fmt.Println(myDate, myDate.Hour(), myDate.Day(), myDate.Weekday(), "vjhwvhj")
 	list := make([]models.Tenant_details, 0)
+	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
+
+	}
 	row, err := r.DBConn.Raw("select id, domain_uuid,app_id, app_key, app_secret from tenant_details WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
@@ -958,6 +964,8 @@ func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_u
 	list := make([]models.WhatsappConfiguration, 0)
 	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
 	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
+
 	}
 
 	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, message, whatsapp_integration_id, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from whatsapp_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
@@ -1064,6 +1072,12 @@ func (r crudRepository) Add_Facebook_configuration(ctx context.Context, td model
 /**********************************************Get appID by tenant_domain_uuid******************************/
 func (r crudRepository) Get_Facebook_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	list := make([]models.FacebookConfiguration, 0)
+	w := models.FacebookConfiguration{}
+	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
+
+	}
 	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, message, facebook_integration_id, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from facebook_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
