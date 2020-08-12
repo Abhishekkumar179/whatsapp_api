@@ -126,6 +126,7 @@ func (r *crudRepository) Get_allId(ctx context.Context) (*models.Response, error
 
 			list = append(list, f)
 		}
+
 		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, AppUserList: list}, nil
 	}
 }
@@ -222,13 +223,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: fb.Message,
 				}
-
+				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				return &models.Response{Msg: "Userid already exist."}, nil
@@ -242,7 +243,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: fb.TriggerMessage,
 					}
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -258,13 +259,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: fb.Message,
 				}
-
+				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				return &models.Response{Msg: "Userid already exist."}, nil
@@ -278,7 +279,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: fb.TriggerMessage,
 					}
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -294,13 +295,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: fb.Message,
 				}
-
+				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				return &models.Response{Msg: "Userid already exist."}, nil
@@ -314,7 +315,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: fb.TriggerMessage,
 					}
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -330,13 +331,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: fb.Message,
 				}
-
+				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				return &models.Response{Msg: "Userid already exist."}, nil
@@ -350,7 +351,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: fb.TriggerMessage,
 					}
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -366,13 +367,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: fb.Message,
 				}
-
+				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				return &models.Response{Msg: "Userid already exist."}, nil
@@ -386,7 +387,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: fb.TriggerMessage,
 					}
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -402,13 +403,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: fb.Message,
 				}
-
+				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				return &models.Response{Msg: "Userid already exist."}, nil
@@ -422,7 +423,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: fb.TriggerMessage,
 					}
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -438,13 +439,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: fb.Message,
 				}
-
+				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				return &models.Response{Msg: "Userid already exist."}, nil
@@ -458,7 +459,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: fb.TriggerMessage,
 					}
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -467,6 +468,8 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
+		} else {
+			fmt.Println("User Registered.")
 		}
 	} else if f.Messages[0].Source.Type == "whatsapp" {
 		db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
@@ -480,12 +483,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: w.Message,
 				}
+				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -501,7 +505,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: w.TriggerMessage,
 					}
 					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -517,12 +521,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: w.Message,
 				}
+				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -538,7 +543,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: w.TriggerMessage,
 					}
 					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -554,12 +559,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: w.Message,
 				}
+				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -575,7 +581,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: w.TriggerMessage,
 					}
 					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -591,12 +597,12 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: w.Message,
 				}
+				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -612,7 +618,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: w.TriggerMessage,
 					}
 					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -628,12 +634,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: w.Message,
 				}
+				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -649,7 +656,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: w.TriggerMessage,
 					}
 					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -665,12 +672,12 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: w.Message,
 				}
+				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -686,7 +693,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: w.TriggerMessage,
 					}
 					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -702,12 +709,12 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					Type: "text",
 					Text: w.Message,
 				}
+				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
 
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -719,11 +726,10 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
-						Text: "Hello! Welcome to Uvoice digital communication platform!. How may I help you today?",
+						Text: w.TriggerMessage,
 					}
 					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
@@ -732,8 +738,12 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
+		} else {
+			fmt.Println("user Registered.")
 		}
 
+	} else {
+		return &models.Response{Msg: "Userid already exist."}, nil
 	}
 	return &models.Response{Msg: "Userid already exist."}, nil
 }
@@ -874,8 +884,11 @@ func (r crudRepository) Update_Smooch_configuration(ctx context.Context, id int6
 
 /***************************************Get smooch configuration*****************************************/
 func (r crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
-	s := int64(1595414844)
+	s := int64(1597047140)
 	myDate := time.Unix(s, 0)
+
+	fmt.Println(myDate.Hour(), myDate.Weekday())
+
 	w := models.Tenant_details{}
 	fmt.Println(myDate, myDate.Hour(), myDate.Day(), myDate.Weekday(), "vjhwvhj")
 	list := make([]models.Tenant_details, 0)
@@ -923,6 +936,10 @@ func (r crudRepository) Add_Whatsapp_configuration(ctx context.Context, td model
 		AppKey:                td.AppKey,
 		AppSecret:             td.AppSecret,
 		Message:               td.Message,
+		Size:                  td.Size,
+		TriggerWhen:           td.Trigger.When,
+		TriggerName:           td.Trigger.Name,
+		TriggerMessage:        td.Trigger.Message,
 		WhatsappIntegrationID: td.WhatsappIntegrationID,
 		Day1:                  td.WorkingDays[0].Day,
 		Day2:                  td.WorkingDays[1].Day,
@@ -968,14 +985,14 @@ func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_u
 
 	}
 
-	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, message, whatsapp_integration_id, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from whatsapp_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, message, whatsapp_integration_id,size,trigger_name,trigger_message,trigger_when, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from whatsapp_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 	}
 	defer row.Close()
 	for row.Next() {
 		f := models.WhatsappConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.WhatsappIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.WhatsappIntegrationID, &f.Size, &f.TriggerName, &f.TriggerMessage, &f.TriggerWhen, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
 
 			return nil, err
 		}
@@ -993,14 +1010,14 @@ func (r crudRepository) Update_Whatsapp_configuration(ctx context.Context, id in
 		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
 	if td.WhatsappIntegrationID == w.WhatsappIntegrationID {
-		if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+		if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
 			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 		}
 
 		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
 	} else if td.WhatsappIntegrationID != w.WhatsappIntegrationID {
 		if err := r.DBConn.Where("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Find(&w).Error; err != nil {
-			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
 				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 			}
 
@@ -1035,6 +1052,10 @@ func (r crudRepository) Add_Facebook_configuration(ctx context.Context, td model
 		AppSecret:             td.AppSecret,
 		Message:               td.Message,
 		FacebookIntegrationID: td.FacebookIntegrationID,
+		Size:                  td.Size,
+		TriggerWhen:           td.Trigger.When,
+		TriggerName:           td.Trigger.Name,
+		TriggerMessage:        td.Trigger.Message,
 		Day1:                  td.WorkingDays[0].Day,
 		Day2:                  td.WorkingDays[1].Day,
 		Day3:                  td.WorkingDays[2].Day,
@@ -1078,14 +1099,14 @@ func (r crudRepository) Get_Facebook_configuration(ctx context.Context, domain_u
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 
 	}
-	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, message, facebook_integration_id, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from facebook_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, message, facebook_integration_id, size, trigger_name, trigger_message, trigger_when, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from facebook_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 	}
 	defer row.Close()
 	for row.Next() {
 		f := models.FacebookConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.FacebookIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.FacebookIntegrationID, &f.Size, &f.TriggerName, &f.TriggerMessage, &f.TriggerWhen, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
 
 			return nil, err
 		}
@@ -1103,14 +1124,14 @@ func (r crudRepository) Update_Facebook_configuration(ctx context.Context, id in
 		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
 	if td.FacebookIntegrationID == w.FacebookIntegrationID {
-		if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
+		if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
 			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 		}
 
 		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
 	} else if td.FacebookIntegrationID != w.FacebookIntegrationID {
 		if err := r.DBConn.Where("facebook_integration_id = ?", td.FacebookIntegrationID).Find(&w).Error; err != nil {
-			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
+			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
 				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 			}
 
@@ -1574,59 +1595,119 @@ func (r crudRepository) Unlink_appUser_to_Channel(ctx context.Context, appId str
 }
 
 /******************************************Upload Attachments********************************************/
-func (r crudRepository) Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
+func (r crudRepository) Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error) {
 
-	td := models.Tenant_details{
-		AppId: appId,
-	}
-	fmt.Println(td.AppId, td.AppKey)
-	db := r.DBConn.Table("tenant_details").Where("app_id = ?", appId).Find(&td)
+	td := models.WhatsappConfiguration{}
+	db := r.DBConn.Table("whatsapp_configurations").Where("app_id = ? AND whatsapp_integration_id = ?", appId, IntegrationID).Find(&td)
 	if db.Error != nil {
-		return nil, db.Error
-	}
-	fileBytes, err := ioutil.ReadAll(file)
-	if err != nil {
-		fmt.Println(err)
-	}
-	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
-
-	part, err := writer.CreateFormFile("source", handler.Filename)
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return nil, err
-	}
-
-	part.Write(fileBytes)
-	writer.Close()
-	req, _ := http.NewRequest("POST", "https://api.smooch.io/v1.1/apps/"+appId+"/attachments?access=public&for=message&appUserId="+appUserId, body)
-	req.Header.Add("Content-Type", "multipart/form-data")
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	req.SetBasicAuth(td.AppKey, td.AppSecret)
-	client := &http.Client{}
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, err
-	} else {
-		u := models.User{}
-		data, _ := ioutil.ReadAll(res.Body)
-		jsonData := json.Unmarshal(data, &u)
-		fmt.Println(jsonData, u.MediaUrl, u.MediaType, "ghvghvqv")
-		p := models.User{
-			Role:      "appMaker",
-			Type:      Type,
-			MediaType: u.MediaType,
-			MediaUrl:  u.MediaUrl,
+		fb := models.FacebookConfiguration{}
+		df := r.DBConn.Table("facebook_configurations").Where("app_id = ? AND facebook_integration_id = ?", appId, IntegrationID).Find(&fb)
+		if df.Error != nil {
+			return &models.Response{Status: "0", Msg: "FacebookId not found.", ResponseCode: 404}, nil
 		}
-		r.PostMessage(ctx, appId, appUserId, p)
-		return data, nil
-	}
+		if IntegrationID == fb.FacebookIntegrationID {
+			Size = fb.Size
+			fmt.Println(Size, "size...")
+			if handler.Size > fb.Size {
+				return &models.Response{Status: "0", Msg: "File size is large please choose small file.", ResponseCode: 400}, nil
+			}
+			fmt.Println(fb.AppKey, fb.AppSecret, "ederc")
+			fileBytes, err := ioutil.ReadAll(file)
+			if err != nil {
+				fmt.Println(err)
+			}
+			body := new(bytes.Buffer)
+			writer := multipart.NewWriter(body)
 
+			part, err := writer.CreateFormFile("source", handler.Filename)
+			if err != nil {
+				return nil, err
+			}
+
+			_, err = io.Copy(part, file)
+			if err != nil {
+				return nil, err
+			}
+
+			part.Write(fileBytes)
+			writer.Close()
+			req, _ := http.NewRequest("POST", "https://api.smooch.io/v1.1/apps/"+appId+"/attachments?access=public&for=message&appUserId="+appUserId, body)
+			req.Header.Add("Content-Type", "multipart/form-data")
+			req.Header.Set("Content-Type", writer.FormDataContentType())
+			req.SetBasicAuth(fb.AppKey, fb.AppSecret)
+			client := &http.Client{}
+			res, err := client.Do(req)
+			if err != nil {
+				return nil, err
+			} else {
+				u := models.User{}
+				data, _ := ioutil.ReadAll(res.Body)
+				jsonData := json.Unmarshal(data, &u)
+				fmt.Println(jsonData, handler.Filename, string(data), u.MediaUrl, u.MediaType, "ghvghvqv")
+				p := models.User{
+					Role:      "appMaker",
+					Type:      Type,
+					MediaType: u.MediaType,
+					MediaUrl:  u.MediaUrl,
+				}
+				r.PostMessage(ctx, appId, appUserId, p)
+				return &models.Response{Status: "1", Msg: "File is sent successfully.", ResponseCode: 200}, nil
+			}
+		}
+	}
+	if IntegrationID == td.WhatsappIntegrationID {
+		fmt.Println("whatsappp")
+		Size = td.Size
+		if handler.Size > td.Size {
+			return &models.Response{Status: "0", Msg: "File size is large please choose small file.", ResponseCode: 400}, nil
+		}
+		fmt.Println(td.AppSecret, td.AppKey, "bcbjbjbj")
+		fileBytes, err := ioutil.ReadAll(file)
+		if err != nil {
+			fmt.Println(err)
+		}
+		body := new(bytes.Buffer)
+		writer := multipart.NewWriter(body)
+
+		part, err := writer.CreateFormFile("source", handler.Filename)
+		if err != nil {
+			return nil, err
+		}
+
+		_, err = io.Copy(part, file)
+		if err != nil {
+			return nil, err
+		}
+
+		part.Write(fileBytes)
+		writer.Close()
+		req, _ := http.NewRequest("POST", "https://api.smooch.io/v1.1/apps/"+appId+"/attachments?access=public&for=message&appUserId="+appUserId, body)
+		req.Header.Add("Content-Type", "multipart/form-data")
+		req.Header.Set("Content-Type", writer.FormDataContentType())
+
+		req.SetBasicAuth(td.AppKey, td.AppSecret)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			u := models.User{}
+			data, _ := ioutil.ReadAll(res.Body)
+			jsonData := json.Unmarshal(data, &u)
+			fmt.Println(jsonData, string(data), u.MediaUrl, u.MediaType, "ghvghvqv")
+			p := models.User{
+				Role:      "appMaker",
+				Type:      Type,
+				MediaType: u.MediaType,
+				MediaUrl:  u.MediaUrl,
+			}
+			r.PostMessage(ctx, appId, appUserId, p)
+			return &models.Response{Status: "1", Msg: "File is sent successfully.", ResponseCode: 200}, nil
+		}
+
+	} else {
+		return &models.Response{Status: "0", Msg: "Please choose message type.", ResponseCode: 200}, nil
+	}
 }
 
 /***********************************************TypingActivity***********************************************/

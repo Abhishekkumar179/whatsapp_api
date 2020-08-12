@@ -217,13 +217,15 @@ type Tenant_details struct {
 }
 
 type WhatsappConfigurations struct {
-	Id                    int64         `gorm:"PRIMARY_KEY" json:"id,omitempty"`
-	Domain_uuid           string        `json:"domain_uuid,omitempty"`
-	AppId                 string        `json:"appId,omitempty"`
-	AppKey                string        `json:"appKey,omitempty"`
-	AppSecret             string        `json:"appSecret,omitempty"`
-	Message               string        `json:"message,omitempty"`
-	WhatsappIntegrationID string        `json:"whatsapp_integration_id,omitempty"`
+	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	Domain_uuid           string `json:"domain_uuid,omitempty"`
+	AppId                 string `json:"appId,omitempty"`
+	AppKey                string `json:"appKey,omitempty"`
+	AppSecret             string `json:"appSecret,omitempty"`
+	Message               string `json:"message,omitempty"`
+	Size                  int64  `json:"size,omitempty"`
+	WhatsappIntegrationID string `json:"whatsapp_integration_id,omitempty"`
+	Trigger               Trigger
 	WorkingDays           []WorkingDays `json:"working_days,omitempty"`
 }
 type WorkingDays struct {
@@ -238,6 +240,7 @@ type WhatsappConfiguration struct {
 	AppKey                string `json:"appKey,omitempty"`
 	AppSecret             string `json:"appSecret,omitempty"`
 	Message               string `json:"message,omitempty"`
+	Size                  int64  `json:"size,omitempty"`
 	WhatsappIntegrationID string `json:"whatsapp_integration_id,omitempty"`
 	Day1                  string `json:"day1,omitempty"`
 	Day2                  string `json:"day2,omitempty"`
@@ -260,16 +263,26 @@ type WhatsappConfiguration struct {
 	Workend5              string `json:"workend5,omitempty"`
 	Workend6              string `json:"workend6,omitempty"`
 	Workend7              string `json:"workend7,omitempty"`
+	TriggerWhen           string `json:"trigger_when,omitempty"`
+	TriggerName           string `json:"trigger_name,omitempty"`
+	TriggerMessage        string `json:"trigger_message,omitempty"`
 }
 type FacebookConfigurations struct {
-	Id                    int64         `gorm:"PRIMARY_KEY" json:"id,omitempty"`
-	Domain_uuid           string        `json:"domain_uuid,omitempty"`
-	AppId                 string        `json:"appId,omitempty"`
-	AppKey                string        `json:"appKey,omitempty"`
-	AppSecret             string        `json:"appSecret,omitempty"`
-	FacebookIntegrationID string        `json:"facebook_integration_id,omitempty"`
-	Message               string        `json:"message,omitempty"`
+	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	Domain_uuid           string `json:"domain_uuid,omitempty"`
+	AppId                 string `json:"appId,omitempty"`
+	AppKey                string `json:"appKey,omitempty"`
+	AppSecret             string `json:"appSecret,omitempty"`
+	FacebookIntegrationID string `json:"facebook_integration_id,omitempty"`
+	Message               string `json:"message,omitempty"`
+	Size                  int64  `json:"size,omitempty"`
+	Trigger               Trigger
 	WorkingDays           []WorkingDays `json:"working_days,omitempty"`
+}
+type Trigger struct {
+	When    string `json:"when,omitempty"`
+	Name    string `json:"name,omitempty"`
+	Message string `json:"message,omitempty"`
 }
 type FacebookConfiguration struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
@@ -278,6 +291,7 @@ type FacebookConfiguration struct {
 	AppKey                string `json:"appKey,omitempty"`
 	AppSecret             string `json:"appSecret,omitempty"`
 	Message               string `json:"message,omitempty"`
+	Size                  int64  `json:"size,omitempty"`
 	FacebookIntegrationID string `json:"facebook_integration_id,omitempty"`
 	Day1                  string `json:"day1,omitempty"`
 	Day2                  string `json:"day2,omitempty"`
@@ -300,6 +314,9 @@ type FacebookConfiguration struct {
 	Workend5              string `json:"workend5,omitempty"`
 	Workend6              string `json:"workend6,omitempty"`
 	Workend7              string `json:"workend7,omitempty"`
+	TriggerWhen           string `json:"trigger_when,omitempty"`
+	TriggerName           string `json:"trigger_name,omitempty"`
+	TriggerMessage        string `json:"trigger_message,omitempty"`
 }
 type Link struct {
 	Type         string       `json:"type,omitempty"`

@@ -46,6 +46,6 @@ type Usecase interface {
 	Send_Carousel_Message(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error)
 	Link_appUser_to_Channel(ctx context.Context, appId string, appUserId string, p models.Link) ([]byte, error)
 	Unlink_appUser_to_Channel(ctx context.Context, appId string, appUserId string, channel string) ([]byte, error)
-	Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, file multipart.File, handler *multipart.FileHeader) ([]byte, error)
+	Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error)
 	TypingActivity(ctx context.Context, appUserId string, appId string, p models.User) ([]byte, error)
 }

@@ -735,7 +735,13 @@ func (r *CRUDController) Add_Whatsapp_configuration(c echo.Context) error {
 		AppKey:                u.AppKey,
 		Message:               u.Message,
 		AppSecret:             u.AppSecret,
+		Size:                  u.Size,
 		WhatsappIntegrationID: u.WhatsappIntegrationID,
+		Trigger: models.Trigger{
+			When:    u.Trigger.When,
+			Name:    u.Trigger.Name,
+			Message: u.Trigger.Message,
+		},
 		WorkingDays: []models.WorkingDays{
 			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
 			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
@@ -792,8 +798,14 @@ func (r *CRUDController) Update_Whatsapp_configuration(c echo.Context) error {
 		AppId:                 u.AppId,
 		AppKey:                u.AppKey,
 		AppSecret:             u.AppSecret,
+		Size:                  u.Size,
 		Message:               u.Message,
 		WhatsappIntegrationID: u.WhatsappIntegrationID,
+		Trigger: models.Trigger{
+			When:    u.Trigger.When,
+			Name:    u.Trigger.Name,
+			Message: u.Trigger.Message,
+		},
 		WorkingDays: []models.WorkingDays{
 			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
 			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
@@ -849,8 +861,14 @@ func (r *CRUDController) Add_Facebook_configuration(c echo.Context) error {
 		AppId:                 u.AppId,
 		AppKey:                u.AppKey,
 		Message:               u.Message,
+		Size:                  u.Size,
 		AppSecret:             u.AppSecret,
 		FacebookIntegrationID: u.FacebookIntegrationID,
+		Trigger: models.Trigger{
+			When:    u.Trigger.When,
+			Name:    u.Trigger.Name,
+			Message: u.Trigger.Message,
+		},
 		WorkingDays: []models.WorkingDays{
 			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
 			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
@@ -908,7 +926,13 @@ func (r *CRUDController) Update_Facebook_configuration(c echo.Context) error {
 		AppKey:                u.AppKey,
 		AppSecret:             u.AppSecret,
 		Message:               u.Message,
+		Size:                  u.Size,
 		FacebookIntegrationID: u.FacebookIntegrationID,
+		Trigger: models.Trigger{
+			When:    u.Trigger.When,
+			Name:    u.Trigger.Name,
+			Message: u.Trigger.Message,
+		},
 		WorkingDays: []models.WorkingDays{
 			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
 			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
@@ -1021,7 +1045,14 @@ func (r *CRUDController) Upload_Attachments(c echo.Context) error {
 	appId := c.Param("appId")
 	appUserId := c.Param("appUserId")
 	Type := c.FormValue("type")
-	err := c.Request().ParseMultipartForm(25 << 20) // 25Mb
+	IntegrationID := c.FormValue("integration_id")
+	var Size int64
+	err1 := json.NewDecoder(c.Request().Body).Decode(&Size)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
+
+	err := c.Request().ParseMultipartForm(Size << 20) // 25Mb
 	if err != nil {
 		return err
 	}
@@ -1035,12 +1066,12 @@ func (r *CRUDController) Upload_Attachments(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Upload_Attachments(ctx, appId, appUserId, Type, file, handler)
+	authResponse, _ := r.usecase.Upload_Attachments(ctx, appId, appUserId, Type, IntegrationID, Size, file, handler)
 
 	if authResponse == nil {
-		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+		return c.JSON(http.StatusUnauthorized, authResponse)
 	}
-	return c.JSONBlob(http.StatusOK, authResponse)
+	return c.JSON(http.StatusOK, authResponse)
 
 }
 
@@ -1058,6 +1089,7 @@ func (r *CRUDController) TypingActivity(c echo.Context) error {
 		Name:      u.Name,
 		AvatarURL: u.AvatarURL,
 	}
+
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
