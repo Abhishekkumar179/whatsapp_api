@@ -1160,7 +1160,7 @@ func (r crudRepository) List_integration(ctx context.Context, appId string) ([]b
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
-		return nil, db.Error
+
 	}
 	req, _ := http.NewRequest("GET", "https://api.smooch.io/v1.1/apps/"+appId+"/integrations", nil)
 	req.Header.Set("Content-Type", "application/json")
@@ -1171,7 +1171,6 @@ func (r crudRepository) List_integration(ctx context.Context, appId string) ([]b
 	if err != nil {
 		return nil, err
 	} else {
-
 		data, _ := ioutil.ReadAll(res.Body)
 		return data, nil
 	}
@@ -1711,7 +1710,7 @@ func (r crudRepository) Upload_Attachments(ctx context.Context, appId string, ap
 }
 
 /***********************************************TypingActivity***********************************************/
-func (r crudRepository) TypingActivity(ctx context.Context, appUserId string, appId string, p models.User) ([]byte, error) {
+func (r crudRepository) TypingActivity(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
 	td := models.Tenant_details{}
 
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
