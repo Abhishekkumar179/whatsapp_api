@@ -224,7 +224,7 @@ type WhatsappConfigurations struct {
 	AppKey                string `json:"appKey,omitempty"`
 	AppSecret             string `json:"appSecret,omitempty"`
 	Message               string `json:"message,omitempty"`
-	Size                  int64  `json:"size,omitempty"`
+	Size                  string `json:"size,omitempty"`
 	WhatsappIntegrationID string `json:"whatsapp_integration_id,omitempty"`
 	Trigger               Trigger
 	WorkingDays           []WorkingDays `json:"working_days,omitempty"`
@@ -241,7 +241,7 @@ type WhatsappConfiguration struct {
 	AppKey                string `json:"appKey,omitempty"`
 	AppSecret             string `json:"appSecret,omitempty"`
 	Message               string `json:"message,omitempty"`
-	Size                  int64  `json:"size,omitempty"`
+	Size                  string `json:"size,omitempty"`
 	WhatsappIntegrationID string `json:"whatsapp_integration_id,omitempty"`
 	Day1                  string `json:"day1,omitempty"`
 	Day2                  string `json:"day2,omitempty"`
@@ -276,7 +276,7 @@ type FacebookConfigurations struct {
 	AppSecret             string `json:"appSecret,omitempty"`
 	FacebookIntegrationID string `json:"facebook_integration_id,omitempty"`
 	Message               string `json:"message,omitempty"`
-	Size                  int64  `json:"size,omitempty"`
+	Size                  string `json:"size,omitempty"`
 	Trigger               Trigger
 	WorkingDays           []WorkingDays `json:"working_days,omitempty"`
 }
@@ -292,7 +292,7 @@ type FacebookConfiguration struct {
 	AppKey                string `json:"appKey,omitempty"`
 	AppSecret             string `json:"appSecret,omitempty"`
 	Message               string `json:"message,omitempty"`
-	Size                  int64  `json:"size,omitempty"`
+	Size                  string `json:"size,omitempty"`
 	FacebookIntegrationID string `json:"facebook_integration_id,omitempty"`
 	Day1                  string `json:"day1,omitempty"`
 	Day2                  string `json:"day2,omitempty"`
