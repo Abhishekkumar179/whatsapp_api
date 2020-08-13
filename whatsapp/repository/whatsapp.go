@@ -994,14 +994,14 @@ func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_u
 
 	}
 
-	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, message, whatsapp_integration_id,size,trigger_name,trigger_message,trigger_when, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from whatsapp_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, whatsapp_integration_id,size,trigger_name,trigger_message,trigger_when, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from whatsapp_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 	}
 	defer row.Close()
 	for row.Next() {
 		f := models.WhatsappConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.WhatsappIntegrationID, &f.Size, &f.TriggerName, &f.TriggerMessage, &f.TriggerWhen, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.WhatsappIntegrationID, &f.Size, &f.TriggerName, &f.TriggerMessage, &f.TriggerWhen, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
 
 			return nil, err
 		}
@@ -1137,14 +1137,14 @@ func (r crudRepository) Get_Facebook_configuration(ctx context.Context, domain_u
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 
 	}
-	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, message, facebook_integration_id, size, trigger_name, trigger_message, trigger_when, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from facebook_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, facebook_integration_id, size, trigger_name, trigger_message, trigger_when, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from facebook_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 	}
 	defer row.Close()
 	for row.Next() {
 		f := models.FacebookConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.FacebookIntegrationID, &f.Size, &f.TriggerName, &f.TriggerMessage, &f.TriggerWhen, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.FacebookIntegrationID, &f.Size, &f.TriggerName, &f.TriggerMessage, &f.TriggerWhen, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
 
 			return nil, err
 		}
@@ -1794,7 +1794,7 @@ func (r crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (
 	u := models.ReceiveUserDetails{}
 	err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&u)
 	if err != nil {
-		return &models.Response{Status: "1", Msg: "AppUserId Not Found.", ResponseCode: 200}, nil
+		return &models.Response{Status: "0", Msg: "AppUserId Not Found.", ResponseCode: 404}, nil
 
 	}
 	db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Update("is_enabled", false)
