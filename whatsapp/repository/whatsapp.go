@@ -1791,10 +1791,15 @@ func (r crudRepository) TypingActivity(ctx context.Context, appId string, appUse
 
 /*************************************************Disable AppUser*************************************************/
 func (r crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error) {
+	u := models.ReceiveUserDetails{}
+	err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&u)
+	if err != nil {
+		return &models.Response{Status: "1", Msg: "AppUserId Not Found.", ResponseCode: 200}, nil
 
+	}
 	db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Update("is_enabled", false)
 	if db.Error != nil {
-		return &models.Response{Status: "0", Msg: "AppUserId not found.", ResponseCode: 404}, nil
+		return &models.Response{Status: "0", Msg: "AppUserId not Updated.", ResponseCode: 404}, nil
 	}
-	return &models.Response{Status: "1", Msg: "AppUserId Disabled Successfully.", ResponseCode: 200}, nil
+	return &models.Response{Status: "0", Msg: "AppUserId Disabled Successfully.", ResponseCode: 404}, nil
 }

@@ -1133,7 +1133,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("post_message/:appId/:appUserId", handler.PostMessage)
 	e.DELETE("delete_message/:appId/:appUserId/:messageId", handler.DeleteMessage)
 	e.POST("/messages", handler.App_user)
-	e.GET("/getall_appUserId/:appId", handler.Get_allId)
+	e.GET("/getall_appUserId", handler.Get_allId)
 	e.GET("/get_appUser_details/:appId/:appUserId", handler.GetAppUserDetails)
 	e.POST("/create_text_template/:appId", handler.Create_Text_Template)
 	e.POST("/create_compound_template/:appId", handler.Create_Compound_Template)
@@ -1152,7 +1152,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("send_messages/:appId/:appUserId", handler.Message_Action_Types)
 	e.POST("quickreply_message/:appId/:appUserId", handler.Quickreply_Message)
 	e.POST("send_carousel_message/:appId/:appUserId", handler.Send_Carousel_Message)
-	e.POST("disable_appUser/:appUserId", handler.Disable_AppUser)
+	e.GET("disable_appUser/:appUserId", handler.Disable_AppUser)
 
 	e.POST("add_smoochConfiguration", handler.Add_Smooch_configuration)
 	e.GET("get_smoochConfiguration/:domain_uuid", handler.Get_Smooch_configuration)
