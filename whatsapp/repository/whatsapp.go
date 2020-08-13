@@ -112,7 +112,7 @@ func (r *crudRepository) Delete_AppUser_Profile(ctx context.Context, appId strin
 func (r *crudRepository) Get_allId(ctx context.Context) (*models.Response, error) {
 	list := make([]models.ReceiveUserDetails, 0)
 
-	if rows, err := r.DBConn.Raw("select app_id, app_user_id, surname, given_name,type,text,role,name,author_id,message_id,original_message_id,integration_id,source_type, signed_up_at, conversation_started from receive_user_details").Rows(); err != nil {
+	if rows, err := r.DBConn.Raw("select app_id, app_user_id, surname, given_name,type,text,role,name,author_id,message_id,original_message_id,integration_id,source_type, signed_up_at, conversation_started from receive_user_details where is_enabled = true").Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
 	} else {
