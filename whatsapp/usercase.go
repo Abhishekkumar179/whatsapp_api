@@ -48,4 +48,5 @@ type Usecase interface {
 	Unlink_appUser_to_Channel(ctx context.Context, appId string, appUserId string, channel string) ([]byte, error)
 	Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error)
 	TypingActivity(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error)
+	Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error)
 }

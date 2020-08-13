@@ -206,6 +206,7 @@ type ReceiveUserDetails struct {
 	OriginalMessageTimestamp float64   `json:"originalMessageTimestamp,omitempty"`
 	Source_Type              string    `json:"source_type,omitempty"`
 	IntegrationID            string    `json:"integrationId,omitempty"`
+	Is_enabled               bool      `json:"is_enabled,omitempty"`
 }
 
 type Tenant_details struct {

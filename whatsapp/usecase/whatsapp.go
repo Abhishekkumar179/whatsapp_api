@@ -322,3 +322,10 @@ func (r *crudUsecase) TypingActivity(ctx context.Context, appId string, appUserI
 	return r.repository.TypingActivity(ctx, appId, appUserId, p)
 
 }
+
+/**********************************************Disable_AppUser*************************************************/
+func (r *crudUsecase) Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error) {
+
+	return r.repository.Disable_AppUser(ctx, appUserId)
+
+}
