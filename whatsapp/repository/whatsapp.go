@@ -1937,7 +1937,7 @@ func (r crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (
 
 /****************************************Reset Unread Count*******************************************/
 func (r crudRepository) Reset_Unread_Count(ctx context.Context, appId string, appUserId string) (*models.Response, error) {
-
+	u := models.ReceiveUserDetails{}
 	td := models.Tenant_details{
 		AppId: appId,
 	}
@@ -1955,6 +1955,11 @@ func (r crudRepository) Reset_Unread_Count(ctx context.Context, appId string, ap
 	} else {
 		data, _ := ioutil.ReadAll(res.Body)
 		fmt.Println(string(data))
+		err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&u)
+		if err != nil {
+			return &models.Response{Status: "0", Msg: "AppUserId Not Found.", ResponseCode: 404}, nil
+
+		}
 		db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Update("unread_count", 0)
 		if db.Error != nil {
 			return &models.Response{Status: "0", Msg: "AppUserId unread count not Updated.", ResponseCode: 404}, nil
