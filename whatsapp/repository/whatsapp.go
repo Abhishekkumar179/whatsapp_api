@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
@@ -224,7 +225,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			fmt.Println("error")
 		}
 		if myDate.Weekday().String() == fb.Day1 {
-			if hour <= fb.Workstart1 || hour >= fb.Workend1 {
+			workstart1 := fb.Workstart1
+			components := strings.Split(workstart1, ":")
+			StartHour, _ := components[0], components[1]
+			workend1 := fb.Workend1
+			components1 := strings.Split(workend1, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -260,7 +267,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day2 {
-			if hour <= fb.Workstart2 || hour >= fb.Workend2 {
+			workstart2 := fb.Workstart2
+			components := strings.Split(workstart2, ":")
+			StartHour, _ := components[0], components[1]
+			workend2 := fb.Workend2
+			components1 := strings.Split(workend2, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -296,7 +309,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day3 {
-			if hour <= fb.Workstart3 || hour >= fb.Workend3 {
+			workstart3 := fb.Workstart3
+			components := strings.Split(workstart3, ":")
+			StartHour, _ := components[0], components[1]
+			workend3 := fb.Workend3
+			components1 := strings.Split(workend3, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -332,7 +351,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day4 {
-			if hour <= fb.Workstart4 || hour >= fb.Workend4 {
+			workstart4 := fb.Workstart4
+			components := strings.Split(workstart4, ":")
+			StartHour, _ := components[0], components[1]
+			workend4 := fb.Workend4
+			components1 := strings.Split(workend4, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -368,7 +393,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day5 {
-			if hour <= fb.Workstart5 || hour >= fb.Workend5 {
+			workstart5 := fb.Workstart5
+			components := strings.Split(workstart5, ":")
+			StartHour, _ := components[0], components[1]
+			workend5 := fb.Workend5
+			components1 := strings.Split(workend5, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -404,7 +435,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day6 {
-			if hour <= fb.Workstart6 || hour >= fb.Workend6 {
+			workstart6 := fb.Workstart6
+			components := strings.Split(workstart6, ":")
+			StartHour, _ := components[0], components[1]
+			workend6 := fb.Workend6
+			components1 := strings.Split(workend6, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -440,7 +477,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == fb.Day7 {
-			if hour <= fb.Workstart7 || hour >= fb.Workend7 {
+			workstart7 := fb.Workstart7
+			components := strings.Split(workstart7, ":")
+			StartHour, _ := components[0], components[1]
+			workend7 := fb.Workend7
+			components1 := strings.Split(workend7, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -484,7 +527,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			fmt.Println("error")
 		}
 		if myDate.Weekday().String() == w.Day1 {
-			if hour <= w.Workstart1 || hour >= w.Workend1 {
+			workstart1 := w.Workstart1
+			components := strings.Split(workstart1, ":")
+			StartHour, _ := components[0], components[1]
+			workend1 := w.Workend1
+			components1 := strings.Split(workend1, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -522,7 +571,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day2 {
-			if hour <= w.Workstart2 || hour >= w.Workend2 {
+			workstart2 := w.Workstart2
+			components := strings.Split(workstart2, ":")
+			StartHour, _ := components[0], components[1]
+			workend2 := w.Workend2
+			components1 := strings.Split(workend2, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -560,7 +615,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day3 {
-			if hour <= w.Workstart3 || hour >= w.Workend3 {
+			workstart3 := w.Workstart3
+			components := strings.Split(workstart3, ":")
+			StartHour, _ := components[0], components[1]
+			workend3 := w.Workend3
+			components1 := strings.Split(workend3, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -598,7 +659,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day4 {
-			if hour <= w.Workstart4 || hour >= w.Workend4 {
+			workstart4 := w.Workstart4
+			components := strings.Split(workstart4, ":")
+			StartHour, _ := components[0], components[1]
+			workend4 := w.Workend4
+			components1 := strings.Split(workend4, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -635,7 +702,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day5 {
-			if hour <= w.Workstart5 || hour >= w.Workend5 {
+			workstart5 := w.Workstart5
+			components := strings.Split(workstart5, ":")
+			StartHour, _ := components[0], components[1]
+			workend5 := w.Workend5
+			components1 := strings.Split(workend5, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -673,7 +746,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day6 {
-			if hour <= w.Workstart6 || hour >= w.Workend6 {
+			workstart6 := w.Workstart6
+			components := strings.Split(workstart6, ":")
+			StartHour, _ := components[0], components[1]
+			workend6 := w.Workend6
+			components1 := strings.Split(workend6, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -710,7 +789,13 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else if myDate.Weekday().String() == w.Day7 {
-			if hour <= w.Workstart7 || hour >= w.Workend7 {
+			workstart7 := w.Workstart7
+			components := strings.Split(workstart7, ":")
+			StartHour, _ := components[0], components[1]
+			workend7 := w.Workend7
+			components1 := strings.Split(workend7, ":")
+			EndHour, _ := components1[0], components1[1]
+			if hour < StartHour || hour > EndHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
