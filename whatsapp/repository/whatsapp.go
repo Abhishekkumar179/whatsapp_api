@@ -113,14 +113,14 @@ func (r *crudRepository) Delete_AppUser_Profile(ctx context.Context, appId strin
 func (r *crudRepository) Get_allId(ctx context.Context) (*models.Response, error) {
 	list := make([]models.ReceiveUserDetails, 0)
 
-	if rows, err := r.DBConn.Raw("select app_id, app_user_id, surname, given_name,type,text,role,name,author_id,message_id,original_message_id,integration_id,source_type, signed_up_at, conversation_started from receive_user_details where is_enabled = true").Rows(); err != nil {
+	if rows, err := r.DBConn.Raw("select app_id, app_user_id, surname, given_name,type,text,role,name,author_id,message_id,original_message_id,integration_id,source_type, signed_up_at, conversation_started, unread_count from receive_user_details where is_enabled = true").Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			f := models.ReceiveUserDetails{}
-			if err := rows.Scan(&f.AppId, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Message_id, &f.OriginalMessageID, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.ConversationStarted); err != nil {
+			if err := rows.Scan(&f.AppId, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Message_id, &f.OriginalMessageID, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.ConversationStarted, &f.UnreadCount); err != nil {
 
 				return nil, err
 			}
@@ -187,8 +187,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	fmt.Println(jsondata, f)
 	s := int64(f.Messages[0].Received)
 	myDate := time.Unix(s, 0)
-	// hour := strconv.Itoa(myDate.Hour())
-	// hours, _ := strconv.Atoi(hour)
 	u := models.ReceiveUserDetails{
 		Trigger:                  f.Trigger,
 		Version:                  f.Version,
@@ -211,10 +209,20 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		Source_Type:              f.Messages[0].Source.Type,
 		IntegrationID:            f.Messages[0].Source.IntegrationID,
 		Is_enabled:               true,
+		UnreadCount:              0,
 	}
 
 	err := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
 	fmt.Println(err)
+	if f.Messages[0].Role == "appUser" {
+		count := r.DBConn.Table("receive_user_details").Where("conversation_id = ? AND app_user_id = ?", f.Conversation.ID, f.AppUser.ID).Update("unread_count", u.UnreadCount+1)
+		if count.Error != nil {
+			fmt.Println(count.Error, "error")
+
+		}
+	} else {
+		fmt.Println("error")
+	}
 	if u.Is_enabled == false {
 		update := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("is_enabled", true)
 		fmt.Println(update, update.RowsAffected)
@@ -534,7 +542,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else {
-			fmt.Println("User Registered.")
+			fmt.Println("User Not Registered.")
 		}
 	} else if f.Messages[0].Source.Type == "whatsapp" {
 		db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
@@ -860,7 +868,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 		} else {
-			fmt.Println("user Registered.")
+			fmt.Println("user NOT Registered.")
 		}
 
 	} else {
@@ -1119,7 +1127,6 @@ func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_u
 
 			return nil, err
 		}
-
 		list = append(list, f)
 	}
 	return &models.Response{Status: "1", Msg: "Record Found", ResponseCode: 200, List: list}, nil
@@ -1925,5 +1932,33 @@ func (r crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (
 	if db.Error != nil {
 		return &models.Response{Status: "0", Msg: "AppUserId not Updated.", ResponseCode: 404}, nil
 	}
-	return &models.Response{Status: "0", Msg: "AppUserId Disabled Successfully.", ResponseCode: 404}, nil
+	return &models.Response{Status: "1", Msg: "AppUserId Disabled Successfully.", ResponseCode: 200}, nil
+}
+
+/****************************************Reset Unread Count*******************************************/
+func (r crudRepository) Reset_Unread_Count(ctx context.Context, appId string, appUserId string) (*models.Response, error) {
+
+	td := models.Tenant_details{
+		AppId: appId,
+	}
+	db := r.DBConn.Table("tenant_details").Where("app_id = ?", appId).Find(&td)
+	if db.Error != nil {
+		return nil, db.Error
+	}
+	req, _ := http.NewRequest("POST", "https://api.smooch.io/v1.1/apps/"+appId+"/appusers/"+appUserId+"/conversation/read", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.SetBasicAuth(td.AppKey, td.AppSecret)
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return nil, err
+	} else {
+		data, _ := ioutil.ReadAll(res.Body)
+		fmt.Println(string(data))
+		db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Update("unread_count", 0)
+		if db.Error != nil {
+			return &models.Response{Status: "0", Msg: "AppUserId unread count not Updated.", ResponseCode: 404}, nil
+		}
+		return &models.Response{Status: "1", Msg: "Unread count reset Successfully.", ResponseCode: 200}, nil
+	}
 }

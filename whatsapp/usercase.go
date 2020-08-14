@@ -49,4 +49,5 @@ type Usecase interface {
 	Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error)
 	TypingActivity(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error)
 	Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error)
+	Reset_Unread_Count(ctx context.Context, appId string, appUserId string) (*models.Response, error)
 }

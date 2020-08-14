@@ -207,6 +207,7 @@ type ReceiveUserDetails struct {
 	Source_Type              string    `json:"source_type,omitempty"`
 	IntegrationID            string    `json:"integrationId,omitempty"`
 	Is_enabled               bool      `json:"is_enabled,omitempty"`
+	UnreadCount              int64     `json:"unread_count,omitempty"`
 }
 
 type Tenant_details struct {

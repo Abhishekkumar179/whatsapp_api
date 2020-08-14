@@ -329,3 +329,9 @@ func (r *crudUsecase) Disable_AppUser(ctx context.Context, appUserId string) (*m
 	return r.repository.Disable_AppUser(ctx, appUserId)
 
 }
+
+/********************************************Reset Unread Count************************************************/
+func (r *crudUsecase) Reset_Unread_Count(ctx context.Context, appId string, appUserId string) (*models.Response, error) {
+
+	return r.repository.Reset_Unread_Count(ctx, appId, appUserId)
+}

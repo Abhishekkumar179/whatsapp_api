@@ -1120,6 +1120,23 @@ func (r *CRUDController) Disable_AppUser(c echo.Context) error {
 
 }
 
+/**********************************************Reset Unread count******************************************/
+func (r *CRUDController) Reset_Unread_Count(c echo.Context) error {
+	appId := c.Param("appId")
+	appUserId := c.Param("appUserId")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Reset_Unread_Count(ctx, appId, appUserId)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1153,6 +1170,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("quickreply_message/:appId/:appUserId", handler.Quickreply_Message)
 	e.POST("send_carousel_message/:appId/:appUserId", handler.Send_Carousel_Message)
 	e.GET("disable_appUser/:appUserId", handler.Disable_AppUser)
+	e.GET("reset_unread_count/:appId/:appUserId", handler.Reset_Unread_Count)
 
 	e.POST("add_smoochConfiguration", handler.Add_Smooch_configuration)
 	e.GET("get_smoochConfiguration/:domain_uuid", handler.Get_Smooch_configuration)
