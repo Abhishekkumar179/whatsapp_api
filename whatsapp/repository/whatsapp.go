@@ -187,8 +187,8 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	fmt.Println(jsondata, f)
 	s := int64(f.Messages[0].Received)
 	myDate := time.Unix(s, 0)
-	hour := strconv.Itoa(myDate.Hour())
-	hours, _ := strconv.Atoi(hour)
+	// hour := strconv.Itoa(myDate.Hour())
+	// hours, _ := strconv.Atoi(hour)
 	u := models.ReceiveUserDetails{
 		Trigger:                  f.Trigger,
 		Version:                  f.Version,
@@ -214,7 +214,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	}
 
 	err := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
-	fmt.Println(err, hour, "hour value is "+hour, hours)
+	fmt.Println(err)
 	if u.Is_enabled == false {
 		update := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("is_enabled", true)
 		fmt.Println(update, update.RowsAffected)
@@ -234,7 +234,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -278,7 +278,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -322,7 +322,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -366,7 +366,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -410,7 +410,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -454,7 +454,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -498,7 +498,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -550,7 +550,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -596,7 +596,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -642,7 +642,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -688,7 +688,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -733,7 +733,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -779,7 +779,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -824,7 +824,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if hours < startHour || hours > endHour {
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
