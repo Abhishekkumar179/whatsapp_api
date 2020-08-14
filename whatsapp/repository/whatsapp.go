@@ -185,6 +185,10 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	fb := models.FacebookConfiguration{}
 	jsondata := json.Unmarshal(body, &f)
 	fmt.Println(jsondata, f)
+	s := int64(f.Messages[0].Received)
+	myDate := time.Unix(s, 0)
+	hour := strconv.Itoa(myDate.Hour())
+	hours, _ := strconv.Atoi(hour)
 	u := models.ReceiveUserDetails{
 		Trigger:                  f.Trigger,
 		Version:                  f.Version,
@@ -208,12 +212,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		IntegrationID:            f.Messages[0].Source.IntegrationID,
 		Is_enabled:               true,
 	}
-	s := int64(f.Messages[0].Received)
-	myDate := time.Unix(s, 0)
-	fmt.Println(myDate)
-	hour := strconv.Itoa(myDate.Hour())
+
 	err := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
-	fmt.Println(err)
+	fmt.Println(err, hour, "hour value is "+hour, hours)
 	if u.Is_enabled == false {
 		update := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("is_enabled", true)
 		fmt.Println(update, update.RowsAffected)
@@ -231,7 +232,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend1 := fb.Workend1
 			components1 := strings.Split(workend1, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -273,7 +276,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend2 := fb.Workend2
 			components1 := strings.Split(workend2, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -315,7 +320,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend3 := fb.Workend3
 			components1 := strings.Split(workend3, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -357,7 +364,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend4 := fb.Workend4
 			components1 := strings.Split(workend4, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -399,7 +408,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend5 := fb.Workend5
 			components1 := strings.Split(workend5, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -441,7 +452,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend6 := fb.Workend6
 			components1 := strings.Split(workend6, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -483,7 +496,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend7 := fb.Workend7
 			components1 := strings.Split(workend7, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -533,7 +548,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend1 := w.Workend1
 			components1 := strings.Split(workend1, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -577,7 +594,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend2 := w.Workend2
 			components1 := strings.Split(workend2, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -621,7 +640,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend3 := w.Workend3
 			components1 := strings.Split(workend3, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -665,7 +686,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend4 := w.Workend4
 			components1 := strings.Split(workend4, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -708,7 +731,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend5 := w.Workend5
 			components1 := strings.Split(workend5, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -752,7 +777,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend6 := w.Workend6
 			components1 := strings.Split(workend6, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
@@ -795,7 +822,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			workend7 := w.Workend7
 			components1 := strings.Split(workend7, ":")
 			EndHour, _ := components1[0], components1[1]
-			if hour < StartHour || hour > EndHour {
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if hours < startHour || hours > endHour {
 				p := models.User{
 					Role: "appMaker",
 					Type: "text",
