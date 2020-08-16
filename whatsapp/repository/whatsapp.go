@@ -1990,7 +1990,7 @@ func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid 
 		}
 
 	}
-	return &models.Response{Status: "0", Msg: "Queue Name Alreay Exist.", ResponseCode: 404}, nil
+	return &models.Response{Status: "0", Msg: "Queue Name Already Exist.", ResponseCode: 404}, nil
 
 }
 
@@ -2011,7 +2011,7 @@ func (r *crudRepository) Assign_Agent_To_Queue(ctx context.Context, Agent_name s
 		}
 
 	}
-	return &models.Response{Status: "0", Msg: "Agent Alreay In Queue.", ResponseCode: 404}, nil
+	return &models.Response{Status: "0", Msg: "Agent Already In Queue.", ResponseCode: 404}, nil
 
 }
 
@@ -2064,7 +2064,7 @@ func (r *crudRepository) Get_Queue_List(ctx context.Context) (*models.Response, 
 
 	if rows, err := r.DBConn.Raw("select id, name, integration_id, queue_uuid, map_with from queues").Rows(); err != nil {
 
-		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
