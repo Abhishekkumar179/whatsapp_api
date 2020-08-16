@@ -341,6 +341,7 @@ type Queue struct {
 type AgentQueue struct {
 	QueueName          string `json:"queue_name,omitempty"`
 	AgentName          string `json:"agent_name,omitempty"`
+	Queue_uuid         string `json:"queue_uuid,omitempty" gorm:"type:uuid"`
 	Agent_uuid         string `json:"agent_uuid,omitempty" gorm:"type:uuid"`
 	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty" gorm:"type:uuid"`
 }
