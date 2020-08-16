@@ -335,3 +335,44 @@ func (r *crudUsecase) Reset_Unread_Count(ctx context.Context, appId string, appU
 
 	return r.repository.Reset_Unread_Count(ctx, appId, appUserId)
 }
+
+/**********************************************create Queue*************************************************/
+func (r *crudUsecase) Create_Queue(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	id1 := fmt.Sprintf("%v", flow["id"])
+	Id, _ := strconv.ParseInt(id1, 10, 64)
+	Queue_uuid := fmt.Sprintf("%v", flow["queue_uuid"])
+	Map_with := fmt.Sprintf("%v", flow["map_with"])
+	Name := fmt.Sprintf("%v", flow["name"])
+	IntegrationID := fmt.Sprintf("%v", flow["integration_id"])
+
+	return r.repository.Create_Queue(ctx, Id, Queue_uuid, Map_with, Name, IntegrationID)
+}
+
+/***************************************************Assign_Agent************************************************/
+func (r *crudUsecase) Assign_Agent_To_Queue(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+
+	Agent_name := fmt.Sprintf("%v", flow["agent_name"])
+	Agent_uuid := fmt.Sprintf("%v", flow["agent_uuid"])
+	Queue_name := fmt.Sprintf("%v", flow["queue_name"])
+	Tenant_domain_uuid := fmt.Sprintf("%v", flow["tenant_domain_uuid"])
+	return r.repository.Assign_Agent_To_Queue(ctx, Agent_name, Agent_uuid, Queue_name, Tenant_domain_uuid)
+}
+
+/*************************************************Remove Agent From Queue****************************************/
+func (r *crudUsecase) Remove_Agent_From_Queue(ctx context.Context, agent_uuid string) (*models.Response, error) {
+
+	return r.repository.Remove_Agent_From_Queue(ctx, agent_uuid)
+}
+
+/**********************************************Get Assigned Agent list from Queue******************************/
+func (r *crudUsecase) Get_Assigned_Agent_list_From_Queue(ctx context.Context, queueName string) (*models.Response, error) {
+
+	return r.repository.Get_Assigned_Agent_list_From_Queue(ctx, queueName)
+}
+
+/***************************************Get Queue List****************************************************/
+func (r *crudUsecase) Get_Queue_List(ctx context.Context) (*models.Response, error) {
+
+	return r.repository.Get_Queue_List(ctx)
+
+}

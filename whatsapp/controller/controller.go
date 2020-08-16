@@ -1137,6 +1137,95 @@ func (r *CRUDController) Reset_Unread_Count(c echo.Context) error {
 
 }
 
+/**********************************************Create Queue************************************************/
+func (r *CRUDController) Create_Queue(c echo.Context) error {
+	var create_queue map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&create_queue)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	} else {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Create_Queue(ctx, create_queue)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/***********************************************Assign Agent************************************************/
+func (r *CRUDController) Assign_Agent_To_Queue(c echo.Context) error {
+	var assign_agent map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&assign_agent)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	} else {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Assign_Agent_To_Queue(ctx, assign_agent)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/**********************************************Remove Agent From Queue**************************************/
+func (r *CRUDController) Remove_Agent_From_Queue(c echo.Context) error {
+	agent_uuid := c.Param("agent_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Remove_Agent_From_Queue(ctx, agent_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/*****************************************Get Assigned agents from queue List********************************/
+func (r *CRUDController) Get_Assigned_Agent_list_From_Queue(c echo.Context) error {
+	queueName := c.Param("queue_name")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Assigned_Agent_list_From_Queue(ctx, queueName)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/*********************************************Get Queue List*************************************************/
+func (r *CRUDController) Get_Queue_List(c echo.Context) error {
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Queue_List(ctx)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1192,4 +1281,10 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.DELETE("unlink_appUser_to_channel/:appId/:appUserId/:channel", handler.Unlink_appUser_to_Channel)
 	e.POST("upload_attachments/:appId/:appUserId", handler.Upload_Attachments)
 	e.POST("typing_activity/:appId/:appUserId", handler.TypingActivity)
+
+	e.POST("create_queue", handler.Create_Queue)
+	e.POST("assign_agent_to_queue", handler.Assign_Agent_To_Queue)
+	e.DELETE("remove_agent_from_queue/:agent_uuid", handler.Remove_Agent_From_Queue)
+	e.GET("get_assigned_agent_list/:queue_name", handler.Get_Assigned_Agent_list_From_Queue)
+	e.GET("get_queue_list", handler.Get_Queue_List)
 }

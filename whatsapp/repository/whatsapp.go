@@ -15,6 +15,8 @@ import (
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
 
+	myNewUUID "github.com/google/uuid"
+
 	"github.com/jinzhu/gorm"
 )
 
@@ -929,7 +931,7 @@ func (r *crudRepository) Pre_createUser(ctx context.Context, appId string, id in
 }
 
 /***********************************************update appuser******************************************/
-func (r crudRepository) Update_AppUser(ctx context.Context, appUserId string, appId string, surname string, givenName string) (*models.Response, error) {
+func (r *crudRepository) Update_AppUser(ctx context.Context, appUserId string, appId string, surname string, givenName string) (*models.Response, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -966,7 +968,7 @@ func (r crudRepository) Update_AppUser(ctx context.Context, appUserId string, ap
 }
 
 /****************************************SmoochConfiguration*********************************************/
-func (r crudRepository) Add_Smooch_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
+func (r *crudRepository) Add_Smooch_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
 
 	td := models.Tenant_details{
 		Domain_uuid: domain_uuid,
@@ -987,7 +989,7 @@ func (r crudRepository) Add_Smooch_configuration(ctx context.Context, domain_uui
 }
 
 /***************************************Add smooch configuration*****************************************/
-func (r crudRepository) Update_Smooch_configuration(ctx context.Context, id int64, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
+func (r *crudRepository) Update_Smooch_configuration(ctx context.Context, id int64, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
 	w := models.Tenant_details{}
 	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Find(&w)
 	if db.RowsAffected == 0 {
@@ -1012,7 +1014,7 @@ func (r crudRepository) Update_Smooch_configuration(ctx context.Context, id int6
 }
 
 /***************************************Get smooch configuration*****************************************/
-func (r crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+func (r *crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	s := int64(1597047140)
 	myDate := time.Unix(s, 0)
 
@@ -1044,7 +1046,7 @@ func (r crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uui
 }
 
 /**************************************************Delete Smooch configuration***************************/
-func (r crudRepository) Delete_Smooch_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+func (r *crudRepository) Delete_Smooch_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Delete(&td)
 	if db.Error != nil {
@@ -1057,7 +1059,7 @@ func (r crudRepository) Delete_Smooch_configuration(ctx context.Context, id int6
 }
 
 /****************************************Save tenant details*********************************************/
-func (r crudRepository) Add_Whatsapp_configuration(ctx context.Context, td models.WhatsappConfigurations) (*models.Response, error) {
+func (r *crudRepository) Add_Whatsapp_configuration(ctx context.Context, td models.WhatsappConfigurations) (*models.Response, error) {
 
 	ts := models.WhatsappConfiguration{
 		Domain_uuid:           td.Domain_uuid,
@@ -1107,7 +1109,7 @@ func (r crudRepository) Add_Whatsapp_configuration(ctx context.Context, td model
 }
 
 /**********************************************Get appID by tenant_domain_uuid******************************/
-func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+func (r *crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	w := models.WhatsappConfiguration{}
 	list := make([]models.WhatsappConfiguration, 0)
 	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
@@ -1116,14 +1118,14 @@ func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_u
 
 	}
 
-	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, whatsapp_integration_id,size,trigger_name,trigger_message,trigger_when, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from whatsapp_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	row, err := r.DBConn.Raw("select * from whatsapp_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 	}
 	defer row.Close()
 	for row.Next() {
 		f := models.WhatsappConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.WhatsappIntegrationID, &f.Size, &f.TriggerName, &f.TriggerMessage, &f.TriggerWhen, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.WhatsappIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
 
 			return nil, err
 		}
@@ -1133,7 +1135,7 @@ func (r crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_u
 }
 
 /**********************************************Update Tenant details*************************************/
-func (r crudRepository) Update_Whatsapp_configuration(ctx context.Context, id int64, domain_uuid string, td models.WhatsappConfigurations) (*models.Response, error) {
+func (r *crudRepository) Update_Whatsapp_configuration(ctx context.Context, id int64, domain_uuid string, td models.WhatsappConfigurations) (*models.Response, error) {
 	w := models.WhatsappConfiguration{}
 	db1 := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Find(&w)
 	if db1.Error != nil {
@@ -1193,7 +1195,7 @@ func (r crudRepository) Update_Whatsapp_configuration(ctx context.Context, id in
 }
 
 /**********************************************Delete Tenant details*************************************/
-func (r crudRepository) Delete_Whatsapp_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+func (r *crudRepository) Delete_Whatsapp_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
 	td := models.WhatsappConfiguration{}
 	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Delete(&td)
 	if db.Error != nil {
@@ -1206,7 +1208,7 @@ func (r crudRepository) Delete_Whatsapp_configuration(ctx context.Context, id in
 }
 
 /*******************************************Add facebook configuration*******************************/
-func (r crudRepository) Add_Facebook_configuration(ctx context.Context, td models.FacebookConfigurations) (*models.Response, error) {
+func (r *crudRepository) Add_Facebook_configuration(ctx context.Context, td models.FacebookConfigurations) (*models.Response, error) {
 
 	ts := models.FacebookConfiguration{
 		Domain_uuid:           td.Domain_uuid,
@@ -1256,7 +1258,7 @@ func (r crudRepository) Add_Facebook_configuration(ctx context.Context, td model
 }
 
 /**********************************************Get appID by tenant_domain_uuid******************************/
-func (r crudRepository) Get_Facebook_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+func (r *crudRepository) Get_Facebook_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	list := make([]models.FacebookConfiguration, 0)
 	w := models.FacebookConfiguration{}
 	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
@@ -1264,14 +1266,14 @@ func (r crudRepository) Get_Facebook_configuration(ctx context.Context, domain_u
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 
 	}
-	row, err := r.DBConn.Raw("select id, domain_uuid, app_id, app_key, app_secret, facebook_integration_id, size, trigger_name, trigger_message, trigger_when, day1, day2, day3, day4, day5, day6, day7, workstart1, workstart2, workstart3, workstart4, workstart5, workstart6, workstart7, workend1, workend2, workend3, workend4, workend5, workend6, workend7 from facebook_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	row, err := r.DBConn.Raw("select * from facebook_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 	}
 	defer row.Close()
 	for row.Next() {
 		f := models.FacebookConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.FacebookIntegrationID, &f.Size, &f.TriggerName, &f.TriggerMessage, &f.TriggerWhen, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.FacebookIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
 
 			return nil, err
 		}
@@ -1282,7 +1284,7 @@ func (r crudRepository) Get_Facebook_configuration(ctx context.Context, domain_u
 }
 
 /**********************************************Update Tenant details*************************************/
-func (r crudRepository) Update_Facebook_configuration(ctx context.Context, id int64, domain_uuid string, td models.FacebookConfigurations) (*models.Response, error) {
+func (r *crudRepository) Update_Facebook_configuration(ctx context.Context, id int64, domain_uuid string, td models.FacebookConfigurations) (*models.Response, error) {
 	w := models.FacebookConfiguration{}
 	db1 := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Find(&w)
 	if db1.RowsAffected == 0 {
@@ -1332,7 +1334,7 @@ func (r crudRepository) Update_Facebook_configuration(ctx context.Context, id in
 }
 
 /**********************************************Delete Tenant details*************************************/
-func (r crudRepository) Delete_Facebook_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+func (r *crudRepository) Delete_Facebook_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
 	td := models.FacebookConfiguration{}
 	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Delete(&td)
 	if db.Error != nil {
@@ -1345,7 +1347,7 @@ func (r crudRepository) Delete_Facebook_configuration(ctx context.Context, id in
 }
 
 /**********************************************List integration**************************************/
-func (r crudRepository) List_integration(ctx context.Context, appId string) ([]byte, error) {
+func (r *crudRepository) List_integration(ctx context.Context, appId string) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1366,7 +1368,7 @@ func (r crudRepository) List_integration(ctx context.Context, appId string) ([]b
 }
 
 /***********************************************Delete All Messages*********************************/
-func (r crudRepository) DeleteAllMessage(ctx context.Context, appUserId string, appId string) (*models.Response, error) {
+func (r *crudRepository) DeleteAllMessage(ctx context.Context, appUserId string, appId string) (*models.Response, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1392,7 +1394,7 @@ func (r crudRepository) DeleteAllMessage(ctx context.Context, appUserId string, 
 }
 
 /**************************************************Delete Message*****************************************/
-func (r crudRepository) DeleteMessage(ctx context.Context, appId string, appUserId string, messageId string) (*models.Response, error) {
+func (r *crudRepository) DeleteMessage(ctx context.Context, appId string, appUserId string, messageId string) (*models.Response, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1415,7 +1417,7 @@ func (r crudRepository) DeleteMessage(ctx context.Context, appId string, appUser
 }
 
 /**********************************************Create Text template*************************************/
-func (r crudRepository) Create_Text_Template(ctx context.Context, appId string, p models.Comtemplate) ([]byte, error) {
+func (r *crudRepository) Create_Text_Template(ctx context.Context, appId string, p models.Comtemplate) ([]byte, error) {
 	td := models.Tenant_details{}
 
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
@@ -1438,7 +1440,7 @@ func (r crudRepository) Create_Text_Template(ctx context.Context, appId string, 
 }
 
 /*************************************************Create carousel template********************************/
-func (r crudRepository) Create_Carousel_Template(ctx context.Context, appId string, p models.Payload) ([]byte, error) {
+func (r *crudRepository) Create_Carousel_Template(ctx context.Context, appId string, p models.Payload) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1460,7 +1462,7 @@ func (r crudRepository) Create_Carousel_Template(ctx context.Context, appId stri
 }
 
 /**************************************************Create Compound Template*******************************/
-func (r crudRepository) Create_Compound_Template(ctx context.Context, appId string, p models.Comtemplate) ([]byte, error) {
+func (r *crudRepository) Create_Compound_Template(ctx context.Context, appId string, p models.Comtemplate) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1527,7 +1529,7 @@ func (r *crudRepository) Create_Quickreply_Template(ctx context.Context, appId s
 }
 
 /***************************************Create send location template****************************************/
-func (r crudRepository) Create_Request_Location_Template(ctx context.Context, appId string, p models.Comtemplate) ([]byte, error) {
+func (r *crudRepository) Create_Request_Location_Template(ctx context.Context, appId string, p models.Comtemplate) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1549,7 +1551,7 @@ func (r crudRepository) Create_Request_Location_Template(ctx context.Context, ap
 }
 
 /************************************************Update Text Template**********************************/
-func (r crudRepository) Update_Text_Template(ctx context.Context, appId string, template_id string, p models.Payload) ([]byte, error) {
+func (r *crudRepository) Update_Text_Template(ctx context.Context, appId string, template_id string, p models.Payload) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1571,7 +1573,7 @@ func (r crudRepository) Update_Text_Template(ctx context.Context, appId string, 
 }
 
 /*************************************************get tempalte id************************************/
-func (r crudRepository) Get_template(ctx context.Context, appId string, template_id string) ([]byte, error) {
+func (r *crudRepository) Get_template(ctx context.Context, appId string, template_id string) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1593,7 +1595,7 @@ func (r crudRepository) Get_template(ctx context.Context, appId string, template
 }
 
 /***************************************************List tempalte*****************************************/
-func (r crudRepository) List_template(ctx context.Context, appId string) ([]byte, error) {
+func (r *crudRepository) List_template(ctx context.Context, appId string) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1615,7 +1617,7 @@ func (r crudRepository) List_template(ctx context.Context, appId string) ([]byte
 }
 
 /************************************************Delete template*************************************/
-func (r crudRepository) Delete_template(ctx context.Context, appId string, template_id string) (*models.Response, error) {
+func (r *crudRepository) Delete_template(ctx context.Context, appId string, template_id string) (*models.Response, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1642,7 +1644,7 @@ func (r crudRepository) Delete_template(ctx context.Context, appId string, templ
 }
 
 /**************************************************Send Location*************************************/
-func (r crudRepository) Send_Location(ctx context.Context, appId string, appUserId string, p models.Locations) ([]byte, error) {
+func (r *crudRepository) Send_Location(ctx context.Context, appId string, appUserId string, p models.Locations) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1664,7 +1666,7 @@ func (r crudRepository) Send_Location(ctx context.Context, appId string, appUser
 }
 
 /**************************************************send action message**************************************/
-func (r crudRepository) Message_Action_Types(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
+func (r *crudRepository) Message_Action_Types(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1688,7 +1690,7 @@ func (r crudRepository) Message_Action_Types(ctx context.Context, appId string, 
 }
 
 /**********************************************Quickreply message************************************/
-func (r crudRepository) Quickreply_Message(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
+func (r *crudRepository) Quickreply_Message(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -1710,7 +1712,7 @@ func (r crudRepository) Quickreply_Message(ctx context.Context, appId string, ap
 }
 
 /************************************************Send carousel message**********************************/
-func (r crudRepository) Send_Carousel_Message(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
+func (r *crudRepository) Send_Carousel_Message(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
 
 	td := models.Tenant_details{
 		AppId: appId,
@@ -1735,7 +1737,7 @@ func (r crudRepository) Send_Carousel_Message(ctx context.Context, appId string,
 }
 
 /*********************************Link appuser to channel*********************************************/
-func (r crudRepository) Link_appUser_to_Channel(ctx context.Context, appId string, appUserId string, p models.Link) ([]byte, error) {
+func (r *crudRepository) Link_appUser_to_Channel(ctx context.Context, appId string, appUserId string, p models.Link) ([]byte, error) {
 
 	td := models.Tenant_details{
 		AppId: appId,
@@ -1760,7 +1762,7 @@ func (r crudRepository) Link_appUser_to_Channel(ctx context.Context, appId strin
 }
 
 /*************************************Unlink appUser to channel*****************************************/
-func (r crudRepository) Unlink_appUser_to_Channel(ctx context.Context, appId string, appUserId string, channel string) ([]byte, error) {
+func (r *crudRepository) Unlink_appUser_to_Channel(ctx context.Context, appId string, appUserId string, channel string) ([]byte, error) {
 
 	td := models.Tenant_details{
 		AppId: appId,
@@ -1783,7 +1785,7 @@ func (r crudRepository) Unlink_appUser_to_Channel(ctx context.Context, appId str
 }
 
 /******************************************Upload Attachments********************************************/
-func (r crudRepository) Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error) {
+func (r *crudRepository) Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error) {
 	td := models.WhatsappConfiguration{}
 	db := r.DBConn.Table("whatsapp_configurations").Where("app_id = ? AND whatsapp_integration_id = ?", appId, IntegrationID).Find(&td)
 	if db.Error != nil {
@@ -1899,7 +1901,7 @@ func (r crudRepository) Upload_Attachments(ctx context.Context, appId string, ap
 }
 
 /***********************************************TypingActivity***********************************************/
-func (r crudRepository) TypingActivity(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
+func (r *crudRepository) TypingActivity(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
 	td := models.Tenant_details{}
 
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
@@ -1921,10 +1923,10 @@ func (r crudRepository) TypingActivity(ctx context.Context, appId string, appUse
 }
 
 /*************************************************Disable AppUser*************************************************/
-func (r crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error) {
+func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error) {
 	u := models.ReceiveUserDetails{}
 	err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&u)
-	if err != nil {
+	if err.Error != nil {
 		return &models.Response{Status: "0", Msg: "AppUserId Not Found.", ResponseCode: 404}, nil
 
 	}
@@ -1936,7 +1938,7 @@ func (r crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (
 }
 
 /****************************************Reset Unread Count*******************************************/
-func (r crudRepository) Reset_Unread_Count(ctx context.Context, appId string, appUserId string) (*models.Response, error) {
+func (r *crudRepository) Reset_Unread_Count(ctx context.Context, appId string, appUserId string) (*models.Response, error) {
 	u := models.ReceiveUserDetails{}
 	td := models.Tenant_details{
 		AppId: appId,
@@ -1965,5 +1967,116 @@ func (r crudRepository) Reset_Unread_Count(ctx context.Context, appId string, ap
 			return &models.Response{Status: "0", Msg: "AppUserId unread count not Updated.", ResponseCode: 404}, nil
 		}
 		return &models.Response{Status: "1", Msg: "Unread count reset Successfully.", ResponseCode: 200}, nil
+	}
+}
+
+/************************************************Create Queue***********************************************/
+func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid string, Map_with string, Name string, IntegrationID string) (*models.Response, error) {
+	uuid1, _ := myNewUUID.NewUUID()
+	uuid := uuid1.String()
+	u := models.Queue{
+		Id:            Id,
+		Name:          Name,
+		IntegrationID: IntegrationID,
+		Queue_uuid:    uuid,
+		Map_with:      Map_with,
+	}
+	if err := r.DBConn.Where("name = ?", Name).Find(&u).Error; err != nil {
+		Queue := r.DBConn.Create(&u)
+		if Queue.RowsAffected == 0 {
+			return &models.Response{Status: "0", Msg: "Queue not created.", ResponseCode: 400}, nil
+		} else {
+			return &models.Response{Status: "1", Msg: "Queue created successfully.", ResponseCode: 200}, nil
+		}
+
+	}
+	return &models.Response{Status: "0", Msg: "Queue Name Alreay Exist.", ResponseCode: 404}, nil
+
+}
+
+/***************************************************Assign_Agent********************************************/
+func (r *crudRepository) Assign_Agent_To_Queue(ctx context.Context, Agent_name string, Agent_uuid string, Queue_name string, tenant_domain_uuid string) (*models.Response, error) {
+	u := models.AgentQueue{
+		AgentName:          Agent_name,
+		Agent_uuid:         Agent_uuid,
+		QueueName:          Queue_name,
+		Tenant_domain_uuid: tenant_domain_uuid,
+	}
+	if err := r.DBConn.Where("agent_uuid = ?", Agent_uuid).Find(&u).Error; err != nil {
+		Queue := r.DBConn.Create(&u)
+		if Queue.RowsAffected == 0 {
+			return &models.Response{Status: "0", Msg: "Agent not Assigned.", ResponseCode: 400}, nil
+		} else {
+			return &models.Response{Status: "1", Msg: "Agent Assigned successfully.", ResponseCode: 200}, nil
+		}
+
+	}
+	return &models.Response{Status: "0", Msg: "Agent Alreay In Queue.", ResponseCode: 404}, nil
+
+}
+
+/*****************************************************Remove Agent From Queue*********************************/
+func (r *crudRepository) Remove_Agent_From_Queue(ctx context.Context, Agent_uuid string) (*models.Response, error) {
+	u := models.AgentQueue{}
+	err := r.DBConn.Where("agent_uuid = ?", Agent_uuid).Find(&u)
+	if err.Error != nil {
+		return &models.Response{Status: "0", Msg: "Agent not found in Queue.", ResponseCode: 404}, nil
+	}
+	db := r.DBConn.Where("agent_uuid = ?", Agent_uuid).Delete(&u)
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "0", Msg: "Agent not removed Queue..", ResponseCode: 404}, nil
+	}
+
+	return &models.Response{Status: "1", Msg: "Agent Removed From Queue.", ResponseCode: 200}, nil
+
+}
+
+/**************************************************Get Assigned Agent list From Queue***************************/
+func (r *crudRepository) Get_Assigned_Agent_list_From_Queue(ctx context.Context, queueName string) (*models.Response, error) {
+	list := make([]models.AgentQueue, 0)
+	a := models.AgentQueue{}
+	err := r.DBConn.Where("queue_name = ?", queueName).Find(&a)
+	if err.Error != nil {
+		return &models.Response{Status: "Not Found", Msg: "Queue Not Found", ResponseCode: 404}, nil
+	}
+	if rows, err := r.DBConn.Raw("select queue_name, agent_name, agent_uuid from agent_queues where queue_name = ?", queueName).Rows(); err != nil {
+
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.AgentQueue{}
+			if err := rows.Scan(&f.QueueName, &f.AgentName, &f.Agent_uuid); err != nil {
+
+				return nil, err
+			}
+
+			list = append(list, f)
+		}
+
+		return &models.Response{Status: "OK", Msg: "Queue Found", ResponseCode: 200, AssignAgent: list}, nil
+	}
+}
+
+/*********************************************Get Queue List****************************************************/
+func (r *crudRepository) Get_Queue_List(ctx context.Context) (*models.Response, error) {
+	list := make([]models.Queue, 0)
+
+	if rows, err := r.DBConn.Raw("select id, name, integration_id, queue_uuid, map_with from queues").Rows(); err != nil {
+
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.Queue{}
+			if err := rows.Scan(&f.Id, &f.Name, &f.IntegrationID, &f.Queue_uuid, &f.Map_with); err != nil {
+
+				return nil, err
+			}
+
+			list = append(list, f)
+		}
+
+		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Queue: list}, nil
 	}
 }

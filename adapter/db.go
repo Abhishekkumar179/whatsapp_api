@@ -24,6 +24,8 @@ func DB(config *config.Config) *gorm.DB {
 	db.AutoMigrate(models.Tenant_details{})
 	db.AutoMigrate(models.WhatsappConfiguration{})
 	db.AutoMigrate(models.FacebookConfiguration{})
+	db.AutoMigrate(models.Queue{})
+	db.AutoMigrate(models.AgentQueue{})
 	fmt.Println("Successfully connected!")
 	return db
 }

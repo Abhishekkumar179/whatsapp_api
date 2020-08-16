@@ -50,4 +50,9 @@ type Usecase interface {
 	TypingActivity(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error)
 	Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error)
 	Reset_Unread_Count(ctx context.Context, appId string, appUserId string) (*models.Response, error)
+	Create_Queue(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
+	Assign_Agent_To_Queue(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
+	Remove_Agent_From_Queue(ctx context.Context, agent_uuid string) (*models.Response, error)
+	Get_Assigned_Agent_list_From_Queue(ctx context.Context, queueName string) (*models.Response, error)
+	Get_Queue_List(ctx context.Context) (*models.Response, error)
 }
