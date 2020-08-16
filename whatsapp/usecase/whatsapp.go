@@ -344,8 +344,9 @@ func (r *crudUsecase) Create_Queue(ctx context.Context, flow map[string]interfac
 	Map_with := fmt.Sprintf("%v", flow["map_with"])
 	Name := fmt.Sprintf("%v", flow["name"])
 	IntegrationID := fmt.Sprintf("%v", flow["integration_id"])
+	Domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
 
-	return r.repository.Create_Queue(ctx, Id, Queue_uuid, Map_with, Name, IntegrationID)
+	return r.repository.Create_Queue(ctx, Id, Queue_uuid, Map_with, Name, IntegrationID, Domain_uuid)
 }
 
 /***************************************************Assign_Agent************************************************/
@@ -371,8 +372,26 @@ func (r *crudUsecase) Get_Assigned_Agent_list_From_Queue(ctx context.Context, qu
 }
 
 /***************************************Get Queue List****************************************************/
-func (r *crudUsecase) Get_Queue_List(ctx context.Context) (*models.Response, error) {
+func (r *crudUsecase) Get_Queue_List(ctx context.Context, domain_uuid string) (*models.Response, error) {
 
-	return r.repository.Get_Queue_List(ctx)
+	return r.repository.Get_Queue_List(ctx, domain_uuid)
+
+}
+
+/**********************************************Update_Queue*****************************************************/
+func (r *crudUsecase) Update_Queue(ctx context.Context, queue_uuid string, flow map[string]interface{}) (*models.Response, error) {
+
+	Name := fmt.Sprintf("%v", flow["name"])
+	IntegrationID := fmt.Sprintf("%v", flow["integration_id"])
+	Map_with := fmt.Sprintf("%v", flow["map_with"])
+	Domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
+	return r.repository.Update_Queue(ctx, queue_uuid, Name, IntegrationID, Map_with, Domain_uuid)
+}
+
+/********************************************Delete Queue******************************************************/
+
+func (r *crudUsecase) Delete_Queue(ctx context.Context, queue_uuid string) (*models.Response, error) {
+
+	return r.repository.Delete_Queue(ctx, queue_uuid)
 
 }

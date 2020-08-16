@@ -1971,7 +1971,7 @@ func (r *crudRepository) Reset_Unread_Count(ctx context.Context, appId string, a
 }
 
 /************************************************Create Queue***********************************************/
-func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid string, Map_with string, Name string, IntegrationID string) (*models.Response, error) {
+func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid string, Map_with string, Name string, IntegrationID string, Domain_uuid string) (*models.Response, error) {
 	uuid1, _ := myNewUUID.NewUUID()
 	uuid := uuid1.String()
 	u := models.Queue{
@@ -1980,6 +1980,7 @@ func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid 
 		IntegrationID: IntegrationID,
 		Queue_uuid:    uuid,
 		Map_with:      Map_with,
+		Domain_uuid:   Domain_uuid,
 	}
 	if err := r.DBConn.Where("name = ?", Name).Find(&u).Error; err != nil {
 		Queue := r.DBConn.Create(&u)
@@ -2059,17 +2060,21 @@ func (r *crudRepository) Get_Assigned_Agent_list_From_Queue(ctx context.Context,
 }
 
 /*********************************************Get Queue List****************************************************/
-func (r *crudRepository) Get_Queue_List(ctx context.Context) (*models.Response, error) {
+func (r *crudRepository) Get_Queue_List(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	list := make([]models.Queue, 0)
-
-	if rows, err := r.DBConn.Raw("select id, name, integration_id, queue_uuid, map_with from queues").Rows(); err != nil {
+	a := models.Queue{}
+	err := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&a)
+	if err.Error != nil {
+		return &models.Response{Status: "Not Found", Msg: "Queue Not Found", ResponseCode: 404}, nil
+	}
+	if rows, err := r.DBConn.Raw("select id, name, integration_id, queue_uuid, map_with, domain_uuid from queues where domain_uuid = ?", domain_uuid).Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			f := models.Queue{}
-			if err := rows.Scan(&f.Id, &f.Name, &f.IntegrationID, &f.Queue_uuid, &f.Map_with); err != nil {
+			if err := rows.Scan(&f.Id, &f.Name, &f.IntegrationID, &f.Queue_uuid, &f.Map_with, &f.Domain_uuid); err != nil {
 
 				return nil, err
 			}
@@ -2079,4 +2084,35 @@ func (r *crudRepository) Get_Queue_List(ctx context.Context) (*models.Response, 
 
 		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Queue: list}, nil
 	}
+}
+
+/*********************************************Update Queue*************************************************/
+func (r *crudRepository) Update_Queue(ctx context.Context, queue_uuid string, Name string, IntegrationID string, Map_with string, Domain_uuid string) (*models.Response, error) {
+	u := models.Queue{}
+	err := r.DBConn.Where("queue_uuid = ?", queue_uuid).Find(&u)
+	if err.Error != nil {
+		return &models.Response{Status: "0", Msg: "Queue not found.", ResponseCode: 404}, nil
+	}
+	Queue := r.DBConn.Table("queues").Where("queue_uuid = ?", queue_uuid).Updates(map[string]interface{}{"map_with": Map_with, "name": Name, "integration_id": IntegrationID, "domain_uuid": Domain_uuid})
+	if Queue.Error != nil {
+		return &models.Response{Status: "0", Msg: "Queue not Updated.", ResponseCode: 400}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Queue Updated successfully.", ResponseCode: 200}, nil
+
+}
+
+/************************************************Delete Queue*******************************************/
+func (r *crudRepository) Delete_Queue(ctx context.Context, queue_uuid string) (*models.Response, error) {
+	u := models.Queue{}
+	err := r.DBConn.Where("queue_uuid = ?", queue_uuid).Find(&u)
+	if err.Error != nil {
+		return &models.Response{Status: "0", Msg: "Queue not found.", ResponseCode: 404}, nil
+	}
+	db := r.DBConn.Where("queue_uuid = ?", queue_uuid).Delete(&u)
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "0", Msg: "Queue not Deleted.", ResponseCode: 404}, nil
+	}
+
+	return &models.Response{Status: "1", Msg: "Queue Delete Successfully.", ResponseCode: 200}, nil
+
 }

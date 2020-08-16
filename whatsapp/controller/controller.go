@@ -1181,6 +1181,46 @@ func (r *CRUDController) Assign_Agent_To_Queue(c echo.Context) error {
 
 }
 
+/**********************************************Update Queue************************************************/
+func (r *CRUDController) Update_Queue(c echo.Context) error {
+	queue_uuid := c.Param("queue_uuid")
+	var assign_agent map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&assign_agent)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	} else {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Update_Queue(ctx, queue_uuid, assign_agent)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/*******************************************Delete Queue****************************************************/
+func (r *CRUDController) Delete_Queue(c echo.Context) error {
+	queue_uuid := c.Param("queue_uuid")
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Delete_Queue(ctx, queue_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
 /**********************************************Remove Agent From Queue**************************************/
 func (r *CRUDController) Remove_Agent_From_Queue(c echo.Context) error {
 	agent_uuid := c.Param("agent_uuid")
@@ -1213,12 +1253,12 @@ func (r *CRUDController) Get_Assigned_Agent_list_From_Queue(c echo.Context) erro
 
 /*********************************************Get Queue List*************************************************/
 func (r *CRUDController) Get_Queue_List(c echo.Context) error {
-
+	domain_uuid := c.Param("domain_uuid")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Get_Queue_List(ctx)
+	authResponse, _ := r.usecase.Get_Queue_List(ctx, domain_uuid)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -1286,5 +1326,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("assign_agent_to_queue", handler.Assign_Agent_To_Queue)
 	e.DELETE("remove_agent_from_queue/:agent_uuid", handler.Remove_Agent_From_Queue)
 	e.GET("get_assigned_agent_list/:queue_name", handler.Get_Assigned_Agent_list_From_Queue)
-	e.GET("get_queue_list", handler.Get_Queue_List)
+	e.GET("get_queue_list/:domain_uuid", handler.Get_Queue_List)
+	e.POST("update_queue/:queue_uuid", handler.Update_Queue)
+	e.DELETE("delete_queue/:queue_uuid", handler.Delete_Queue)
 }

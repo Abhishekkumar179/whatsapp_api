@@ -336,6 +336,7 @@ type Queue struct {
 	IntegrationID string `json:"integration_id,omitempty"`
 	Queue_uuid    string `json:"queue_uuid,omitempty" gorm:"type:uuid"`
 	Map_with      string `json:"map_with,omitempty"`
+	Domain_uuid   string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
 }
 type AgentQueue struct {
 	QueueName          string `json:"queue_name,omitempty"`

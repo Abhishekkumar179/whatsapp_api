@@ -54,5 +54,7 @@ type Usecase interface {
 	Assign_Agent_To_Queue(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
 	Remove_Agent_From_Queue(ctx context.Context, agent_uuid string) (*models.Response, error)
 	Get_Assigned_Agent_list_From_Queue(ctx context.Context, queueName string) (*models.Response, error)
-	Get_Queue_List(ctx context.Context) (*models.Response, error)
+	Get_Queue_List(ctx context.Context, queue_uuid string) (*models.Response, error)
+	Update_Queue(ctx context.Context, queue_uuid string, flow map[string]interface{}) (*models.Response, error)
+	Delete_Queue(ctx context.Context, domain_uuid string) (*models.Response, error)
 }
