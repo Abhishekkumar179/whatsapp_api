@@ -1238,12 +1238,12 @@ func (r *CRUDController) Remove_Agent_From_Queue(c echo.Context) error {
 
 /*****************************************Get Assigned agents from queue List********************************/
 func (r *CRUDController) Get_Assigned_Agent_list_From_Queue(c echo.Context) error {
-	queueName := c.Param("queue_name")
+	queue_uuid := c.Param("queue_uuid")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Get_Assigned_Agent_list_From_Queue(ctx, queueName)
+	authResponse, _ := r.usecase.Get_Assigned_Agent_list_From_Queue(ctx, queue_uuid)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -1266,6 +1266,20 @@ func (r *CRUDController) Get_Queue_List(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/*************************************************Available Agents************************************************/
+// func (r *CRUDController) Available_Agents(c echo.Context) error {
+// 	domain_uuid := c.Param("domain_uuid")
+// 	ctx := c.Request().Context()
+// 	if ctx == nil {
+// 		ctx = context.Background()
+// 	}
+// 	authResponse, _ := r.usecase.Available_Agents(ctx, domain_uuid)
+
+// 	if authResponse == nil {
+// 		return c.JSON(http.StatusUnauthorized, authResponse)
+// 	}
+// 	return c.JSON(http.StatusOK, authResponse)
+// }
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1325,7 +1339,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("create_queue", handler.Create_Queue)
 	e.POST("assign_agent_to_queue", handler.Assign_Agent_To_Queue)
 	e.DELETE("remove_agent_from_queue/:agent_uuid", handler.Remove_Agent_From_Queue)
-	e.GET("get_assigned_agent_list/:queue_name", handler.Get_Assigned_Agent_list_From_Queue)
+	e.GET("get_assigned_agent_list/:queue_uuid", handler.Get_Assigned_Agent_list_From_Queue)
 	e.GET("get_queue_list/:domain_uuid", handler.Get_Queue_List)
 	e.POST("update_queue/:queue_uuid", handler.Update_Queue)
 	e.DELETE("delete_queue/:queue_uuid", handler.Delete_Queue)

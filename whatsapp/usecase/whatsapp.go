@@ -356,7 +356,8 @@ func (r *crudUsecase) Assign_Agent_To_Queue(ctx context.Context, flow map[string
 	Agent_uuid := fmt.Sprintf("%v", flow["agent_uuid"])
 	Queue_name := fmt.Sprintf("%v", flow["queue_name"])
 	Tenant_domain_uuid := fmt.Sprintf("%v", flow["tenant_domain_uuid"])
-	return r.repository.Assign_Agent_To_Queue(ctx, Agent_name, Agent_uuid, Queue_name, Tenant_domain_uuid)
+	Queue_uuid := fmt.Sprintf("%v", flow["queue_uuid"])
+	return r.repository.Assign_Agent_To_Queue(ctx, Agent_name, Agent_uuid, Queue_name, Tenant_domain_uuid, Queue_uuid)
 }
 
 /*************************************************Remove Agent From Queue****************************************/
@@ -366,9 +367,9 @@ func (r *crudUsecase) Remove_Agent_From_Queue(ctx context.Context, agent_uuid st
 }
 
 /**********************************************Get Assigned Agent list from Queue******************************/
-func (r *crudUsecase) Get_Assigned_Agent_list_From_Queue(ctx context.Context, queueName string) (*models.Response, error) {
+func (r *crudUsecase) Get_Assigned_Agent_list_From_Queue(ctx context.Context, queue_uuid string) (*models.Response, error) {
 
-	return r.repository.Get_Assigned_Agent_list_From_Queue(ctx, queueName)
+	return r.repository.Get_Assigned_Agent_list_From_Queue(ctx, queue_uuid)
 }
 
 /***************************************Get Queue List****************************************************/

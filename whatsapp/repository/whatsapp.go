@@ -1982,26 +1982,24 @@ func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid 
 		Map_with:      Map_with,
 		Domain_uuid:   Domain_uuid,
 	}
-	if err := r.DBConn.Where("name = ?", Name).Find(&u).Error; err != nil {
-		Queue := r.DBConn.Create(&u)
-		if Queue.RowsAffected == 0 {
-			return &models.Response{Status: "0", Msg: "Queue not created.", ResponseCode: 400}, nil
-		} else {
-			return &models.Response{Status: "1", Msg: "Queue created successfully.", ResponseCode: 200}, nil
-		}
 
+	Queue := r.DBConn.Create(&u)
+	if Queue.RowsAffected == 0 {
+		return &models.Response{Status: "0", Msg: "Queue not created.", ResponseCode: 400}, nil
+	} else {
+		return &models.Response{Status: "1", Msg: "Queue created successfully.", ResponseCode: 200}, nil
 	}
-	return &models.Response{Status: "0", Msg: "Queue Name Already Exist.", ResponseCode: 404}, nil
 
 }
 
 /***************************************************Assign_Agent********************************************/
-func (r *crudRepository) Assign_Agent_To_Queue(ctx context.Context, Agent_name string, Agent_uuid string, Queue_name string, tenant_domain_uuid string) (*models.Response, error) {
+func (r *crudRepository) Assign_Agent_To_Queue(ctx context.Context, Agent_name string, Agent_uuid string, Queue_name string, tenant_domain_uuid string, Queue_uuid string) (*models.Response, error) {
 	u := models.AgentQueue{
 		AgentName:          Agent_name,
 		Agent_uuid:         Agent_uuid,
 		QueueName:          Queue_name,
 		Tenant_domain_uuid: tenant_domain_uuid,
+		Queue_uuid:         Queue_uuid,
 	}
 	if err := r.DBConn.Where("agent_uuid = ?", Agent_uuid).Find(&u).Error; err != nil {
 		Queue := r.DBConn.Create(&u)
@@ -2033,14 +2031,14 @@ func (r *crudRepository) Remove_Agent_From_Queue(ctx context.Context, Agent_uuid
 }
 
 /**************************************************Get Assigned Agent list From Queue***************************/
-func (r *crudRepository) Get_Assigned_Agent_list_From_Queue(ctx context.Context, queueName string) (*models.Response, error) {
+func (r *crudRepository) Get_Assigned_Agent_list_From_Queue(ctx context.Context, queue_uuid string) (*models.Response, error) {
 	list := make([]models.AgentQueue, 0)
 	a := models.AgentQueue{}
-	err := r.DBConn.Where("queue_name = ?", queueName).Find(&a)
+	err := r.DBConn.Where("queue_uuid = ?", queue_uuid).Find(&a)
 	if err.Error != nil {
 		return &models.Response{Status: "Not Found", Msg: "Queue Not Found", ResponseCode: 404}, nil
 	}
-	if rows, err := r.DBConn.Raw("select queue_name, agent_name, agent_uuid from agent_queues where queue_name = ?", queueName).Rows(); err != nil {
+	if rows, err := r.DBConn.Raw("select queue_name, agent_name, agent_uuid from agent_queues where queue_uuid = ?", queue_uuid).Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
 	} else {
