@@ -2114,3 +2114,38 @@ func (r *crudRepository) Delete_Queue(ctx context.Context, queue_uuid string) (*
 	return &models.Response{Status: "1", Msg: "Queue Delete Successfully.", ResponseCode: 200}, nil
 
 }
+
+/************************************************Avaiable Agents*********************************************/
+func (r *crudRepository) Available_Agents(ctx context.Context, domain_uuid string, queue_uuid string) (*models.Response, error) {
+	list := make([]models.V_call_center_agents, 0)
+	a := models.AgentQueue{}
+	b := models.V_call_center_agents{}
+	err := r.DBConn.Where("queue_uuid = ?", queue_uuid).Find(&a)
+	if err.Error != nil {
+		return &models.Response{Status: "Not Found", Msg: "Queue Not Found", ResponseCode: 404}, nil
+	}
+	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&b)
+	if db.Error != nil {
+		return &models.Response{Status: "Not Found", Msg: "Agent Not Found", ResponseCode: 404}, nil
+	}
+	if rows, err := r.DBConn.Raw("select call_center_agent_uuid, agent_name from v_call_center_agents where domain_uuid = ? EXCEPT select agent_queues.agent_uuid, agent_queues.agent_name from agent_queues where queue_uuid = ?", domain_uuid, queue_uuid).Rows(); err != nil {
+
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.V_call_center_agents{}
+			if err := rows.Scan(&f.CallCenterAgentUUID, &f.AgentName); err != nil {
+				fmt.Println("555555")
+				return nil, err
+			}
+
+			list = append(list, f)
+
+		}
+		if len(list) == 0 {
+			return &models.Response{Status: "0", Msg: "Agents Not Found", ResponseCode: 404}, nil
+		}
+		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Agent: list}, nil
+	}
+}

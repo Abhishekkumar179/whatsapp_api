@@ -1267,19 +1267,21 @@ func (r *CRUDController) Get_Queue_List(c echo.Context) error {
 }
 
 /*************************************************Available Agents************************************************/
-// func (r *CRUDController) Available_Agents(c echo.Context) error {
-// 	domain_uuid := c.Param("domain_uuid")
-// 	ctx := c.Request().Context()
-// 	if ctx == nil {
-// 		ctx = context.Background()
-// 	}
-// 	authResponse, _ := r.usecase.Available_Agents(ctx, domain_uuid)
+func (r *CRUDController) Available_Agents(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	queue_uuid := c.Param("queue_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Available_Agents(ctx, domain_uuid, queue_uuid)
 
-// 	if authResponse == nil {
-// 		return c.JSON(http.StatusUnauthorized, authResponse)
-// 	}
-// 	return c.JSON(http.StatusOK, authResponse)
-// }
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1343,4 +1345,5 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("get_queue_list/:domain_uuid", handler.Get_Queue_List)
 	e.POST("update_queue/:queue_uuid", handler.Update_Queue)
 	e.DELETE("delete_queue/:queue_uuid", handler.Delete_Queue)
+	e.GET("available_agent_list/:domain_uuid/:queue_uuid", handler.Available_Agents)
 }

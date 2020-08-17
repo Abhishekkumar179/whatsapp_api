@@ -396,3 +396,10 @@ func (r *crudUsecase) Delete_Queue(ctx context.Context, queue_uuid string) (*mod
 	return r.repository.Delete_Queue(ctx, queue_uuid)
 
 }
+
+/**********************************************Available Agnets***********************************************/
+func (r *crudUsecase) Available_Agents(ctx context.Context, domain_uuid string, queue_uuid string) (*models.Response, error) {
+
+	return r.repository.Available_Agents(ctx, domain_uuid, queue_uuid)
+
+}
