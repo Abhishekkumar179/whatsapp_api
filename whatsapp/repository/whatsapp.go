@@ -2102,15 +2102,23 @@ func (r *crudRepository) Update_Queue(ctx context.Context, queue_uuid string, Na
 /************************************************Delete Queue*******************************************/
 func (r *crudRepository) Delete_Queue(ctx context.Context, queue_uuid string) (*models.Response, error) {
 	u := models.Queue{}
+	a := models.AgentQueue{}
 	err := r.DBConn.Where("queue_uuid = ?", queue_uuid).Find(&u)
 	if err.Error != nil {
+		return &models.Response{Status: "0", Msg: "Queue not found.", ResponseCode: 404}, nil
+	}
+	assignqueue := r.DBConn.Where("queue_uuid = ?", queue_uuid).Find(&a)
+	if assignqueue.Error != nil {
 		return &models.Response{Status: "0", Msg: "Queue not found.", ResponseCode: 404}, nil
 	}
 	db := r.DBConn.Where("queue_uuid = ?", queue_uuid).Delete(&u)
 	if db.RowsAffected == 0 {
 		return &models.Response{Status: "0", Msg: "Queue not Deleted.", ResponseCode: 404}, nil
 	}
-
+	que := r.DBConn.Where("queue_uuid = ?", queue_uuid).Delete(&a)
+	if que.RowsAffected == 0 {
+		return &models.Response{Status: "0", Msg: "Queue not Deleted.", ResponseCode: 404}, nil
+	}
 	return &models.Response{Status: "1", Msg: "Queue Delete Successfully.", ResponseCode: 200}, nil
 
 }
@@ -2136,7 +2144,7 @@ func (r *crudRepository) Available_Agents(ctx context.Context, domain_uuid strin
 		for rows.Next() {
 			f := models.V_call_center_agents{}
 			if err := rows.Scan(&f.CallCenterAgentUUID, &f.AgentName); err != nil {
-				fmt.Println("555555")
+
 				return nil, err
 			}
 
