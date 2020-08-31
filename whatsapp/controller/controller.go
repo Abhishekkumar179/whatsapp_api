@@ -1295,7 +1295,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("post_message/:appId/:appUserId", handler.PostMessage)
 	e.DELETE("delete_message/:appId/:appUserId/:messageId", handler.DeleteMessage)
 	e.POST("/messages", handler.App_user)
-	e.GET("/getall_appUserId", handler.Get_allId)
+	e.GET("/getall_appUserId/:domain_uuid", handler.Get_allId)
 	e.GET("/get_appUser_details/:appId/:appUserId", handler.GetAppUserDetails)
 	e.POST("/create_text_template/:appId", handler.Create_Text_Template)
 	e.POST("/create_compound_template/:appId", handler.Create_Compound_Template)
