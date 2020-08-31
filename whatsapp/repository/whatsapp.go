@@ -112,9 +112,13 @@ func (r *crudRepository) Delete_AppUser_Profile(ctx context.Context, appId strin
 
 /**************************************************Getall Id***************************************************/
 
-func (r *crudRepository) Get_allId(ctx context.Context) (*models.Response, error) {
+func (r *crudRepository) Get_allId(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	td := models.Tenant_details{}
 	list := make([]models.ReceiveUserDetails, 0)
+	if db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&td).Error; db != nil {
 
+		return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
+	}
 	if rows, err := r.DBConn.Raw("select app_id, app_user_id, surname, given_name,type,text,role,name,author_id,message_id,original_message_id,integration_id,source_type, signed_up_at, conversation_started, unread_count from receive_user_details where is_enabled = true").Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
@@ -132,6 +136,7 @@ func (r *crudRepository) Get_allId(ctx context.Context) (*models.Response, error
 
 		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, AppUserList: list}, nil
 	}
+
 }
 
 /**************************************************Getall_messageByUserId***************************************************/

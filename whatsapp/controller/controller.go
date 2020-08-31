@@ -159,12 +159,12 @@ func (r *CRUDController) App_user(c echo.Context) error {
 
 /**********************************************get all_id**************************************************/
 func (r *CRUDController) Get_allId(c echo.Context) error {
-
+	domain_uuid := c.Param("domain_uuid")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Get_allId(ctx)
+	authResponse, _ := r.usecase.Get_allId(ctx, domain_uuid)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)

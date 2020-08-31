@@ -48,9 +48,9 @@ func (r *crudUsecase) GetAppUserDetails(ctx context.Context, appUserId string, a
 
 /**************************************************Update User***************************************************/
 
-func (r *crudUsecase) Get_allId(ctx context.Context) (*models.Response, error) {
+func (r *crudUsecase) Get_allId(ctx context.Context, domain_uuid string) (*models.Response, error) {
 
-	return r.repository.Get_allId(ctx)
+	return r.repository.Get_allId(ctx, domain_uuid)
 }
 
 /**************************************************Delete User***************************************************/

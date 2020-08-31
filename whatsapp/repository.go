@@ -11,7 +11,7 @@ type Repository interface {
 	Delete_AppUser_Profile(ctx context.Context, appId string, appUserId string) (*models.Response, error)
 	GetAllMessageByAppUserId(ctx context.Context, appUserId string, appId string) ([]byte, error)
 	GetAppUserDetails(ctx context.Context, appUserId string, appId string) ([]byte, error)
-	Get_allId(ctx context.Context) (*models.Response, error)
+	Get_allId(ctx context.Context, domain_uuid string) (*models.Response, error)
 	App_user(ctx context.Context, body []byte) (*models.Response, error)
 	Pre_createUser(ctx context.Context, appId string, id int64, userId string, surname string, givenName string) (*models.Response, error)
 	Update_AppUser(tx context.Context, appUserId string, appId string, surname string, givenName string) (*models.Response, error)
