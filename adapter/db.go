@@ -26,6 +26,12 @@ func DB(config *config.Config) *gorm.DB {
 	db.AutoMigrate(models.FacebookConfiguration{})
 	db.AutoMigrate(models.Queue{})
 	db.AutoMigrate(models.AgentQueue{})
+	db.AutoMigrate(models.Customer_Agents{})
 	fmt.Println("Successfully connected!")
 	return db
 }
+
+// SELECT agent_uuid, domain_uuid FROM agent_queues INNER JOIN queues
+//         ON agent_queues.queue_uuid = queues.queue_uuid;
+// select count(agent_uuid),aq.agent_uuid from customer_agents where agent_uuid in  (select aq.agent_uuid from agent_queues aq where aq.queue_uuid=(select queue_uuid from queues where integration_id='5edbb2eb385adf000f97cddb'));
+//select count(aq.agent_uuid),aq.agent_uuid from customer_agents ca right join (select agent_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='5edbb2eb385adf000f97cddb')) aq on aq.agent_uuid=ca.agent_uuid group by aq.agent_uuid;

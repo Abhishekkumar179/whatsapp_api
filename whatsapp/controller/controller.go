@@ -1282,6 +1282,68 @@ func (r *CRUDController) Available_Agents(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/**********************************************Create Queue Channel Rabbitmq*********************************/
+func (r *CRUDController) Publish_message_to_queue(c echo.Context) error {
+
+	author_id := c.Param("author_id")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Publish_message_to_queue(ctx, author_id)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+// 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		panic(err)
+// 	}
+// 	defer conn.Close()
+// 	fmt.Println("Successfully connected to RabbitMQ server.")
+
+// 	ch, err := conn.Channel()
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		panic(err)
+// 	}
+// 	defer ch.Close()
+
+// 	q, err := ch.QueueDeclare(
+// 		"Test",
+// 		false,
+// 		false,
+// 		false,
+// 		false,
+// 		nil,
+// 	)
+
+// 	if err != nil {
+// 		fmt.Println(err)
+// 		panic(err)
+// 	}
+// 	fmt.Println(q)
+// 	err = ch.Publish(
+// 		"",
+// 		"Test",
+// 		false,
+// 		false,
+// 		amqp.Publishing{
+// 			ContentType: "text/plain",
+// 			Body:        []byte("Hi how are you."),
+// 		},
+// 	)
+// 	if err != nil {
+// 		fmt.Println(err)
+// 	}
+// 	fmt.Println("message printed")
+// 	return nil
+// }
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1346,4 +1408,6 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("update_queue/:queue_uuid", handler.Update_Queue)
 	e.DELETE("delete_queue/:queue_uuid", handler.Delete_Queue)
 	e.GET("available_agent_list/:domain_uuid/:queue_uuid", handler.Available_Agents)
+
+	e.GET("testing/:author_id", handler.Publish_message_to_queue)
 }

@@ -403,3 +403,9 @@ func (r *crudUsecase) Available_Agents(ctx context.Context, domain_uuid string, 
 	return r.repository.Available_Agents(ctx, domain_uuid, queue_uuid)
 
 }
+
+/*********************************************Publish Queue Message**********************************************/
+func (r *crudUsecase) Publish_message_to_queue(ctx context.Context, author_id string) (*models.Response, error) {
+
+	return r.repository.Publish_message_to_queue(ctx, author_id)
+}

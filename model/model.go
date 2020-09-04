@@ -354,6 +354,16 @@ type V_call_center_agents struct {
 	CallCenterAgentUUID uuid.UUID `json:"call_center_agent_uuid,omitempty" gorm:"type:uuid"`
 	AgentName           string    `json:"agent_name,omitempty"`
 }
+type Customer_Agents struct {
+	Domain_uuid string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
+	AppUserId   string `json:"appUserId,omitempty"`
+	Agent_uuid  string `json:"agent_uuid,omitempty"`
+}
+type Count_Agent_customer struct {
+	Agent_uuid         string `json:"agent_uuid,omitempty"`
+	Count              int64  `json:"count,omitempty"`
+	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty"`
+}
 
 // 97a8b191dc46299a5eb349ea
 // 6a88e08e1828ca95ea97f305

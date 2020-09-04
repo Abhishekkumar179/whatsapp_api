@@ -58,4 +58,5 @@ type Repository interface {
 	Update_Queue(ctx context.Context, queue_uuid string, Name string, IntegrationID string, Map_with string, Domain_uuid string) (*models.Response, error)
 	Delete_Queue(ctx context.Context, domain_uuid string) (*models.Response, error)
 	Available_Agents(ctx context.Context, domain_uuid string, queue_uuid string) (*models.Response, error)
+	Publish_message_to_queue(ctx context.Context, author_id string) (*models.Response, error)
 }

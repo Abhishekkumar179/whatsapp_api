@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"mime/multipart"
 	"net/http"
 	"strconv"
@@ -14,19 +15,24 @@ import (
 	"time"
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
+	controller "whatsapp_api/whatsapp/controller"
 
 	myNewUUID "github.com/google/uuid"
+	"github.com/streadway/amqp"
+	"golang.org/x/net/websocket"
 
 	"github.com/jinzhu/gorm"
 )
 
 type crudRepository struct {
 	DBConn *gorm.DB
+	SList  *controller.ServerUserList
 }
 
-func NewcrudRepository(conn *gorm.DB) crud.Repository {
+func NewcrudRepository(conn *gorm.DB, slist *controller.ServerUserList) crud.Repository {
 	return &crudRepository{
 		DBConn: conn,
+		SList:  slist,
 	}
 }
 
@@ -191,7 +197,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	w := models.WhatsappConfiguration{}
 	fb := models.FacebookConfiguration{}
 	jsondata := json.Unmarshal(body, &f)
-	fmt.Println(jsondata, f)
+	fmt.Println(jsondata)
 	s := int64(f.Messages[0].Received)
 	myDate := time.Unix(s, 0)
 	u := models.ReceiveUserDetails{
@@ -218,13 +224,73 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		Is_enabled:               true,
 		UnreadCount:              0,
 	}
+	//queue := models.Queue{}
+	cou := []models.Count_Agent_customer{}
+	agent := models.AgentQueue{}
+	db := r.DBConn.Table("customer_agents ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
+	if db.Error != nil {
+		fmt.Println(db.Error)
+	}
+	var min int64 = 0
+	var max int64 = 0
+	//max_uuid := cou[0].Agent_uuid
+	min_uuid := cou[0].Agent_uuid
+	for k, v := range cou {
+		fmt.Println(k, v)
 
-	err := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
-	fmt.Println(err)
+		if v.Count >= max {
+			max = v.Count
+			//max_uuid = v.Agent_uuid
+		} else {
+			min = v.Count
+			min_uuid = v.Agent_uuid
+		}
+		fmt.Println(" min= ", min, " max= ", max, " min_uuid= ", min_uuid)
+	}
+	if min == max && min == 0 {
+		fmt.Println("if part")
+		agent.Agent_uuid = min_uuid
+		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
+	} else {
+		fmt.Println("else part")
+		agent.Agent_uuid = min_uuid
+		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
+	}
+	fmt.Println("2 min= ", min, " max= ", max, " min_uuid= ", min_uuid)
+	// agents := r.DBConn.Where("tenant_domain_uuid = ?", queue.Domain_uuid).Find(&agent)
+	// if agents.Error != nil {
+	// 	fmt.Println(agents.Error)
+	// }
+	customer := models.Customer_Agents{
+		Domain_uuid: agent.Tenant_domain_uuid,
+		AppUserId:   f.AppUser.ID,
+		Agent_uuid:  agent.Agent_uuid,
+	}
+	fmt.Println(agent, "cus ", customer)
+
+	if cust := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&customer).Error; cust != nil {
+		db := r.DBConn.Create(&customer)
+		if db.Error != nil {
+			fmt.Println(db.Error)
+		}
+	}
+	for _, oldu := range r.SList.Users {
+		if oldu.UName == customer.Agent_uuid {
+			log.Println("found user: ", oldu)
+			if err := websocket.JSON.Send(oldu.Ws, customer.AppUserId); err != nil {
+				log.Println("Can't send", err)
+			}
+			fmt.Println("sucessfully sent ", oldu, customer.AppUserId)
+
+		}
+	}
+
+	errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
+	fmt.Println(errs.Error)
 	if f.Messages[0].Role == "appUser" {
 		count := r.DBConn.Table("receive_user_details").Where("conversation_id = ? AND app_user_id = ?", f.Conversation.ID, f.AppUser.ID).Update("unread_count", u.UnreadCount+1)
 		if count.Error != nil {
-			fmt.Println(count.Error, "error")
+			fmt.Println(count.Error)
 
 		}
 	} else {
@@ -1930,6 +1996,9 @@ func (r *crudRepository) TypingActivity(ctx context.Context, appId string, appUs
 /*************************************************Disable AppUser*************************************************/
 func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error) {
 	u := models.ReceiveUserDetails{}
+	customer := models.Customer_Agents{
+		AppUserId: appUserId,
+	}
 	err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&u)
 	if err.Error != nil {
 		return &models.Response{Status: "0", Msg: "AppUserId Not Found.", ResponseCode: 404}, nil
@@ -1938,6 +2007,10 @@ func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string) 
 	db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Update("is_enabled", false)
 	if db.Error != nil {
 		return &models.Response{Status: "0", Msg: "AppUserId not Updated.", ResponseCode: 404}, nil
+	}
+	cust := r.DBConn.Where("app_user_id = ?", appUserId).Delete(&customer)
+	if cust.Error != nil {
+		return &models.Response{Status: "0", Msg: "Customer not Removed from queue.", ResponseCode: 404}, nil
 	}
 	return &models.Response{Status: "1", Msg: "AppUserId Disabled Successfully.", ResponseCode: 200}, nil
 }
@@ -1987,14 +2060,16 @@ func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid 
 		Map_with:      Map_with,
 		Domain_uuid:   Domain_uuid,
 	}
+	if err := r.DBConn.Where("name = ?", Name).Find(&u).Error; err != nil {
+		Queue := r.DBConn.Create(&u)
+		if Queue.RowsAffected == 0 {
+			return &models.Response{Status: "0", Msg: "Queue not created.", ResponseCode: 400}, nil
+		} else {
+			return &models.Response{Status: "1", Msg: "Queue created successfully.", ResponseCode: 200}, nil
+		}
 
-	Queue := r.DBConn.Create(&u)
-	if Queue.RowsAffected == 0 {
-		return &models.Response{Status: "0", Msg: "Queue not created.", ResponseCode: 400}, nil
-	} else {
-		return &models.Response{Status: "1", Msg: "Queue created successfully.", ResponseCode: 200}, nil
 	}
-
+	return &models.Response{Status: "0", Msg: "Queue name Already exists.", ResponseCode: 404}, nil
 }
 
 /***************************************************Assign_Agent********************************************/
@@ -2161,4 +2236,88 @@ func (r *crudRepository) Available_Agents(ctx context.Context, domain_uuid strin
 		}
 		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Agent: list}, nil
 	}
+}
+
+/********************************************Publish Message to queue************************************/
+func (r *crudRepository) Publish_message_to_queue(ctx context.Context, author_id string) (*models.Response, error) {
+	// r:=models.ReceiveUserDetails{}
+	// if db:=r.DBConn.Where("")
+	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
+	if err != nil {
+		fmt.Println("Failed to connect to RabbitMQ")
+	}
+
+	defer conn.Close()
+	fmt.Println("RabitMQ conected")
+	ch, err := conn.Channel()
+	if err != nil {
+		fmt.Println("Failed to open a channel")
+	}
+	defer ch.Close()
+	fmt.Println("channel opened")
+	// err = ch.ExchangeDeclare(
+	// 	"Exchange", // name
+	// 	"direct",   // type
+	// 	true,       // durable
+	// 	false,      // auto-deleted
+	// 	false,      // internal
+	// 	false,      // no-wait
+	// 	nil,        // arguments
+	// )
+	// if err != nil {
+	// 	fmt.Println("Failed to declare an exchange")
+	// }
+	// fmt.Println("Exchange declare")
+
+	q, err := ch.QueueDeclare(
+		author_id, // name
+		true,      // durable
+		false,     // delete when unused
+		false,     // exclusive
+		false,     // no-wait
+		nil,       // arguments
+	)
+
+	if err != nil {
+		fmt.Println("Failed to declare a queue")
+	}
+	fmt.Println("Queue declare", q)
+	err = ch.QueueBind(
+		q.Name,     // queue name
+		author_id,  // routing key
+		"Exchange", // exchange
+		false,
+		nil,
+	)
+	if err != nil {
+		fmt.Println("Failed to bind a queue")
+	}
+	msgs, err := ch.Consume(
+
+		"test", // queue
+		"",     // consumer
+		false,  // auto-ack
+		false,  // exclusive
+
+		false, // no-local
+		false, // no-wait
+		nil,   // args
+	)
+	if err != nil {
+		fmt.Println("Failed to register a consumer")
+	}
+	fmt.Println("Message send", msgs)
+	//	forever := make(chan bool)
+
+	go func() {
+		for d := range msgs {
+			log.Printf(" [x] %s", d.Body)
+		}
+	}()
+
+	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
+	//	<-forever
+	fmt.Println("message printed")
+	defer conn.Close()
+	return &models.Response{Status: "0", Msg: "done"}, nil
 }
