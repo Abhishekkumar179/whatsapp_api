@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	models "whatsapp_api/model"
@@ -532,7 +531,6 @@ func (s *ServerUserList) userLogin(msg map[string]interface{}, ws *websocket.Con
 func (s *ServerUserList) UserRegister(c echo.Context) error {
 	websocket.Handler(func(ws *websocket.Conn) {
 		// var msg models.Register
-		fmt.Println("enterrrr")
 		var msg map[string]interface{}
 		var rsp models.MyResponse
 		for {

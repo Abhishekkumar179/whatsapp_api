@@ -273,18 +273,16 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		if db.Error != nil {
 			fmt.Println(db.Error)
 		}
-	}
-	for _, oldu := range r.SList.Users {
-		if oldu.UName == customer.Agent_uuid {
-			log.Println("found user: ", oldu)
-			if err := websocket.JSON.Send(oldu.Ws, customer.AppUserId); err != nil {
-				log.Println("Can't send", err)
-			}
-			fmt.Println("sucessfully sent ", oldu, customer.AppUserId)
 
+		for _, oldu := range r.SList.Users {
+			if oldu.UName == customer.Agent_uuid {
+				msg := map[string]interface{}{"message_id": "5", "customer_id": customer.AppUserId, "user_id": customer.Agent_uuid, "user_type": "agent"}
+				if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
+					log.Println("Can't send", err)
+				}
+			}
 		}
 	}
-
 	errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
 	fmt.Println(errs.Error)
 	if f.Messages[0].Role == "appUser" {
@@ -2081,7 +2079,7 @@ func (r *crudRepository) Assign_Agent_To_Queue(ctx context.Context, Agent_name s
 		Tenant_domain_uuid: tenant_domain_uuid,
 		Queue_uuid:         Queue_uuid,
 	}
-	if err := r.DBConn.Where("agent_uuid = ?", Agent_uuid).Find(&u).Error; err != nil {
+	if err := r.DBConn.Where("agent_uuid = ? AND queue_name = ?", Agent_uuid, Queue_name).Find(&u).Error; err != nil {
 		Queue := r.DBConn.Create(&u)
 		if Queue.RowsAffected == 0 {
 			return &models.Response{Status: "0", Msg: "Agent not Assigned.", ResponseCode: 400}, nil
