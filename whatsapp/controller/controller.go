@@ -173,6 +173,22 @@ func (r *CRUDController) Get_allId(c echo.Context) error {
 
 }
 
+/********************************************Get Customer Details by appUserId****************************/
+func (r *CRUDController) Get_Customer_by_appUserId(c echo.Context) error {
+	appUserId := c.Param("appUserId")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Customer_by_appUserId(ctx, appUserId)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
 /**********************************************Create Template********************************************/
 func (r *CRUDController) Create_Text_Template(c echo.Context) error {
 	appId := c.Param("appId")
@@ -731,6 +747,7 @@ func (r *CRUDController) Add_Whatsapp_configuration(c echo.Context) error {
 	}
 	td := models.WhatsappConfigurations{
 		Domain_uuid:           u.Domain_uuid,
+		ConfigurationName:     u.ConfigurationName,
 		AppId:                 u.AppId,
 		AppKey:                u.AppKey,
 		Message:               u.Message,
@@ -795,6 +812,7 @@ func (r *CRUDController) Update_Whatsapp_configuration(c echo.Context) error {
 	}
 	td := models.WhatsappConfigurations{
 		Domain_uuid:           u.Domain_uuid,
+		ConfigurationName:     u.ConfigurationName,
 		AppId:                 u.AppId,
 		AppKey:                u.AppKey,
 		AppSecret:             u.AppSecret,
@@ -858,6 +876,7 @@ func (r *CRUDController) Add_Facebook_configuration(c echo.Context) error {
 	}
 	td := models.FacebookConfigurations{
 		Domain_uuid:           u.Domain_uuid,
+		ConfigurationName:     u.ConfigurationName,
 		AppId:                 u.AppId,
 		AppKey:                u.AppKey,
 		Message:               u.Message,
@@ -922,6 +941,7 @@ func (r *CRUDController) Update_Facebook_configuration(c echo.Context) error {
 	}
 	td := models.FacebookConfigurations{
 		Domain_uuid:           u.Domain_uuid,
+		ConfigurationName:     u.ConfigurationName,
 		AppId:                 u.AppId,
 		AppKey:                u.AppKey,
 		AppSecret:             u.AppSecret,
@@ -1282,67 +1302,21 @@ func (r *CRUDController) Available_Agents(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
-/**********************************************Create Queue Channel Rabbitmq*********************************/
-func (r *CRUDController) Publish_message_to_queue(c echo.Context) error {
-
-	author_id := c.Param("author_id")
+/**********************************************Transfer Customer******************************************/
+func (r *CRUDController) Transfer_customer(c echo.Context) error {
+	var transfer_customer map[string]interface{}
+	c.Bind(&transfer_customer)
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Publish_message_to_queue(ctx, author_id)
+	authResponse, _ := r.usecase.Transfer_customer(ctx, transfer_customer)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
 	}
 	return c.JSON(http.StatusOK, authResponse)
 }
-
-// 	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		panic(err)
-// 	}
-// 	defer conn.Close()
-// 	fmt.Println("Successfully connected to RabbitMQ server.")
-
-// 	ch, err := conn.Channel()
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		panic(err)
-// 	}
-// 	defer ch.Close()
-
-// 	q, err := ch.QueueDeclare(
-// 		"Test",
-// 		false,
-// 		false,
-// 		false,
-// 		false,
-// 		nil,
-// 	)
-
-// 	if err != nil {
-// 		fmt.Println(err)
-// 		panic(err)
-// 	}
-// 	fmt.Println(q)
-// 	err = ch.Publish(
-// 		"",
-// 		"Test",
-// 		false,
-// 		false,
-// 		amqp.Publishing{
-// 			ContentType: "text/plain",
-// 			Body:        []byte("Hi how are you."),
-// 		},
-// 	)
-// 	if err != nil {
-// 		fmt.Println(err)
-// 	}
-// 	fmt.Println("message printed")
-// 	return nil
-// }
 
 /***********************************************Router*****************************************************/
 
@@ -1358,6 +1332,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.DELETE("delete_message/:appId/:appUserId/:messageId", handler.DeleteMessage)
 	e.POST("/messages", handler.App_user)
 	e.GET("/getall_appUserId/:domain_uuid", handler.Get_allId)
+	e.GET("getcustomerbyappUserId/:appUserId", handler.Get_Customer_by_appUserId)
 	e.GET("/get_appUser_details/:appId/:appUserId", handler.GetAppUserDetails)
 	e.POST("/create_text_template/:appId", handler.Create_Text_Template)
 	e.POST("/create_compound_template/:appId", handler.Create_Compound_Template)
@@ -1408,6 +1383,6 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("update_queue/:queue_uuid", handler.Update_Queue)
 	e.DELETE("delete_queue/:queue_uuid", handler.Delete_Queue)
 	e.GET("available_agent_list/:domain_uuid/:queue_uuid", handler.Available_Agents)
+	e.POST("transfer_customer", handler.Transfer_customer)
 
-	e.GET("testing/:author_id", handler.Publish_message_to_queue)
 }

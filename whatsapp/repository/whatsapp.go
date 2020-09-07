@@ -18,7 +18,6 @@ import (
 	controller "whatsapp_api/whatsapp/controller"
 
 	myNewUUID "github.com/google/uuid"
-	"github.com/streadway/amqp"
 	"golang.org/x/net/websocket"
 
 	"github.com/jinzhu/gorm"
@@ -143,6 +142,18 @@ func (r *crudRepository) Get_allId(ctx context.Context, domain_uuid string) (*mo
 		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, AppUserList: list}, nil
 	}
 
+}
+
+/**********************************************Get customer by appUserId*********************************************/
+func (r *crudRepository) Get_Customer_by_appUserId(ctx context.Context, appUserId string) (*models.Response, error) {
+	customer := models.ReceiveUserDetails{
+		AppUserId: appUserId,
+	}
+	db := r.DBConn.Where("app_user_id = ?", appUserId).Find(&customer)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Cusomer not found.", ResponseCode: 404}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Customer details found.", ResponseCode: 200, Customer: &customer}, nil
 }
 
 /**************************************************Getall_messageByUserId***************************************************/
@@ -289,7 +300,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		count := r.DBConn.Table("receive_user_details").Where("conversation_id = ? AND app_user_id = ?", f.Conversation.ID, f.AppUser.ID).Update("unread_count", u.UnreadCount+1)
 		if count.Error != nil {
 			fmt.Println(count.Error)
-
 		}
 	} else {
 		fmt.Println("error")
@@ -1037,16 +1047,17 @@ func (r *crudRepository) Update_AppUser(ctx context.Context, appUserId string, a
 }
 
 /****************************************SmoochConfiguration*********************************************/
-func (r *crudRepository) Add_Smooch_configuration(ctx context.Context, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
+func (r *crudRepository) Add_Smooch_configuration(ctx context.Context, name string, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
 
 	td := models.Tenant_details{
-		Domain_uuid: domain_uuid,
-		AppId:       appId,
-		AppKey:      appKey,
-		AppSecret:   appSecret,
+		ConfigurationName: name,
+		Domain_uuid:       domain_uuid,
+		AppId:             appId,
+		AppKey:            appKey,
+		AppSecret:         appSecret,
 	}
 
-	if db := r.DBConn.Table("tenant_details").Where("app_id = ?", appId).Find(&td).Error; db != nil {
+	if db := r.DBConn.Table("tenant_details").Where("app_id = ?", appId).Or("configuration_name = ?", name).Find(&td).Error; db != nil {
 		st := r.DBConn.Create(&td)
 		if st.Error != nil {
 			return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
@@ -1054,32 +1065,55 @@ func (r *crudRepository) Add_Smooch_configuration(ctx context.Context, domain_uu
 		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration saved successfully."}, nil
 
 	}
-	return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId  Already Exist."}, nil
+	if td.AppId == appId {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId Already Exist."}, nil
+	} else if td.ConfigurationName == name {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Configuration name Already Exist."}, nil
+	}
+	return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration saved successfully."}, nil
+
 }
 
 /***************************************Add smooch configuration*****************************************/
-func (r *crudRepository) Update_Smooch_configuration(ctx context.Context, id int64, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
+func (r *crudRepository) Update_Smooch_configuration(ctx context.Context, id int64, name string, domain_uuid string, appId string, appKey string, appSecret string) (*models.Response, error) {
 	w := models.Tenant_details{}
 	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Find(&w)
 	if db.RowsAffected == 0 {
 		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
-	if appId != w.AppId {
+	if appId != w.AppId && name != w.ConfigurationName {
+		fmt.Println("part1")
+		if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret, "configuration_name": name}).Error; db != nil {
+			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+		}
 
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
+
+	} else if appId == w.AppId && name == w.ConfigurationName {
+		fmt.Println("part2")
+		if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_key": appKey, "app_secret": appSecret}).Error; db != nil {
+			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+		}
+
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
+	} else if appId != w.AppId && name == w.ConfigurationName {
+		fmt.Println("part3")
 		if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret}).Error; db != nil {
 			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 		}
 
 		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
 
-	} else {
-		if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": appId, "app_key": appKey, "app_secret": appSecret}).Error; db != nil {
+	} else if appId == w.AppId && name != w.ConfigurationName {
+		fmt.Println("part4")
+		if db := r.DBConn.Table("tenant_details").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_key": appKey, "app_secret": appSecret, "configuration_name": name}).Error; db != nil {
 			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 		}
 
 		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
+
 	}
-
+	return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Smooch configuration Updated successfully."}, nil
 }
 
 /***************************************Get smooch configuration*****************************************/
@@ -1097,14 +1131,14 @@ func (r *crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uu
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 
 	}
-	row, err := r.DBConn.Raw("select id, domain_uuid,app_id, app_key, app_secret from tenant_details WHERE domain_uuid = ?", domain_uuid).Rows()
+	row, err := r.DBConn.Raw("select id, configuration_name, domain_uuid,app_id, app_key, app_secret from tenant_details WHERE domain_uuid = ?", domain_uuid).Rows()
 	if err != nil {
 		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
 	}
 	defer row.Close()
 	for row.Next() {
 		f := models.Tenant_details{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret); err != nil {
+		if err := row.Scan(&f.Id, &f.ConfigurationName, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret); err != nil {
 
 			return nil, err
 		}
@@ -1132,6 +1166,7 @@ func (r *crudRepository) Add_Whatsapp_configuration(ctx context.Context, td mode
 
 	ts := models.WhatsappConfiguration{
 		Domain_uuid:           td.Domain_uuid,
+		ConfigurationName:     td.ConfigurationName,
 		AppId:                 td.AppId,
 		AppKey:                td.AppKey,
 		AppSecret:             td.AppSecret,
@@ -1163,18 +1198,21 @@ func (r *crudRepository) Add_Whatsapp_configuration(ctx context.Context, td mode
 		Workend6:              td.WorkingDays[5].WorkingHourEndTime,
 		Workend7:              td.WorkingDays[6].WorkingHourEndTime,
 	}
-	if err := r.DBConn.Table("whatsapp_configurations").Where("app_id = ?", td.AppId).Find(&ts).Error; err != nil {
-		if db := r.DBConn.Table("whatsapp_configurations").Where("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Find(&ts).Error; db != nil {
-			st := r.DBConn.Create(&ts)
-			if st.Error != nil {
-				return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
-			}
-			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp configuration saved successfully."}, nil
-
+	if err := r.DBConn.Table("whatsapp_configurations").Where("app_id = ?", td.AppId).Or("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&ts).Error; err != nil {
+		st := r.DBConn.Create(&ts)
+		if st.Error != nil {
+			return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
 		}
-		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Whatsapp Integration Id  Already Exist."}, nil
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp configuration saved successfully."}, nil
 	}
-	return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId Already Exist."}, nil
+	if ts.AppId == td.AppId {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId Already Exist."}, nil
+	} else if ts.WhatsappIntegrationID == td.WhatsappIntegrationID {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Whatsapp Integration Id  Already Exist."}, nil
+	} else if ts.ConfigurationName == td.ConfigurationName {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "configuration name Already Exist."}, nil
+	}
+	return &models.Response{ResponseCode: 201, Status: "Ok", Msg: "Whatsapp configuration saved successfully."}, nil
 }
 
 /**********************************************Get appID by tenant_domain_uuid******************************/
@@ -1194,7 +1232,7 @@ func (r *crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_
 	defer row.Close()
 	for row.Next() {
 		f := models.WhatsappConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.WhatsappIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.ConfigurationName, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.WhatsappIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
 
 			return nil, err
 		}
@@ -1210,43 +1248,77 @@ func (r *crudRepository) Update_Whatsapp_configuration(ctx context.Context, id i
 	if db1.Error != nil {
 		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
-	if td.WhatsappIntegrationID == w.WhatsappIntegrationID && td.AppId == w.AppId {
+
+	if td.WhatsappIntegrationID == w.WhatsappIntegrationID && td.AppId == w.AppId && td.ConfigurationName == w.ConfigurationName {
 		fmt.Println("part1")
+
 		if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
 			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 		}
 
 		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
-	} else if td.WhatsappIntegrationID != w.WhatsappIntegrationID && td.AppId != w.AppId {
+	} else if td.WhatsappIntegrationID != w.WhatsappIntegrationID && td.AppId != w.AppId && td.ConfigurationName != w.ConfigurationName {
 		fmt.Println("part2")
 		w := models.WhatsappConfiguration{}
-		if row := r.DBConn.Table("whatsapp_configurations").Where("app_id = ?", td.AppId).Find(&w).Error; row != nil {
-			if err := r.DBConn.Table("whatsapp_configurations").Where("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Find(&w).Error; err != nil {
-				if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
-					return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
-				}
-
-				return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
-			}
-			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Whatsapp id already exist."}, nil
-
-		}
-		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
-
-	} else if td.WhatsappIntegrationID == w.WhatsappIntegrationID && td.AppId != w.AppId {
-		fmt.Println("part3")
-		w := models.WhatsappConfiguration{}
-		if row := r.DBConn.Where("app_id = ?", td.AppId).Find(&w).Error; row != nil {
-			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+		if row := r.DBConn.Table("whatsapp_configurations").Where("app_id = ?", td.AppId).Or("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; row != nil {
+			//if err := r.DBConn.Table("whatsapp_configurations").Where("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
 				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 			}
 
 			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
 		}
-		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		if w.WhatsappIntegrationID == td.WhatsappIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Whatsapp id already exist."}, nil
 
-	} else if td.WhatsappIntegrationID != w.WhatsappIntegrationID && td.AppId == w.AppId {
+		} else if w.AppId == td.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		} else if w.ConfigurationName == td.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+	} else if td.WhatsappIntegrationID == w.WhatsappIntegrationID && td.AppId != w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part3")
+		w := models.WhatsappConfiguration{}
+		if row := r.DBConn.Where("app_id = ?", td.AppId).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; row != nil {
+			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
+		}
+		if w.AppId == td.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		} else if w.ConfigurationName == td.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+	} else if td.WhatsappIntegrationID == w.WhatsappIntegrationID && td.AppId == w.AppId && td.ConfigurationName != w.ConfigurationName {
 		fmt.Println("part4")
+		w := models.WhatsappConfiguration{}
+		if err := r.DBConn.Where("configuration_name = ?", td.ConfigurationName).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
+		}
+		return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+	} else if td.WhatsappIntegrationID != w.WhatsappIntegrationID && td.AppId != w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part5")
+		w := models.WhatsappConfiguration{}
+		if err := r.DBConn.Where("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Or("app_id = ?", td.AppId).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
+		}
+		if w.WhatsappIntegrationID == td.WhatsappIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Whatsapp id already exist."}, nil
+		} else if w.AppId == td.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		}
+	} else if td.WhatsappIntegrationID != w.WhatsappIntegrationID && td.AppId == w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part6")
 		w := models.WhatsappConfiguration{}
 		if err := r.DBConn.Where("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Find(&w).Error; err != nil {
 			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
@@ -1256,10 +1328,36 @@ func (r *crudRepository) Update_Whatsapp_configuration(ctx context.Context, id i
 			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
 		}
 		return &models.Response{ResponseCode: 409, Status: "0", Msg: "Whatsapp id already exist."}, nil
-	} else {
-		return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
+	} else if td.WhatsappIntegrationID != w.WhatsappIntegrationID && td.AppId == w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part7")
+		w := models.WhatsappConfiguration{}
+		if err := r.DBConn.Where("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "whatsapp_integration_id": td.WhatsappIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
 
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
+		}
+		if w.WhatsappIntegrationID == td.WhatsappIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Whatsapp id already exist."}, nil
+		} else if w.ConfigurationName == td.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+	} else if td.WhatsappIntegrationID == w.WhatsappIntegrationID && td.AppId != w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part8")
+		w := models.WhatsappConfiguration{}
+		if err := r.DBConn.Where("app_id = ?", td.AppId).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("whatsapp_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
+		}
+		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+	} else {
+		return &models.Response{ResponseCode: 401, Status: "Not Ok", Msg: "Whatsapp integration Not Updated."}, nil
 	}
+	return &models.Response{ResponseCode: 204, Status: "OK", Msg: "Whatsapp integration Updated successfully."}, nil
 
 }
 
@@ -1281,6 +1379,7 @@ func (r *crudRepository) Add_Facebook_configuration(ctx context.Context, td mode
 
 	ts := models.FacebookConfiguration{
 		Domain_uuid:           td.Domain_uuid,
+		ConfigurationName:     td.ConfigurationName,
 		AppId:                 td.AppId,
 		AppKey:                td.AppKey,
 		AppSecret:             td.AppSecret,
@@ -1312,18 +1411,22 @@ func (r *crudRepository) Add_Facebook_configuration(ctx context.Context, td mode
 		Workend6:              td.WorkingDays[5].WorkingHourEndTime,
 		Workend7:              td.WorkingDays[6].WorkingHourEndTime,
 	}
-	if err := r.DBConn.Table("facebook_configurations").Where("app_id = ?", td.AppId).Find(&ts).Error; err != nil {
-		if db := r.DBConn.Table("facebook_configurations").Where("facebook_integration_id = ?", td.FacebookIntegrationID).Find(&ts).Error; db != nil {
-			st := r.DBConn.Create(&ts)
-			if st.Error != nil {
-				return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
-			}
-			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook configuration saved successfully."}, nil
-
+	if err := r.DBConn.Table("facebook_configurations").Where("app_id = ?", td.AppId).Or("facebook_integration_id = ?", td.FacebookIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&ts).Error; err != nil {
+		st := r.DBConn.Create(&ts)
+		if st.Error != nil {
+			return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
 		}
-		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Facebook Integration Id  Already Exist."}, nil
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook configuration saved successfully."}, nil
+
 	}
-	return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId  Already Exist."}, nil
+	if ts.FacebookIntegrationID == td.FacebookIntegrationID {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Facebook Integration Id  Already Exist."}, nil
+	} else if ts.AppId == td.AppId {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId  Already Exist."}, nil
+	} else if ts.ConfigurationName == td.ConfigurationName {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Configuration name Already Exist."}, nil
+	}
+	return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook configuration saved successfully."}, nil
 }
 
 /**********************************************Get appID by tenant_domain_uuid******************************/
@@ -1342,7 +1445,7 @@ func (r *crudRepository) Get_Facebook_configuration(ctx context.Context, domain_
 	defer row.Close()
 	for row.Next() {
 		f := models.FacebookConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.FacebookIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
+		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.ConfigurationName, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.FacebookIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
 
 			return nil, err
 		}
@@ -1359,36 +1462,74 @@ func (r *crudRepository) Update_Facebook_configuration(ctx context.Context, id i
 	if db1.RowsAffected == 0 {
 		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
-	if td.FacebookIntegrationID == w.FacebookIntegrationID && td.AppId == w.AppId {
+	if td.FacebookIntegrationID == w.FacebookIntegrationID && td.AppId == w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part1")
 		if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_key": td.AppKey, "app_secret": td.AppSecret, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
 			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 		}
 
 		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
-	} else if td.FacebookIntegrationID != w.FacebookIntegrationID && td.AppId != w.AppId {
+	} else if td.FacebookIntegrationID != w.FacebookIntegrationID && td.AppId != w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part2")
 		w := models.FacebookConfiguration{}
-		if row := r.DBConn.Where("app_id = ?", td.AppId).Find(&w).Error; row != nil {
-			if err := r.DBConn.Where("facebook_integration_id = ?", td.FacebookIntegrationID).Find(&w).Error; err != nil {
-				if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
-					return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
-				}
-
-				return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
-			}
-			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Facebook id already exist."}, nil
-		}
-		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
-	} else if td.FacebookIntegrationID == w.FacebookIntegrationID && td.AppId != w.AppId {
-		w := models.FacebookConfiguration{}
-		if err := r.DBConn.Where("app_id = ?", td.AppId).Find(&w).Error; err != nil {
-			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
+		if row := r.DBConn.Where("app_id = ?", td.AppId).Or("facebook_integration_id = ?", td.FacebookIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; row != nil {
+			//if err := r.DBConn.Where("facebook_integration_id = ?", td.FacebookIntegrationID).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
 				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
 			}
 
 			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
 		}
-		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
-	} else if td.FacebookIntegrationID != w.FacebookIntegrationID && td.AppId == w.AppId {
+		if td.FacebookIntegrationID == w.FacebookIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Facebook id already exist."}, nil
+		} else if td.AppId == w.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		} else if td.ConfigurationName == w.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+	} else if td.FacebookIntegrationID == w.FacebookIntegrationID && td.AppId != w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part3")
+		w := models.FacebookConfiguration{}
+		if err := r.DBConn.Where("app_id = ?", td.AppId).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
+		}
+		if td.AppId == w.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		} else if td.ConfigurationName == w.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+	} else if td.FacebookIntegrationID == w.FacebookIntegrationID && td.AppId == w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part4")
+		w := models.FacebookConfiguration{}
+		if err := r.DBConn.Where("configuration_name = ?", td.ConfigurationName).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
+		}
+		return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+	} else if td.FacebookIntegrationID != w.FacebookIntegrationID && td.AppId != w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part5")
+		w := models.FacebookConfiguration{}
+		if err := r.DBConn.Where("facebook_integration_id = ?", td.FacebookIntegrationID).Or("app_id = ?", td.AppId).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
+		}
+		if td.FacebookIntegrationID == w.FacebookIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Facebook id already exist."}, nil
+		} else if td.AppId == w.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		}
+	} else if td.FacebookIntegrationID != w.FacebookIntegrationID && td.AppId == w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part6")
 		w := models.FacebookConfiguration{}
 		if err := r.DBConn.Where("facebook_integration_id = ?", td.FacebookIntegrationID).Find(&w).Error; err != nil {
 			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
@@ -1398,6 +1539,34 @@ func (r *crudRepository) Update_Facebook_configuration(ctx context.Context, id i
 			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
 		}
 		return &models.Response{ResponseCode: 409, Status: "0", Msg: "Facebook id already exist."}, nil
+	} else if td.FacebookIntegrationID != w.FacebookIntegrationID && td.AppId == w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part7")
+		w := models.FacebookConfiguration{}
+		if err := r.DBConn.Where("facebook_integration_id = ?", td.FacebookIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_key": td.AppKey, "app_secret": td.AppSecret, "facebook_integration_id": td.FacebookIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
+		}
+		if td.FacebookIntegrationID == w.FacebookIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Facebook id already exist."}, nil
+		} else if td.ConfigurationName == w.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
+	} else if td.FacebookIntegrationID == w.FacebookIntegrationID && td.AppId != w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part8")
+		w := models.FacebookConfiguration{}
+		if err := r.DBConn.Where("app_id = ?", td.AppId).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("facebook_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime, "message": td.Message}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
+		}
+
+		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
 	}
 	return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Facebook integration Updated successfully."}, nil
 }
@@ -2236,86 +2405,12 @@ func (r *crudRepository) Available_Agents(ctx context.Context, domain_uuid strin
 	}
 }
 
-/********************************************Publish Message to queue************************************/
-func (r *crudRepository) Publish_message_to_queue(ctx context.Context, author_id string) (*models.Response, error) {
-	// r:=models.ReceiveUserDetails{}
-	// if db:=r.DBConn.Where("")
-	conn, err := amqp.Dial("amqp://guest:guest@localhost:5672/")
-	if err != nil {
-		fmt.Println("Failed to connect to RabbitMQ")
+/************************************************Transfer customer**********************************************/
+func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid string, appUserId string) (*models.Response, error) {
+
+	db := r.DBConn.Table("customer_agents").Where("app_user_id = ?", appUserId).Update("agent_uuid", agent_uuid)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
 	}
-
-	defer conn.Close()
-	fmt.Println("RabitMQ conected")
-	ch, err := conn.Channel()
-	if err != nil {
-		fmt.Println("Failed to open a channel")
-	}
-	defer ch.Close()
-	fmt.Println("channel opened")
-	// err = ch.ExchangeDeclare(
-	// 	"Exchange", // name
-	// 	"direct",   // type
-	// 	true,       // durable
-	// 	false,      // auto-deleted
-	// 	false,      // internal
-	// 	false,      // no-wait
-	// 	nil,        // arguments
-	// )
-	// if err != nil {
-	// 	fmt.Println("Failed to declare an exchange")
-	// }
-	// fmt.Println("Exchange declare")
-
-	q, err := ch.QueueDeclare(
-		author_id, // name
-		true,      // durable
-		false,     // delete when unused
-		false,     // exclusive
-		false,     // no-wait
-		nil,       // arguments
-	)
-
-	if err != nil {
-		fmt.Println("Failed to declare a queue")
-	}
-	fmt.Println("Queue declare", q)
-	err = ch.QueueBind(
-		q.Name,     // queue name
-		author_id,  // routing key
-		"Exchange", // exchange
-		false,
-		nil,
-	)
-	if err != nil {
-		fmt.Println("Failed to bind a queue")
-	}
-	msgs, err := ch.Consume(
-
-		"test", // queue
-		"",     // consumer
-		false,  // auto-ack
-		false,  // exclusive
-
-		false, // no-local
-		false, // no-wait
-		nil,   // args
-	)
-	if err != nil {
-		fmt.Println("Failed to register a consumer")
-	}
-	fmt.Println("Message send", msgs)
-	//	forever := make(chan bool)
-
-	go func() {
-		for d := range msgs {
-			log.Printf(" [x] %s", d.Body)
-		}
-	}()
-
-	log.Printf(" [*] Waiting for logs. To exit press CTRL+C")
-	//	<-forever
-	fmt.Println("message printed")
-	defer conn.Close()
-	return &models.Response{Status: "0", Msg: "done"}, nil
+	return &models.Response{Status: "1", Msg: "Customer assigned to agent successfully.", ResponseCode: 200}, nil
 }

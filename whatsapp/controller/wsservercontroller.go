@@ -548,6 +548,7 @@ func (s *ServerUserList) UserRegister(c echo.Context) error {
 						msg["status_message"] = "Session exist for user."
 						if err := websocket.JSON.Send(ws, msg); err != nil {
 							log.Println("Can't send", err)
+							msg["message_id"] = "0"
 						}
 						s.Del(oldu)
 

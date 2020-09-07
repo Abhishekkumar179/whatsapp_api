@@ -105,6 +105,7 @@ type Response struct {
 	Appuser               *Data                   `json:",omitempty"`
 	Data                  []byte                  `json:",omitempty"`
 	AppUserList           []ReceiveUserDetails    `json:",omitempty"`
+	Customer              *ReceiveUserDetails     `json:",omitempty"`
 	Message               *Payload                `json:",omitempty"`
 	Received              *Received               `json:",omitempty"`
 	Tenant_details        *Tenant_details         `json:",omitempty"`
@@ -218,15 +219,17 @@ type ReceiveUserDetails struct {
 }
 
 type Tenant_details struct {
-	Id          int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
-	Domain_uuid string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
-	AppId       string `json:"app_id,omitempty"`
-	AppKey      string `json:"app_key,omitempty"`
-	AppSecret   string `json:"app_secret,omitempty"`
+	Id                int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	ConfigurationName string `json:"configuration_name,omitempty"`
+	Domain_uuid       string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
+	AppId             string `json:"app_id,omitempty"`
+	AppKey            string `json:"app_key,omitempty"`
+	AppSecret         string `json:"app_secret,omitempty"`
 }
 
 type WhatsappConfigurations struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	ConfigurationName     string `json:"configuration_name,omitempty"`
 	Domain_uuid           string `json:"domain_uuid,omitempty"`
 	AppId                 string `json:"appId,omitempty"`
 	AppKey                string `json:"appKey,omitempty"`
@@ -244,6 +247,7 @@ type WorkingDays struct {
 }
 type WhatsappConfiguration struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	ConfigurationName     string `json:"configuration_name,omitempty"`
 	Domain_uuid           string `json:"domain_uuid,omitempty"`
 	AppId                 string `json:"appId,omitempty"`
 	AppKey                string `json:"appKey,omitempty"`
@@ -278,6 +282,7 @@ type WhatsappConfiguration struct {
 }
 type FacebookConfigurations struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	ConfigurationName     string `json:"configuration_name,omitempty"`
 	Domain_uuid           string `json:"domain_uuid,omitempty"`
 	AppId                 string `json:"appId,omitempty"`
 	AppKey                string `json:"appKey,omitempty"`
@@ -295,6 +300,7 @@ type Trigger struct {
 }
 type FacebookConfiguration struct {
 	Id                    int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
+	ConfigurationName     string `json:"configuration_name,omitempty"`
 	Domain_uuid           string `json:"domain_uuid,omitempty"`
 	AppId                 string `json:"appId,omitempty"`
 	AppKey                string `json:"appKey,omitempty"`

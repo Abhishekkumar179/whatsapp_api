@@ -53,6 +53,12 @@ func (r *crudUsecase) Get_allId(ctx context.Context, domain_uuid string) (*model
 	return r.repository.Get_allId(ctx, domain_uuid)
 }
 
+/**************************************Get customer by appUserId ************************************************/
+func (r *crudUsecase) Get_Customer_by_appUserId(ctx context.Context, appUserId string) (*models.Response, error) {
+
+	return r.repository.Get_Customer_by_appUserId(ctx, appUserId)
+}
+
 /**************************************************Delete User***************************************************/
 
 func (r *crudUsecase) App_user(ctx context.Context, body []byte) (*models.Response, error) {
@@ -86,21 +92,23 @@ func (r *crudUsecase) Update_AppUser(ctx context.Context, appUserId string, appI
 
 /***************************************Add SmoochConfiguration**************************************/
 func (r *crudUsecase) Add_Smooch_configuration(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	name := fmt.Sprintf("%v", flow["configuration_name"])
 	domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
 	appId := fmt.Sprintf("%v", flow["appId"])
 	appKey := fmt.Sprintf("%v", flow["appKey"])
 	appSecret := fmt.Sprintf("%v", flow["appSecret"])
 
-	return r.repository.Add_Smooch_configuration(ctx, domain_uuid, appId, appKey, appSecret)
+	return r.repository.Add_Smooch_configuration(ctx, name, domain_uuid, appId, appKey, appSecret)
 }
 
 /***************************************Update SmoochConfiguration*************************************/
 func (r *crudUsecase) Update_Smooch_configuration(ctx context.Context, id int64, domain_uuid string, flow map[string]interface{}) (*models.Response, error) {
+	name := fmt.Sprintf("%v", flow["configuration_name"])
 	appId := fmt.Sprintf("%v", flow["appId"])
 	appKey := fmt.Sprintf("%v", flow["appKey"])
 	appSecret := fmt.Sprintf("%v", flow["appSecret"])
 
-	return r.repository.Update_Smooch_configuration(ctx, id, domain_uuid, appId, appKey, appSecret)
+	return r.repository.Update_Smooch_configuration(ctx, id, name, domain_uuid, appId, appKey, appSecret)
 }
 
 /**************************************Delete smooch configuration************************************/
@@ -404,8 +412,10 @@ func (r *crudUsecase) Available_Agents(ctx context.Context, domain_uuid string, 
 
 }
 
-/*********************************************Publish Queue Message**********************************************/
-func (r *crudUsecase) Publish_message_to_queue(ctx context.Context, author_id string) (*models.Response, error) {
+/**********************************************Transfer customer*********************************************/
+func (r *crudUsecase) Transfer_customer(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	agent_uuid := fmt.Sprintf("%v", flow["agent_uuid"])
+	appUserId := fmt.Sprintf("%v", flow["appUserId"])
 
-	return r.repository.Publish_message_to_queue(ctx, author_id)
+	return r.repository.Transfer_customer(ctx, agent_uuid, appUserId)
 }
