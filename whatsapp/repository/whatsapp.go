@@ -145,15 +145,32 @@ func (r *crudRepository) Get_allId(ctx context.Context, domain_uuid string) (*mo
 }
 
 /**********************************************Get customer by appUserId*********************************************/
-func (r *crudRepository) Get_Customer_by_appUserId(ctx context.Context, appUserId string) (*models.Response, error) {
-	customer := models.ReceiveUserDetails{
-		AppUserId: appUserId,
+func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string) (*models.Response, error) {
+	customer := models.Customer_Agents{
+		Agent_uuid: agent_uuid,
 	}
-	db := r.DBConn.Where("app_user_id = ?", appUserId).Find(&customer)
-	if db.Error != nil {
-		return &models.Response{Status: "0", Msg: "Cusomer not found.", ResponseCode: 404}, nil
+	list := make([]models.Customer_Agents, 0)
+	if db := r.DBConn.Where("agent_uuid = ?", agent_uuid).Find(&customer).Error; db != nil {
+
+		return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
 	}
-	return &models.Response{Status: "1", Msg: "Customer details found.", ResponseCode: 200, Customer: &customer}, nil
+	if rows, err := r.DBConn.Raw("select domain_uuid, app_user_id from customer_agents where agent_uuid = ?", agent_uuid).Rows(); err != nil {
+
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.Customer_Agents{}
+			if err := rows.Scan(&f.Domain_uuid, &f.AppUserId); err != nil {
+
+				return nil, err
+			}
+
+			list = append(list, f)
+		}
+
+		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Customer: list}, nil
+	}
 }
 
 /**************************************************Getall_messageByUserId***************************************************/

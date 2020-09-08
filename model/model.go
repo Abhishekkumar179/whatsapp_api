@@ -105,7 +105,7 @@ type Response struct {
 	Appuser               *Data                   `json:",omitempty"`
 	Data                  []byte                  `json:",omitempty"`
 	AppUserList           []ReceiveUserDetails    `json:",omitempty"`
-	Customer              *ReceiveUserDetails     `json:",omitempty"`
+	Customer              []Customer_Agents       `json:",omitempty"`
 	Message               *Payload                `json:",omitempty"`
 	Received              *Received               `json:",omitempty"`
 	Tenant_details        *Tenant_details         `json:",omitempty"`

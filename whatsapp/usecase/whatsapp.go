@@ -54,9 +54,9 @@ func (r *crudUsecase) Get_allId(ctx context.Context, domain_uuid string) (*model
 }
 
 /**************************************Get customer by appUserId ************************************************/
-func (r *crudUsecase) Get_Customer_by_appUserId(ctx context.Context, appUserId string) (*models.Response, error) {
+func (r *crudUsecase) Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string) (*models.Response, error) {
 
-	return r.repository.Get_Customer_by_appUserId(ctx, appUserId)
+	return r.repository.Get_Customer_by_agent_uuid(ctx, agent_uuid)
 }
 
 /**************************************************Delete User***************************************************/
