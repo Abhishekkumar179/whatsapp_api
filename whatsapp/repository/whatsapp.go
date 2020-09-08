@@ -268,10 +268,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
 	}
 	fmt.Println("2 min= ", min, " max= ", max, " min_uuid= ", min_uuid)
-	// agents := r.DBConn.Where("tenant_domain_uuid = ?", queue.Domain_uuid).Find(&agent)
-	// if agents.Error != nil {
-	// 	fmt.Println(agents.Error)
-	// }
 	customer := models.Customer_Agents{
 		Domain_uuid: agent.Tenant_domain_uuid,
 		AppUserId:   f.AppUser.ID,
@@ -2411,6 +2407,18 @@ func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid strin
 	db := r.DBConn.Table("customer_agents").Where("app_user_id = ?", appUserId).Update("agent_uuid", agent_uuid)
 	if db.Error != nil {
 		return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
+	}
+	msg := map[string]interface{}{"message_id": "5", "customer_id": appUserId, "user_id": agent_uuid, "user_type": "agent"}
+
+	for _, oldu := range r.SList.Users {
+		if oldu.UName == agent_uuid {
+			log.Println("found user: ", oldu)
+			if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
+				log.Println("Can't send", err)
+			}
+			fmt.Println("sucessfully sent ", oldu, appUserId)
+
+		}
 	}
 	return &models.Response{Status: "1", Msg: "Customer assigned to agent successfully.", ResponseCode: 200}, nil
 }

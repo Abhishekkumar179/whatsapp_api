@@ -509,6 +509,7 @@ func (s *ServerUserList) userLogin(msg map[string]interface{}, ws *websocket.Con
 	// if msg.OnlineStatus == true {
 	// var rsp models.MyResponse
 	// if rowsAffected == 1 {
+	msg["message_id"] = "1"
 	msg["status_code"] = http.StatusOK
 	msg["status_message"] = "Session Started."
 	// rsp.StatusCode = "200"
@@ -544,11 +545,11 @@ func (s *ServerUserList) UserRegister(c echo.Context) error {
 				for _, oldu := range s.Users {
 					if oldu.UName == msg["user_id"] && oldu.UType == msg["user_type"] {
 						log.Println("found user: ", oldu)
+						msg["message_id"] = "0"
 						msg["status_code"] = http.StatusBadRequest
 						msg["status_message"] = "Session exist for user."
-						if err := websocket.JSON.Send(ws, msg); err != nil {
+						if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
 							log.Println("Can't send", err)
-							msg["message_id"] = "0"
 						}
 						s.Del(oldu)
 
@@ -609,8 +610,8 @@ func (s *ServerUserList) Controller(e *echo.Echo) {
 			// log.Println("Now", count, "users connected.")
 
 		case u := <-s.Delch:
-			s.sendUserStatus(u.UName, "false")
-			s.updateUserStatus(u.UName, u.Id, false)
+			// s.sendUserStatus(u.UName, "false")
+			// s.updateUserStatus(u.UName, u.Id, false)
 			delete(s.Users, u.Id)
 		}
 	}
