@@ -10,6 +10,7 @@ import (
 	"log"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -18,9 +19,11 @@ import (
 	controller "whatsapp_api/whatsapp/controller"
 
 	myNewUUID "github.com/google/uuid"
-	"golang.org/x/net/websocket"
-
 	"github.com/jinzhu/gorm"
+	"github.com/labstack/echo"
+	"golang.org/x/net/websocket"
+	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/facebook"
 )
 
 type crudRepository struct {
@@ -2447,9 +2450,9 @@ func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid strin
 }
 
 /*****************************************************Post page on Fb*****************************************/
-func (r *crudRepository) Publish_Post_on_FB_Page(ctx context.Context, pageId string, message string, access_token string, Post_type string) ([]byte, error) {
+func (r *crudRepository) Publish_Post_on_FB_Page(ctx context.Context, pageId string, message string, access_token string) ([]byte, error) {
 	fmt.Println(pageId, access_token, message)
-
+	message = strings.ReplaceAll(message, " ", "%20")
 	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/feed?message="+message+"&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -2464,4 +2467,182 @@ func (r *crudRepository) Publish_Post_on_FB_Page(ctx context.Context, pageId str
 
 	defer res.Body.Close()
 	return nil, err
+}
+
+/**************************************Get all Post of a Page*****************************************/
+func (r *crudRepository) Getall_Post_of_Page(ctx context.Context, pageId string, access_token string) ([]byte, error) {
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+pageId+"/feed?access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+
+	defer res.Body.Close()
+	return nil, err
+}
+
+/*********************************************Delete Post Of a Page****************************************/
+func (r *crudRepository) Delete_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error) {
+	res, err := http.NewRequest("DELETE", "https://graph.facebook.com/"+page_postId+"?access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
+/**********************************************Update Post of Page******************************************/
+func (r *crudRepository) Update_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+page_postId+"?message="+message+"&access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
+/********************************************Get Comments on Page********************************************/
+func (r *crudRepository) Get_Comments_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error) {
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+page_postId+"/comments?access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
+/********************************************Comment on Post of Page******************************************/
+func (r *crudRepository) Comment_on_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+page_postId+"/comments?message="+message+"&access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
+//******************************************************************/
+func (r crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string) (*models.Response, error) {
+	fmt.Println(c.Request)
+	fmt.Println(c.Response)
+	fmt.Println(client_id, client_secret)
+	oauthConf := &oauth2.Config{
+		ClientID:     client_id,
+		ClientSecret: client_secret,
+		RedirectURL:  "http://localhost:10000/uvoice-facebook-login-callback-get-code",
+		Scopes:       []string{"public_profile"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
+			TokenURL: facebook.Endpoint.TokenURL,
+		},
+	}
+	oauthStateString := "thisshouldberandom"
+	Url, err := url.Parse(oauthConf.Endpoint.AuthURL)
+	if err != nil {
+		log.Fatal("Parse: ", err)
+	}
+	parameters := url.Values{}
+	parameters.Add("client_id", oauthConf.ClientID)
+	parameters.Add("scope", strings.Join(oauthConf.Scopes, " "))
+	parameters.Add("redirect_uri", oauthConf.RedirectURL)
+	parameters.Add("response_type", "code")
+	parameters.Add("state", oauthStateString)
+	Url.RawQuery = parameters.Encode()
+	url := Url.String()
+	fmt.Println(url)
+	// b := fmt.Sprintf("%#v", oauthConf)
+	// newrq := c.Request()
+	// newrq.Body = ioutil.NopCloser(bytes.NewBufferString(b))
+	// c.SetRequest(newrq)
+	c.Redirect(http.StatusMovedPermanently, url)
+	return nil, nil
+}
+
+func (r crudRepository) UVoiceFacebookLoginCallbackGetCode(ctx context.Context, c echo.Context) (*models.Response, error) {
+	code := c.FormValue("code")
+	if code == "" {
+		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+
+	return &models.Response{Status: "OK", Msg: "Success", ResponseCode: http.StatusOK, FacebookGetCode: &models.FacebookGetCode{Code: code}}, nil
+}
+
+func (r crudRepository) UVoiceFacebookLoginCallbackGetToken(ctx context.Context, code string, client_id string, client_secret string) (*models.Response, error) {
+	// state := c.FormValue("state")
+	// if state != oauthStateString {
+	// 	fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
+	// 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+	// 	return
+	// }
+
+	oauthConf := &oauth2.Config{
+		ClientID:     client_id,
+		ClientSecret: client_secret,
+		RedirectURL:  "http://localhost:10000/uvoice-facebook-login-callback-get-code",
+		Scopes:       []string{"public_profile"},
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
+			TokenURL: facebook.Endpoint.TokenURL,
+		},
+	}
+
+	token, err := oauthConf.Exchange(ctx, code)
+	if err != nil {
+		fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
+		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	// fmt.Printf("%v \n", token)
+	resp, err := http.Get("https://graph.facebook.com/me?access_token=" + token.AccessToken)
+	if err != nil {
+		fmt.Printf("Get: %s\n", err)
+		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	defer resp.Body.Close()
+	response, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		fmt.Printf("ReadAll: %s\n", err)
+		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	var naid map[string]interface{}
+	json.Unmarshal(response, &naid)
+	info := models.FacebookGetAuthInfo{}
+	info.Name = naid["name"].(string)
+	info.Id = naid["id"].(string)
+	info.AccessToken = token.AccessToken
+	return &models.Response{Status: "OK", Msg: "Success", ResponseCode: 200, FacebookGetAuthInfo: &info}, nil
+
 }

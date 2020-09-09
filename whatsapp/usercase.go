@@ -4,6 +4,8 @@ import (
 	"context"
 	"mime/multipart"
 	models "whatsapp_api/model"
+
+	"github.com/labstack/echo"
 )
 
 type Usecase interface {
@@ -60,5 +62,13 @@ type Usecase interface {
 	Delete_Queue(ctx context.Context, domain_uuid string) (*models.Response, error)
 	Available_Agents(ctx context.Context, domain_uuid string, queue_uuid string) (*models.Response, error)
 	Transfer_customer(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
-	Publish_Post_on_FB_Page(ctx context.Context, pageId string, message string, access_token string, flow map[string]interface{}) ([]byte, error)
+	Publish_Post_on_FB_Page(ctx context.Context, flow map[string]interface{}) ([]byte, error)
+	Getall_Post_of_Page(ctx context.Context, pageId string, access_token string) ([]byte, error)
+	Delete_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error)
+	Update_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error)
+	Get_Comments_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error)
+	Comment_on_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error)
+	UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string) (*models.Response, error)
+	UVoiceFacebookLoginCallbackGetCode(ctx context.Context, c echo.Context) (*models.Response, error)
+	UVoiceFacebookLoginCallbackGetToken(ctx context.Context, code string, client_id string, client_secret string) (*models.Response, error)
 }

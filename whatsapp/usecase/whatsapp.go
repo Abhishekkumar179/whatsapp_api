@@ -7,6 +7,8 @@ import (
 	"strconv"
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
+
+	"github.com/labstack/echo"
 	//	"encoding/json"
 )
 
@@ -421,11 +423,56 @@ func (r *crudUsecase) Transfer_customer(ctx context.Context, flow map[string]int
 }
 
 /************************************************Post on FB page**********************************************/
-func (r *crudUsecase) Publish_Post_on_FB_Page(ctx context.Context, pageId string, message string, access_token string, flow map[string]interface{}) ([]byte, error) {
+func (r *crudUsecase) Publish_Post_on_FB_Page(ctx context.Context, flow map[string]interface{}) ([]byte, error) {
+	pageId := fmt.Sprintf("%v", flow["page_id"])
+	message := fmt.Sprintf("%v", flow["message"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
+	// Post_type := fmt.Sprintf("%v", flow["post_type"])
+	return r.repository.Publish_Post_on_FB_Page(ctx, pageId, message, access_token)
 
-	//message := fmt.Sprintf("%v", flow["message"])
-	// access_token := fmt.Sprintf("%v", flow["access_token"])
-	Post_type := fmt.Sprintf("%v", flow["post_type"])
-	return r.repository.Publish_Post_on_FB_Page(ctx, pageId, message, access_token, Post_type)
+}
 
+/*************************************************Get all Post of a Page***********************************/
+func (r *crudUsecase) Getall_Post_of_Page(ctx context.Context, pageId string, access_token string) ([]byte, error) {
+
+	return r.repository.Getall_Post_of_Page(ctx, pageId, access_token)
+}
+
+/*************************************************Delete Post of a page***************************************/
+func (r *crudUsecase) Delete_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error) {
+
+	return r.repository.Delete_Post_of_Page(ctx, page_postId, access_token)
+}
+
+/*************************************************Update Post of a Page***************************************/
+func (r *crudUsecase) Update_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
+
+	return r.repository.Update_Post_of_Page(ctx, page_postId, message, access_token)
+}
+
+/******************************************Get comments of a page***********************************************/
+func (r *crudUsecase) Get_Comments_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error) {
+
+	return r.repository.Get_Comments_on_Post_of_Page(ctx, page_postId, access_token)
+}
+
+/*******************************************Comment on post of a page******************************************/
+func (r *crudUsecase) Comment_on_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
+
+	return r.Comment_on_Post_of_Page(ctx, page_postId, message, access_token)
+}
+
+/*******************************************************/
+func (r *crudUsecase) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string) (*models.Response, error) {
+	return r.repository.UVoiceFacebookLogin(ctx, c, client_id, client_secret)
+}
+
+/************************************************/
+func (r *crudUsecase) UVoiceFacebookLoginCallbackGetCode(ctx context.Context, c echo.Context) (*models.Response, error) {
+	return r.repository.UVoiceFacebookLoginCallbackGetCode(ctx, c)
+}
+
+/*******************************************************/
+func (r *crudUsecase) UVoiceFacebookLoginCallbackGetToken(ctx context.Context, code string, client_id string, client_secret string) (*models.Response, error) {
+	return r.repository.UVoiceFacebookLoginCallbackGetToken(ctx, code, client_id, client_secret)
 }
