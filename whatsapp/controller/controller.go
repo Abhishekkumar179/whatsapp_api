@@ -1318,6 +1318,28 @@ func (r *CRUDController) Transfer_customer(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/*********************************************Post on facebook Page*****************************************/
+func (r *CRUDController) Publish_Post_on_FB_Page(c echo.Context) error {
+	pageId := c.Param("page_id")
+	message := c.Param("message")
+	access_token := c.Param("access_token")
+	var fb map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&fb)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Publish_Post_on_FB_Page(ctx, pageId, message, access_token, fb)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1385,4 +1407,5 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("available_agent_list/:domain_uuid/:queue_uuid", handler.Available_Agents)
 	e.POST("transfer_customer", handler.Transfer_customer)
 
+	e.POST("publish_post/:page_id/:message/:access_token", handler.Publish_Post_on_FB_Page)
 }

@@ -60,4 +60,5 @@ type Usecase interface {
 	Delete_Queue(ctx context.Context, domain_uuid string) (*models.Response, error)
 	Available_Agents(ctx context.Context, domain_uuid string, queue_uuid string) (*models.Response, error)
 	Transfer_customer(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
+	Publish_Post_on_FB_Page(ctx context.Context, pageId string, message string, access_token string, flow map[string]interface{}) ([]byte, error)
 }

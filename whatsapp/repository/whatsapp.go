@@ -2420,7 +2420,13 @@ func (r *crudRepository) Available_Agents(ctx context.Context, domain_uuid strin
 
 /************************************************Transfer customer**********************************************/
 func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid string, appUserId string) (*models.Response, error) {
-
+	app := models.Customer_Agents{
+		AppUserId: appUserId,
+	}
+	err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&app)
+	if err.Error != nil {
+		return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
+	}
 	db := r.DBConn.Table("customer_agents").Where("app_user_id = ?", appUserId).Update("agent_uuid", agent_uuid)
 	if db.Error != nil {
 		return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
@@ -2438,4 +2444,24 @@ func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid strin
 		}
 	}
 	return &models.Response{Status: "1", Msg: "Customer assigned to agent successfully.", ResponseCode: 200}, nil
+}
+
+/*****************************************************Post page on Fb*****************************************/
+func (r *crudRepository) Publish_Post_on_FB_Page(ctx context.Context, pageId string, message string, access_token string, Post_type string) ([]byte, error) {
+	fmt.Println(pageId, access_token, message)
+
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/feed?message="+message+"&access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+
+	defer res.Body.Close()
+	return nil, err
 }

@@ -419,3 +419,13 @@ func (r *crudUsecase) Transfer_customer(ctx context.Context, flow map[string]int
 
 	return r.repository.Transfer_customer(ctx, agent_uuid, appUserId)
 }
+
+/************************************************Post on FB page**********************************************/
+func (r *crudUsecase) Publish_Post_on_FB_Page(ctx context.Context, pageId string, message string, access_token string, flow map[string]interface{}) ([]byte, error) {
+
+	//message := fmt.Sprintf("%v", flow["message"])
+	// access_token := fmt.Sprintf("%v", flow["access_token"])
+	Post_type := fmt.Sprintf("%v", flow["post_type"])
+	return r.repository.Publish_Post_on_FB_Page(ctx, pageId, message, access_token, Post_type)
+
+}
