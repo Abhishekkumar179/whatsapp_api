@@ -2506,6 +2506,7 @@ func (r *crudRepository) Delete_Post_of_Page(ctx context.Context, page_postId st
 
 /**********************************************Update Post of Page******************************************/
 func (r *crudRepository) Update_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
+	message = strings.ReplaceAll(message, " ", "%20")
 	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+page_postId+"?message="+message+"&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -2540,6 +2541,7 @@ func (r *crudRepository) Get_Comments_on_Post_of_Page(ctx context.Context, page_
 
 /********************************************Comment on Post of Page******************************************/
 func (r *crudRepository) Comment_on_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
+	message = strings.ReplaceAll(message, " ", "%20")
 	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+page_postId+"/comments?message="+message+"&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -2555,7 +2557,50 @@ func (r *crudRepository) Comment_on_Post_of_Page(ctx context.Context, page_postI
 	return nil, err
 }
 
-//******************************************************************/
+/************************************************Get Page Id *************************************************/
+func (r *crudRepository) Get_Page_ID(ctx context.Context, userId string, access_token string) ([]byte, error) {
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+userId+"/accounts?access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
+/************************************************Schedule Post************************************************/
+func (r *crudRepository) Schedule_Post(ctx context.Context, pageId string, message string, scheduled_publish_time string, access_token string) ([]byte, error) {
+	message = strings.ReplaceAll(message, " ", "%20")
+	scheduled_publish_time = strings.ReplaceAll(scheduled_publish_time, ":", "%3A")
+	// layout := "2018-09-01T10:15:30+05:30"
+	// t, err := time.Parse(RFC3339, scheduled_publish_time)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+
+	//fmt.Println(t, "time", scheduled_publish_time)
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/feed?published=false&message="+message+"&scheduled_publish_time="+scheduled_publish_time+"&access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
+/******************************************************************/
 func (r crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string) (*models.Response, error) {
 	fmt.Println(c.Request)
 	fmt.Println(c.Response)
@@ -2645,4 +2690,33 @@ func (r crudRepository) UVoiceFacebookLoginCallbackGetToken(ctx context.Context,
 	info.AccessToken = token.AccessToken
 	return &models.Response{Status: "OK", Msg: "Success", ResponseCode: 200, FacebookGetAuthInfo: &info}, nil
 
+}
+func (r *crudRepository) AddFacebookApplication(ctx context.Context, domain_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error) {
+	if err := r.DBConn.Create(&models.FacebookLoginAppConfiguration{
+		DomainUUID: domain_uuid,
+		AppId:      app_id,
+		AppSecret:  app_secret,
+		AppName:    app_name,
+	}).Error; err != nil {
+		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Success", ResponseCode: http.StatusOK}, nil
+}
+
+func (r *crudRepository) ShowFacebookApplication(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	t := []models.FacebookLoginAppConfiguration{}
+	if err := r.DBConn.Model(&models.FacebookLoginAppConfiguration{}).Where("domain_uuid=?", domain_uuid).Find(&t).Error; err != nil {
+		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	if len(t) == 0 {
+		return &models.Response{Status: "0", Msg: "Empty", ResponseCode: http.StatusOK}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Success", ResponseCode: http.StatusOK, FacebookLoginAppConfiguration: &t}, nil
+}
+
+func (r *crudRepository) DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error) {
+	if err := r.DBConn.Where("domain_uuid=? and flac_uuid=? ", domain_uuid, flac_uuid).Delete(&models.FacebookLoginAppConfiguration{}).Error; err != nil {
+		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Deleted", ResponseCode: http.StatusOK}, nil
 }

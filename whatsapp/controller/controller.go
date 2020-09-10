@@ -1374,15 +1374,19 @@ func (r *CRUDController) Delete_Post_of_Page(c echo.Context) error {
 
 /**********************************************Update Post of a Page***************************************/
 func (r *CRUDController) Update_Post_of_Page(c echo.Context) error {
-	page_postId := c.Param("page_post_id")
-	message := c.Param("message")
-	access_token := c.Param("access_token")
-
+	// page_postId := c.Param("page_post_id")
+	// message := c.Param("message")
+	// access_token := c.Param("access_token")
+	var fb map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&fb)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Update_Post_of_Page(ctx, page_postId, message, access_token)
+	authResponse, _ := r.usecase.Update_Post_of_Page(ctx, fb)
 
 	if authResponse == nil {
 		return c.JSONBlob(http.StatusUnauthorized, authResponse)
@@ -1409,15 +1413,19 @@ func (r *CRUDController) Get_Comments_on_Post_of_Page(c echo.Context) error {
 
 /**********************************************Comment on post of a page**********************************/
 func (r *CRUDController) Comment_on_Post_of_Page(c echo.Context) error {
-	page_postId := c.Param("page_post_id")
-	message := c.Param("message")
-	access_token := c.Param("access_token")
-
+	// page_postId := c.Param("page_post_id")
+	// message := c.Param("message")
+	// access_token := c.Param("access_token")
+	var fb map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&fb)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Comment_on_Post_of_Page(ctx, page_postId, message, access_token)
+	authResponse, _ := r.usecase.Comment_on_Post_of_Page(ctx, fb)
 
 	if authResponse == nil {
 		return c.JSONBlob(http.StatusUnauthorized, authResponse)
@@ -1467,6 +1475,83 @@ func (r *CRUDController) UVoiceFacebookLoginCallbackGetToken(c echo.Context) err
 		ctx = context.Background()
 	}
 	authResponse, _ := r.usecase.UVoiceFacebookLoginCallbackGetToken(ctx, code, client_id, client_secret)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/***********************************************Get Page Id************************************************/
+func (r *CRUDController) Get_Page_ID(c echo.Context) error {
+	userId := c.Param("user_id")
+	access_token := c.Param("access_token")
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Page_ID(ctx, userId, access_token)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+}
+
+/************************************************Schedule a Post*********************************************/
+func (r *CRUDController) Schedule_Post(c echo.Context) error {
+	var fb map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&fb)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Schedule_Post(ctx, fb)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+}
+func (r *CRUDController) AddFacebookApplication(c echo.Context) error {
+	var t map[string]interface{}
+	c.Bind(&t)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.AddFacebookApplication(ctx, t["domain_uuid"].(string), t["app_id"].(string), t["app_secret"].(string), t["app_name"].(string))
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+func (r *CRUDController) ShowFacebookApplication(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.ShowFacebookApplication(ctx, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+func (r *CRUDController) DeleteFacebookApplication(c echo.Context) error {
+	flac_uuid := c.Param("flac_uuid")
+	domain_uuid := c.Param("domain_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.DeleteFacebookApplication(ctx, domain_uuid, flac_uuid)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -1547,8 +1632,13 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("update_post/:page_post_id/:message/:access_token", handler.Update_Post_of_Page)
 	e.GET("get_comments_of_post/:page_post_id/:access_token", handler.Get_Comments_on_Post_of_Page)
 	e.POST("comment_on_post/:page_postId/:message/:access_token", handler.Comment_on_Post_of_Page)
+	e.GET("get_page_id/:user_id/:access_token", handler.Get_Page_ID)
+	e.POST("schedule_post", handler.Schedule_Post)
 
 	e.GET("/uvoice-facebook-login/:client_id/:client_secret", handler.UVoiceFacebookLogin)
 	e.GET("/uvoice-facebook-login-callback-get-code", handler.UVoiceFacebookLoginCallbackGetCode)
 	e.GET("/uvoice-facebook-login-callback-get-token/:code/:client_id/:client_secret", handler.UVoiceFacebookLoginCallbackGetToken)
+	e.POST("/add-facebook-application", handler.AddFacebookApplication)
+	e.GET("/show-facebook-application/:domain_uuid", handler.ShowFacebookApplication)
+	e.DELETE("/delete-facebook-application/:flac_uuid/:domain_uuid", handler.DeleteFacebookApplication)
 }

@@ -71,4 +71,9 @@ type Repository interface {
 	UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string) (*models.Response, error)
 	UVoiceFacebookLoginCallbackGetCode(ctx context.Context, c echo.Context) (*models.Response, error)
 	UVoiceFacebookLoginCallbackGetToken(ctx context.Context, code string, client_id string, client_secret string) (*models.Response, error)
+	Get_Page_ID(ctx context.Context, userId string, access_token string) ([]byte, error)
+	Schedule_Post(ctx context.Context, pageId string, message string, scheduled_publish_time string, access_token string) ([]byte, error)
+	AddFacebookApplication(ctx context.Context, domain_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error)
+	ShowFacebookApplication(ctx context.Context, domain_uuid string) (*models.Response, error)
+	DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error)
 }

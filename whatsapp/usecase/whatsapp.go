@@ -445,8 +445,10 @@ func (r *crudUsecase) Delete_Post_of_Page(ctx context.Context, page_postId strin
 }
 
 /*************************************************Update Post of a Page***************************************/
-func (r *crudUsecase) Update_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
-
+func (r *crudUsecase) Update_Post_of_Page(ctx context.Context, flow map[string]interface{}) ([]byte, error) {
+	page_postId := fmt.Sprintf("%v", flow["page_post_id"])
+	message := fmt.Sprintf("%v", flow["message"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
 	return r.repository.Update_Post_of_Page(ctx, page_postId, message, access_token)
 }
 
@@ -457,9 +459,26 @@ func (r *crudUsecase) Get_Comments_on_Post_of_Page(ctx context.Context, page_pos
 }
 
 /*******************************************Comment on post of a page******************************************/
-func (r *crudUsecase) Comment_on_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
+func (r *crudUsecase) Comment_on_Post_of_Page(ctx context.Context, flow map[string]interface{}) ([]byte, error) {
+	page_postId := fmt.Sprintf("%v", flow["page_post_id"])
+	message := fmt.Sprintf("%v", flow["message"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
+	return r.repository.Comment_on_Post_of_Page(ctx, page_postId, message, access_token)
+}
 
-	return r.Comment_on_Post_of_Page(ctx, page_postId, message, access_token)
+/********************************************Get Page Id******************************************************/
+func (r *crudUsecase) Get_Page_ID(ctx context.Context, userId string, access_token string) ([]byte, error) {
+
+	return r.repository.Get_Page_ID(ctx, userId, access_token)
+}
+
+/*******************************************Schedule a Post*********************************************/
+func (r *crudUsecase) Schedule_Post(ctx context.Context, flow map[string]interface{}) ([]byte, error) {
+	pageId := fmt.Sprintf("%v", flow["page_id"])
+	message := fmt.Sprintf("%v", flow["message"])
+	scheduled_publish_time := fmt.Sprintf("%v", flow["schedule_publish_time"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
+	return r.repository.Schedule_Post(ctx, pageId, message, scheduled_publish_time, access_token)
 }
 
 /*******************************************************/
@@ -475,4 +494,13 @@ func (r *crudUsecase) UVoiceFacebookLoginCallbackGetCode(ctx context.Context, c 
 /*******************************************************/
 func (r *crudUsecase) UVoiceFacebookLoginCallbackGetToken(ctx context.Context, code string, client_id string, client_secret string) (*models.Response, error) {
 	return r.repository.UVoiceFacebookLoginCallbackGetToken(ctx, code, client_id, client_secret)
+}
+func (r *crudUsecase) AddFacebookApplication(ctx context.Context, domain_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error) {
+	return r.repository.AddFacebookApplication(ctx, domain_uuid, app_id, app_secret, app_name)
+}
+func (r *crudUsecase) ShowFacebookApplication(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	return r.repository.ShowFacebookApplication(ctx, domain_uuid)
+}
+func (r *crudUsecase) DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error) {
+	return r.repository.DeleteFacebookApplication(ctx, domain_uuid, flac_uuid)
 }
