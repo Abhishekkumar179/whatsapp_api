@@ -481,20 +481,34 @@ func (r *crudUsecase) Schedule_Post(ctx context.Context, flow map[string]interfa
 	return r.repository.Schedule_Post(ctx, pageId, message, scheduled_publish_time, access_token)
 }
 
+/********************************************Publish link with message************************************/
+func (r *crudUsecase) Publish_link_with_message_on_Post(ctx context.Context, flow map[string]interface{}) ([]byte, error) {
+	pageId := fmt.Sprintf("%v", flow["page_id"])
+	message := fmt.Sprintf("%v", flow["message"])
+	link := fmt.Sprintf("%v", flow["link"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
+	return r.repository.Publish_link_with_message_on_Post(ctx, pageId, message, link, access_token)
+}
+
+/*******************************************Upload Photo with message on post**********************************/
+
+func (r *crudUsecase) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
+
+	return r.repository.Upload_Photo_on_Post(ctx, pageId, access_token, file, handler)
+}
+
 /*******************************************************/
-func (r *crudUsecase) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string) (*models.Response, error) {
-	return r.repository.UVoiceFacebookLogin(ctx, c, client_id, client_secret)
+func (r *crudUsecase) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string, flac_uuid string) (*models.Response, error) {
+	return r.repository.UVoiceFacebookLogin(ctx, c, client_id, client_secret, flac_uuid)
 }
 
 /************************************************/
-func (r *crudUsecase) UVoiceFacebookLoginCallbackGetCode(ctx context.Context, c echo.Context) (*models.Response, error) {
-	return r.repository.UVoiceFacebookLoginCallbackGetCode(ctx, c)
+func (r *crudUsecase) UVoiceFacebookLoginCallback(ctx context.Context, c echo.Context) (*models.Response, error) {
+	return r.repository.UVoiceFacebookLoginCallback(ctx, c)
 }
 
 /*******************************************************/
-func (r *crudUsecase) UVoiceFacebookLoginCallbackGetToken(ctx context.Context, code string, client_id string, client_secret string) (*models.Response, error) {
-	return r.repository.UVoiceFacebookLoginCallbackGetToken(ctx, code, client_id, client_secret)
-}
+
 func (r *crudUsecase) AddFacebookApplication(ctx context.Context, domain_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error) {
 	return r.repository.AddFacebookApplication(ctx, domain_uuid, app_id, app_secret, app_name)
 }

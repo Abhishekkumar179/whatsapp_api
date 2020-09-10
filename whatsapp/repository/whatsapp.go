@@ -26,6 +26,10 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
+const HTTPSERVERHOST = "localhost"
+const HTTPSECURE = "http"
+const PORT = "10000"
+
 type crudRepository struct {
 	DBConn *gorm.DB
 	SList  *controller.ServerUserList
@@ -2600,22 +2604,76 @@ func (r *crudRepository) Schedule_Post(ctx context.Context, pageId string, messa
 	return nil, err
 }
 
+/*******************************************Publish link with message on Post***************************************/
+func (r *crudRepository) Publish_link_with_message_on_Post(ctx context.Context, pageId string, message string, link string, access_token string) ([]byte, error) {
+	message = strings.ReplaceAll(message, " ", "%20")
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/feed?message="+message+"&link="+link+"&access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
+/******************************************Upload Photo on Post**************************************************/
+func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
+	fileBytes, err := ioutil.ReadAll(file)
+	if err != nil {
+		fmt.Println(err)
+	}
+	body := new(bytes.Buffer)
+	writer := multipart.NewWriter(body)
+
+	part, err := writer.CreateFormFile("source", handler.Filename)
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = io.Copy(part, file)
+	if err != nil {
+		return nil, err
+	}
+
+	part.Write(fileBytes)
+	writer.Close()
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?"+access_token+"&access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
 /******************************************************************/
-func (r crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string) (*models.Response, error) {
+func (r *crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string, flac_uuid string) (*models.Response, error) {
 	fmt.Println(c.Request)
 	fmt.Println(c.Response)
 	fmt.Println(client_id, client_secret)
 	oauthConf := &oauth2.Config{
 		ClientID:     client_id,
 		ClientSecret: client_secret,
-		RedirectURL:  "http://localhost:10000/uvoice-facebook-login-callback-get-code",
+		RedirectURL:  HTTPSECURE + "://" + HTTPSERVERHOST + ":" + PORT + "/uvoice-facebook-login-callback",
 		Scopes:       []string{"public_profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
 			TokenURL: facebook.Endpoint.TokenURL,
 		},
 	}
-	oauthStateString := "thisshouldberandom"
+	oauthStateString := flac_uuid
 	Url, err := url.Parse(oauthConf.Endpoint.AuthURL)
 	if err != nil {
 		log.Fatal("Parse: ", err)
@@ -2637,59 +2695,42 @@ func (r crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context,
 	return nil, nil
 }
 
-func (r crudRepository) UVoiceFacebookLoginCallbackGetCode(ctx context.Context, c echo.Context) (*models.Response, error) {
+func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo.Context) (*models.Response, error) {
 	code := c.FormValue("code")
+	state := c.FormValue("state")
+	var t models.FacebookLoginAppConfiguration
+	if err := r.DBConn.Where("flac_uuid=?", state).Find(&t).Error; err != nil {
+		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	if state != t.FlacUUID {
+		fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", t.FlacUUID, state)
+		// http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
+		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
 	if code == "" {
 		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 	}
-
-	return &models.Response{Status: "OK", Msg: "Success", ResponseCode: http.StatusOK, FacebookGetCode: &models.FacebookGetCode{Code: code}}, nil
-}
-
-func (r crudRepository) UVoiceFacebookLoginCallbackGetToken(ctx context.Context, code string, client_id string, client_secret string) (*models.Response, error) {
-	// state := c.FormValue("state")
-	// if state != oauthStateString {
-	// 	fmt.Printf("invalid oauth state, expected '%s', got '%s'\n", oauthStateString, state)
-	// 	http.Redirect(w, r, "/", http.StatusTemporaryRedirect)
-	// 	return
-	// }
-
 	oauthConf := &oauth2.Config{
-		ClientID:     client_id,
-		ClientSecret: client_secret,
-		RedirectURL:  "http://localhost:10000/uvoice-facebook-login-callback-get-code",
+		ClientID:     t.AppId,
+		ClientSecret: t.AppSecret,
+		RedirectURL:  HTTPSECURE + "://" + HTTPSERVERHOST + ":" + PORT + "/uvoice-facebook-login-callback",
 		Scopes:       []string{"public_profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
 			TokenURL: facebook.Endpoint.TokenURL,
 		},
 	}
-
 	token, err := oauthConf.Exchange(ctx, code)
 	if err != nil {
 		fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
 		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 	}
-	// fmt.Printf("%v \n", token)
-	resp, err := http.Get("https://graph.facebook.com/me?access_token=" + token.AccessToken)
-	if err != nil {
-		fmt.Printf("Get: %s\n", err)
-		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
-	}
-	defer resp.Body.Close()
-	response, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		fmt.Printf("ReadAll: %s\n", err)
-		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
-	}
-	var naid map[string]interface{}
-	json.Unmarshal(response, &naid)
-	info := models.FacebookGetAuthInfo{}
-	info.Name = naid["name"].(string)
-	info.Id = naid["id"].(string)
-	info.AccessToken = token.AccessToken
-	return &models.Response{Status: "OK", Msg: "Success", ResponseCode: 200, FacebookGetAuthInfo: &info}, nil
-
+	fmt.Printf("%v \n", token)
+	c.Response().Header().Set("access_token", token.AccessToken)
+	c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
+	c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+"://"+HTTPSERVERHOST+":"+PORT+"/uvoice-facebook-login-status")
+	// return &models.Response{Status: "OK", Msg: "Success1", ResponseCode: http.StatusOK, FacebookGetAuthInfo: &info}, nil
+	return nil, nil
 }
 func (r *crudRepository) AddFacebookApplication(ctx context.Context, domain_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error) {
 	if err := r.DBConn.Create(&models.FacebookLoginAppConfiguration{
@@ -2703,6 +2744,7 @@ func (r *crudRepository) AddFacebookApplication(ctx context.Context, domain_uuid
 	return &models.Response{Status: "1", Msg: "Success", ResponseCode: http.StatusOK}, nil
 }
 
+/*******************************************************/
 func (r *crudRepository) ShowFacebookApplication(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	t := []models.FacebookLoginAppConfiguration{}
 	if err := r.DBConn.Model(&models.FacebookLoginAppConfiguration{}).Where("domain_uuid=?", domain_uuid).Find(&t).Error; err != nil {
@@ -2714,6 +2756,7 @@ func (r *crudRepository) ShowFacebookApplication(ctx context.Context, domain_uui
 	return &models.Response{Status: "1", Msg: "Success", ResponseCode: http.StatusOK, FacebookLoginAppConfiguration: &t}, nil
 }
 
+/*****************************************************************/
 func (r *crudRepository) DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error) {
 	if err := r.DBConn.Where("domain_uuid=? and flac_uuid=? ", domain_uuid, flac_uuid).Delete(&models.FacebookLoginAppConfiguration{}).Error; err != nil {
 		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
