@@ -26,9 +26,9 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
-const HTTPSERVERHOST = "0.0.0.0"
-const HTTPSECURE = "https"
-const PORT = "30707"
+const HTTPSERVERHOST = "localhost"
+const HTTPSECURE = "http"
+const PORT = "10000"
 
 type crudRepository struct {
 	DBConn *gorm.DB
@@ -1252,7 +1252,7 @@ func (r *crudRepository) Get_Whatsapp_configuration(ctx context.Context, domain_
 	defer row.Close()
 	for row.Next() {
 		f := models.WhatsappConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.ConfigurationName, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.WhatsappIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
+		if err := row.Scan(&f.Id, &f.ConfigurationName, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.WhatsappIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
 
 			return nil, err
 		}
@@ -1465,7 +1465,7 @@ func (r *crudRepository) Get_Facebook_configuration(ctx context.Context, domain_
 	defer row.Close()
 	for row.Next() {
 		f := models.FacebookConfiguration{}
-		if err := row.Scan(&f.Id, &f.Domain_uuid, &f.ConfigurationName, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.FacebookIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
+		if err := row.Scan(&f.Id, &f.ConfigurationName, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.FacebookIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
 
 			return nil, err
 		}
