@@ -26,9 +26,9 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
-const HTTPSERVERHOST = "localhost"
-const HTTPSECURE = "http"
-const PORT = "10000"
+const HTTPSERVERHOST = "0.0.0.0"
+const HTTPSECURE = "https"
+const PORT = "30707"
 
 type crudRepository struct {
 	DBConn *gorm.DB
