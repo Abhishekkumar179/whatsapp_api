@@ -2666,7 +2666,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 	// if err != nil {
 	// 	panic(err)
 	// }
-	fmt.Println(url, url.RequestURI(), url.String(), "asdfghjkjhgfddcfgh")
+	//fmt.Println(url, url.RequestURI(), url.String(), "asdfghjkjhgfddcfgh")
 	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+fb_image_path+"&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
