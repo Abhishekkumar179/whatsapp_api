@@ -2792,9 +2792,9 @@ func (r *crudRepository) AgentListAssignedToFacebookApplication(ctx context.Cont
 	return &models.Response{Status: "1", Msg: "List", ResponseCode: http.StatusOK, FacebookLoginAppConfigurationAgentList: &t}, nil
 }
 
-func (r *crudRepository) AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
+func (r *crudRepository) AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string, domain_uuid string) (*models.Response, error) {
 	t := []models.V_call_center_agents{}
-	if err := r.DBConn.Table("v_call_center_agents va").Select("va.call_center_agent_uuid,va.username as agent_name").Where("va.call_center_agent_uuid::text not in (select agent_uuid from facebook_login_app_configuration_agents where flac_uuid=? )", flac_uuid).Find(&t).Error; err != nil {
+	if err := r.DBConn.Table("v_call_center_agents va").Select("va.call_center_agent_uuid,va.username as agent_name").Where("va.call_center_agent_uuid::text not in (select agent_uuid from facebook_login_app_configuration_agents where flac_uuid=? ) and domain_uuid = ? ", flac_uuid, domain_uuid).Find(&t).Error; err != nil {
 		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 	}
 	if len(t) == 0 {

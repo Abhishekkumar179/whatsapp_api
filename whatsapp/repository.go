@@ -79,6 +79,6 @@ type Repository interface {
 	Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error)
 	AssignAgentToFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, agent_uuid string) (*models.Response, error)
 	AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error)
-	AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error)
+	AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string, domain_uuid string) (*models.Response, error)
 	ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
 }

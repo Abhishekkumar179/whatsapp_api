@@ -524,8 +524,8 @@ func (r *crudUsecase) AssignAgentToFacebookApplication(ctx context.Context, doma
 func (r *crudUsecase) AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
 	return r.repository.AgentListAssignedToFacebookApplication(ctx, flac_uuid)
 }
-func (r *crudUsecase) AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
-	return r.repository.AgentListNotInFacebookApplication(ctx, flac_uuid)
+func (r *crudUsecase) AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string, domain_uuid string) (*models.Response, error) {
+	return r.repository.AgentListNotInFacebookApplication(ctx, flac_uuid, domain_uuid)
 }
 func (r *crudUsecase) ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error) {
 	return r.repository.ShowAgentFacebookApplication(ctx, agent_uuid)

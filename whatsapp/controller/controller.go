@@ -1623,11 +1623,12 @@ func (r *CRUDController) AgentListAssignedToFacebookApplication(c echo.Context) 
 }
 func (r *CRUDController) AgentListNotInFacebookApplication(c echo.Context) error {
 	flac_uuid := c.Param("flac_uuid")
+	domain_uuid := c.Param("domain_uuid")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.AgentListNotInFacebookApplication(ctx, flac_uuid)
+	authResponse, _ := r.usecase.AgentListNotInFacebookApplication(ctx, flac_uuid, domain_uuid)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -1736,6 +1737,6 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 
 	e.POST("/assign-agent-to-facebook-application", handler.AssignAgentToFacebookApplication)
 	e.GET("/agent-list-assigned-to-facebook-application/:flac_uuid", handler.AgentListAssignedToFacebookApplication)
-	e.GET("/agent-list-not-in-facebook-application/:flac_uuid", handler.AgentListNotInFacebookApplication)
+	e.GET("/agent-list-not-in-facebook-application/:flac_uuid/:domain_uuid", handler.AgentListNotInFacebookApplication)
 	e.GET("/show-agent-facebook-application/:agent_uuid", handler.ShowAgentFacebookApplication)
 }
