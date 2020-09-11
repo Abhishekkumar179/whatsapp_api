@@ -40,7 +40,7 @@ func main() {
 
 		go newServerUser.Controller(e)
 
-		if err := e.StartTLS("0.0.0.0:30707", "keys/ucall.crt", "keys/ucall.key"); err != nil {
+		if err := e.Start("0.0.0.0:30707"); err != nil {
 			fmt.Println("not connected")
 			//logger.WithError(err).Fatal("avb")
 		}

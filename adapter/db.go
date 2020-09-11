@@ -28,6 +28,7 @@ func DB(config *config.Config) *gorm.DB {
 	db.AutoMigrate(models.AgentQueue{})
 	db.AutoMigrate(models.Customer_Agents{})
 	db.AutoMigrate(models.FacebookLoginAppConfiguration{})
+	db.AutoMigrate(models.FacebookLoginAppConfigurationAgent{})
 	fmt.Println("Successfully connected!")
 	return db
 }

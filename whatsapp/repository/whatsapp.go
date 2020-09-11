@@ -2763,3 +2763,53 @@ func (r *crudRepository) DeleteFacebookApplication(ctx context.Context, domain_u
 	}
 	return &models.Response{Status: "1", Msg: "Deleted", ResponseCode: http.StatusOK}, nil
 }
+
+func (r *crudRepository) AssignAgentToFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, agent_uuid string) (*models.Response, error) {
+	var l int64
+	l = 0
+	r.DBConn.Model(&models.FacebookLoginAppConfigurationAgent{}).Where("flac_uuid=? and agent_uuid=?", flac_uuid, agent_uuid).Count(&l)
+	if l == 0 {
+		if err := r.DBConn.Create(&models.FacebookLoginAppConfigurationAgent{
+			DomainUUID: domain_uuid,
+			AgentUUID:  agent_uuid,
+			FlacUUID:   flac_uuid,
+		}).Error; err != nil {
+			return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+		}
+		return &models.Response{Status: "1", Msg: "Assigned agent facebook account.", ResponseCode: http.StatusOK}, nil
+	}
+	return &models.Response{Status: "0", Msg: "Agent already assigned facebook account.", ResponseCode: http.StatusBadRequest}, nil
+}
+
+func (r *crudRepository) AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
+	t := []models.FacebookLoginAppConfigurationAgentList{}
+	if err := r.DBConn.Table("facebook_login_app_configuration_agents fa").Select("fa.*,va.username as agent_name").Joins(" inner join v_call_center_agents va on va.call_center_agent_uuid::text=fa.agent_uuid").Where("flac_uuid=?", flac_uuid).Find(&t).Error; err != nil {
+		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	if len(t) == 0 {
+		return &models.Response{Status: "0", Msg: "Empty", ResponseCode: http.StatusNoContent}, nil
+	}
+	return &models.Response{Status: "1", Msg: "List", ResponseCode: http.StatusOK, FacebookLoginAppConfigurationAgentList: &t}, nil
+}
+
+func (r *crudRepository) AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
+	t := []models.V_call_center_agents{}
+	if err := r.DBConn.Table("v_call_center_agents va").Select("va.call_center_agent_uuid,va.username as agent_name").Where("va.call_center_agent_uuid::text not in (select agent_uuid from facebook_login_app_configuration_agents where flac_uuid=? )", flac_uuid).Find(&t).Error; err != nil {
+		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	if len(t) == 0 {
+		return &models.Response{Status: "0", Msg: "Empty", ResponseCode: http.StatusOK}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Assigned agent facebook account.", ResponseCode: http.StatusOK, AgentList: &t}, nil
+}
+
+func (r *crudRepository) ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error) {
+	t := []models.FacebookLoginAppConfiguration{}
+	if err := r.DBConn.Model(&models.FacebookLoginAppConfiguration{}).Where("flac_uuid::text in (select flac_uuid from facebook_login_app_configuration_agents where agent_uuid=? )", agent_uuid).Find(&t).Error; err != nil {
+		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	if len(t) == 0 {
+		return &models.Response{Status: "0", Msg: "Empty", ResponseCode: http.StatusOK}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Success", ResponseCode: http.StatusOK, FacebookLoginAppConfiguration: &t}, nil
+}

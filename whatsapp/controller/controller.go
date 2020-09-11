@@ -1593,6 +1593,61 @@ func UVoiceFacebookLoginStatus(c echo.Context) error {
 	return nil
 }
 
+func (r *CRUDController) AssignAgentToFacebookApplication(c echo.Context) error {
+	var t map[string]interface{}
+	c.Bind(&t)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.AssignAgentToFacebookApplication(ctx, t["domain_uuid"].(string), t["flac_uuid"].(string), t["agent_uuid"].(string))
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+func (r *CRUDController) AgentListAssignedToFacebookApplication(c echo.Context) error {
+	flac_uuid := c.Param("flac_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.AgentListAssignedToFacebookApplication(ctx, flac_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+func (r *CRUDController) AgentListNotInFacebookApplication(c echo.Context) error {
+	flac_uuid := c.Param("flac_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.AgentListNotInFacebookApplication(ctx, flac_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+func (r *CRUDController) ShowAgentFacebookApplication(c echo.Context) error {
+	agent_uuid := c.Param("agent_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.ShowAgentFacebookApplication(ctx, agent_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1674,7 +1729,13 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("/uvoice-facebook-login/:client_id/:client_secret/:flac_uuid", handler.UVoiceFacebookLogin)
 	e.GET("/uvoice-facebook-login-callback", handler.UVoiceFacebookLoginCallback)
 	e.GET("/uvoice-facebook-login-status", UVoiceFacebookLoginStatus)
+
 	e.POST("/add-facebook-application", handler.AddFacebookApplication)
 	e.GET("/show-facebook-application/:domain_uuid", handler.ShowFacebookApplication)
 	e.DELETE("/delete-facebook-application/:flac_uuid/:domain_uuid", handler.DeleteFacebookApplication)
+
+	e.POST("/assign-agent-to-facebook-application", handler.AssignAgentToFacebookApplication)
+	e.GET("/agent-list-assigned-to-facebook-application/:flac_uuid", handler.AgentListAssignedToFacebookApplication)
+	e.GET("/agent-list-not-in-facebook-application/:flac_uuid", handler.AgentListNotInFacebookApplication)
+	e.GET("/show-agent-facebook-application/:agent_uuid", handler.ShowAgentFacebookApplication)
 }

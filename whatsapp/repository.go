@@ -77,4 +77,8 @@ type Repository interface {
 	DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error)
 	Publish_link_with_message_on_Post(ctx context.Context, pageId string, message string, link string, access_token string) ([]byte, error)
 	Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error)
+	AssignAgentToFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, agent_uuid string) (*models.Response, error)
+	AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error)
+	AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error)
+	ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
 }

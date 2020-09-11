@@ -518,3 +518,15 @@ func (r *crudUsecase) ShowFacebookApplication(ctx context.Context, domain_uuid s
 func (r *crudUsecase) DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error) {
 	return r.repository.DeleteFacebookApplication(ctx, domain_uuid, flac_uuid)
 }
+func (r *crudUsecase) AssignAgentToFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, agent_uuid string) (*models.Response, error) {
+	return r.repository.AssignAgentToFacebookApplication(ctx, domain_uuid, flac_uuid, agent_uuid)
+}
+func (r *crudUsecase) AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
+	return r.repository.AgentListAssignedToFacebookApplication(ctx, flac_uuid)
+}
+func (r *crudUsecase) AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
+	return r.repository.AgentListNotInFacebookApplication(ctx, flac_uuid)
+}
+func (r *crudUsecase) ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error) {
+	return r.repository.ShowAgentFacebookApplication(ctx, agent_uuid)
+}
