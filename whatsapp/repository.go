@@ -67,6 +67,7 @@ type Repository interface {
 	Delete_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error)
 	Update_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error)
 	Get_Comments_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error)
+	Get_Likes_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error)
 	Comment_on_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error)
 	UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string, flac_uuid string) (*models.Response, error)
 	UVoiceFacebookLoginCallback(ctx context.Context, c echo.Context) (*models.Response, error)
@@ -81,4 +82,5 @@ type Repository interface {
 	AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error)
 	AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string, domain_uuid string) (*models.Response, error)
 	ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
+	Convert_Access_Token_into_Longlived_Token(ctx context.Context, clientId string, clientSecret string, exchange_token string, access_token string) ([]byte, error)
 }

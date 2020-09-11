@@ -1411,6 +1411,23 @@ func (r *CRUDController) Get_Comments_on_Post_of_Page(c echo.Context) error {
 	return c.JSONBlob(http.StatusOK, authResponse)
 }
 
+/*********************************************Get Likes on Page********************************************/
+func (r *CRUDController) Get_Likes_on_Post_of_Page(c echo.Context) error {
+	page_postId := c.Param("page_post_id")
+	access_token := c.Param("access_token")
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Likes_on_Post_of_Page(ctx, page_postId, access_token)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+}
+
 /**********************************************Comment on post of a page**********************************/
 func (r *CRUDController) Comment_on_Post_of_Page(c echo.Context) error {
 	// page_postId := c.Param("page_post_id")
@@ -1519,6 +1536,8 @@ func (r *CRUDController) Schedule_Post(c echo.Context) error {
 	}
 	return c.JSONBlob(http.StatusOK, authResponse)
 }
+
+/*****************************************Add Facebook Application***************************************/
 func (r *CRUDController) AddFacebookApplication(c echo.Context) error {
 	var t map[string]interface{}
 	c.Bind(&t)
@@ -1533,6 +1552,8 @@ func (r *CRUDController) AddFacebookApplication(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, authResponse)
 }
+
+/********************************************Show Facebook Application**************************************/
 func (r *CRUDController) ShowFacebookApplication(c echo.Context) error {
 	domain_uuid := c.Param("domain_uuid")
 	ctx := c.Request().Context()
@@ -1546,6 +1567,8 @@ func (r *CRUDController) ShowFacebookApplication(c echo.Context) error {
 	}
 	return c.JSON(http.StatusOK, authResponse)
 }
+
+/*************************************Delete Facebook Application*************************************/
 func (r *CRUDController) DeleteFacebookApplication(c echo.Context) error {
 	flac_uuid := c.Param("flac_uuid")
 	domain_uuid := c.Param("domain_uuid")
@@ -1582,17 +1605,19 @@ func (r *CRUDController) Upload_Photo_on_Post(c echo.Context) error {
 	authResponse, _ := r.usecase.Upload_Photo_on_Post(ctx, pageId, access_token, file, handler)
 
 	if authResponse == nil {
-		return c.JSON(http.StatusUnauthorized, authResponse)
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
 	}
-	return c.JSON(http.StatusOK, authResponse)
+	return c.JSONBlob(http.StatusOK, authResponse)
 
 }
 
+/****************************************Facebook login status function************************************/
 func UVoiceFacebookLoginStatus(c echo.Context) error {
 	c.Response().Write([]byte(`<html><body><a href="javascript:window.open('','_self').close();">facebook login success!! please close this window</a></body></html>`))
 	return nil
 }
 
+/*********************************************Assign Agent to Facebook Application*******************************/
 func (r *CRUDController) AssignAgentToFacebookApplication(c echo.Context) error {
 	var t map[string]interface{}
 	c.Bind(&t)
@@ -1608,6 +1633,7 @@ func (r *CRUDController) AssignAgentToFacebookApplication(c echo.Context) error 
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/**************************************List of assigned agent in facebook aplication****************************/
 func (r *CRUDController) AgentListAssignedToFacebookApplication(c echo.Context) error {
 	flac_uuid := c.Param("flac_uuid")
 	ctx := c.Request().Context()
@@ -1621,6 +1647,8 @@ func (r *CRUDController) AgentListAssignedToFacebookApplication(c echo.Context) 
 	}
 	return c.JSON(http.StatusOK, authResponse)
 }
+
+/*******************************************List of not assigned agent in facebook application************************/
 func (r *CRUDController) AgentListNotInFacebookApplication(c echo.Context) error {
 	flac_uuid := c.Param("flac_uuid")
 	domain_uuid := c.Param("domain_uuid")
@@ -1635,6 +1663,8 @@ func (r *CRUDController) AgentListNotInFacebookApplication(c echo.Context) error
 	}
 	return c.JSON(http.StatusOK, authResponse)
 }
+
+/*******************************************Show facebook Application*********************************************/
 func (r *CRUDController) ShowAgentFacebookApplication(c echo.Context) error {
 	agent_uuid := c.Param("agent_uuid")
 	ctx := c.Request().Context()
@@ -1647,6 +1677,25 @@ func (r *CRUDController) ShowAgentFacebookApplication(c echo.Context) error {
 		return c.JSON(http.StatusUnauthorized, authResponse)
 	}
 	return c.JSON(http.StatusOK, authResponse)
+}
+
+/**********************************************Convert Access Token in to long Lived*******************************/
+func (r *CRUDController) Convert_Access_Token_into_Longlived_Token(c echo.Context) error {
+	clientId := c.Param("client_id")
+	clientSecret := c.Param("client_secret")
+	exchange_token := c.Param("exchange_token")
+	access_token := c.Param("access_token")
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Convert_Access_Token_into_Longlived_Token(ctx, clientId, clientSecret, exchange_token, access_token)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
 }
 
 /***********************************************Router*****************************************************/
@@ -1721,10 +1770,12 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.DELETE("delete_post_of_page/:page_post_id/:access_token", handler.Delete_Post_of_Page)
 	e.POST("update_post/:page_post_id/:message/:access_token", handler.Update_Post_of_Page)
 	e.GET("get_comments_of_post/:page_post_id/:access_token", handler.Get_Comments_on_Post_of_Page)
+	e.GET("get_likes_of_post/:page_post_id/:access_token", handler.Get_Likes_on_Post_of_Page)
 	e.POST("comment_on_post/:page_postId/:message/:access_token", handler.Comment_on_Post_of_Page)
 	e.GET("get_page_id/:user_id/:access_token", handler.Get_Page_ID)
 	e.POST("schedule_post", handler.Schedule_Post)
 	e.POST("publish_link_with_message", handler.Publish_link_with_message_on_Post)
+	e.GET("convert_access_token_into_longlived_token/:client_id/:client_secret/:exchange_token/:access_token", handler.Convert_Access_Token_into_Longlived_Token)
 	e.POST("upload_photo_on_post", handler.Upload_Photo_on_Post)
 
 	e.GET("/uvoice-facebook-login/:client_id/:client_secret/:flac_uuid", handler.UVoiceFacebookLogin)

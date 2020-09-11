@@ -458,6 +458,12 @@ func (r *crudUsecase) Get_Comments_on_Post_of_Page(ctx context.Context, page_pos
 	return r.repository.Get_Comments_on_Post_of_Page(ctx, page_postId, access_token)
 }
 
+/*******************************************Get Likes on a Page*************************************************/
+func (r *crudUsecase) Get_Likes_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error) {
+
+	return r.repository.Get_Likes_on_Post_of_Page(ctx, page_postId, access_token)
+}
+
 /*******************************************Comment on post of a page******************************************/
 func (r *crudUsecase) Comment_on_Post_of_Page(ctx context.Context, flow map[string]interface{}) ([]byte, error) {
 	page_postId := fmt.Sprintf("%v", flow["page_post_id"])
@@ -497,36 +503,54 @@ func (r *crudUsecase) Upload_Photo_on_Post(ctx context.Context, pageId string, a
 	return r.repository.Upload_Photo_on_Post(ctx, pageId, access_token, file, handler)
 }
 
-/*******************************************************/
+/********************************************Facebook Login Api**********************************************/
 func (r *crudUsecase) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string, flac_uuid string) (*models.Response, error) {
 	return r.repository.UVoiceFacebookLogin(ctx, c, client_id, client_secret, flac_uuid)
 }
 
-/************************************************/
+/************************************************Facebook login callback***************************************/
 func (r *crudUsecase) UVoiceFacebookLoginCallback(ctx context.Context, c echo.Context) (*models.Response, error) {
 	return r.repository.UVoiceFacebookLoginCallback(ctx, c)
 }
 
-/*******************************************************/
+/**************************************************Add Facebook Application************************************/
 
 func (r *crudUsecase) AddFacebookApplication(ctx context.Context, domain_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error) {
 	return r.repository.AddFacebookApplication(ctx, domain_uuid, app_id, app_secret, app_name)
 }
+
+/*************************************************Show facebook Application**************************************/
 func (r *crudUsecase) ShowFacebookApplication(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	return r.repository.ShowFacebookApplication(ctx, domain_uuid)
 }
+
+/*************************************************Delete Facebook Application************************************/
 func (r *crudUsecase) DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error) {
 	return r.repository.DeleteFacebookApplication(ctx, domain_uuid, flac_uuid)
 }
+
+/*************************************************Assign Agent to Facebook Application******************************/
 func (r *crudUsecase) AssignAgentToFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, agent_uuid string) (*models.Response, error) {
 	return r.repository.AssignAgentToFacebookApplication(ctx, domain_uuid, flac_uuid, agent_uuid)
 }
+
+/*************************************************Assign Agent list in Facebook Application******************************/
 func (r *crudUsecase) AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
 	return r.repository.AgentListAssignedToFacebookApplication(ctx, flac_uuid)
 }
+
+/*****************************************Not Assigned Agent list in Facebook Application******************************/
 func (r *crudUsecase) AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string, domain_uuid string) (*models.Response, error) {
 	return r.repository.AgentListNotInFacebookApplication(ctx, flac_uuid, domain_uuid)
 }
+
+/********************************************Show Assigned Agent of Facebook Application******************************/
 func (r *crudUsecase) ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error) {
 	return r.repository.ShowAgentFacebookApplication(ctx, agent_uuid)
+}
+
+/********************************************Convert access token into longlived token******************************/
+func (r *crudUsecase) Convert_Access_Token_into_Longlived_Token(ctx context.Context, clientId string, clientSecret string, exchange_token string, access_token string) ([]byte, error) {
+
+	return r.repository.Convert_Access_Token_into_Longlived_Token(ctx, clientId, clientSecret, exchange_token, access_token)
 }

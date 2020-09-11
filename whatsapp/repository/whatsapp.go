@@ -11,6 +11,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -2543,6 +2544,23 @@ func (r *crudRepository) Get_Comments_on_Post_of_Page(ctx context.Context, page_
 	return nil, err
 }
 
+/************************************************Get Likes of a page*******************************************/
+func (r *crudRepository) Get_Likes_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error) {
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+page_postId+"/likes?access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
+}
+
 /********************************************Comment on Post of Page******************************************/
 func (r *crudRepository) Comment_on_Post_of_Page(ctx context.Context, page_postId string, message string, access_token string) ([]byte, error) {
 	message = strings.ReplaceAll(message, " ", "%20")
@@ -2624,26 +2642,32 @@ func (r *crudRepository) Publish_link_with_message_on_Post(ctx context.Context, 
 
 /******************************************Upload Photo on Post**************************************************/
 func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
-	fileBytes, err := ioutil.ReadAll(file)
+	IMAGE_DIR := "/var/www/go/src/whatsapp_api/temp-images/"
+	//C:\Users\Dell\go\src\whatsapp_api\temp-images
+	dir_location := IMAGE_DIR
+	getFileName := handler.Filename
+
+	fb_image_path := dir_location + getFileName
+	fmt.Println("path...................>>", fb_image_path)
+	if err := os.MkdirAll(dir_location, os.FileMode(0777)); err != nil {
+		fmt.Println(err)
+		//return &models.Response{Status: "0", Msg: "Script file can not be added.", ResponseCode: http.StatusBadRequest}, nil
+	}
+	f, err := os.OpenFile(fb_image_path, os.O_WRONLY|os.O_CREATE, os.FileMode(0777))
 	if err != nil {
 		fmt.Println(err)
-	}
-	body := new(bytes.Buffer)
-	writer := multipart.NewWriter(body)
-
-	part, err := writer.CreateFormFile("source", handler.Filename)
-	if err != nil {
-		return nil, err
+		//return &models.Response{Status: "0", Msg: "Script file can not be added.", ResponseCode: http.StatusBadRequest}, nil
 	}
 
-	_, err = io.Copy(part, file)
-	if err != nil {
-		return nil, err
-	}
-
-	part.Write(fileBytes)
-	writer.Close()
-	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?"+access_token+"&access_token="+access_token, nil)
+	defer f.Close()
+	io.Copy(f, file)
+	fmt.Println(f.Readdir(2))
+	// url, err := url.Parse(fb_image_path)
+	// if err != nil {
+	// 	panic(err)
+	// }
+	fmt.Println(url, url.RequestURI(), url.String(), "asdfghjkjhgfddcfgh")
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+fb_image_path+"&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
@@ -2651,14 +2675,14 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		fmt.Printf("error %s\n", err)
 	} else {
 		data, _ := ioutil.ReadAll(response.Body)
-		fmt.Println(string(data), "enterrer")
+		fmt.Println(string(data))
 		return data, nil
 	}
-	defer res.Body.Close()
+	//defer res.Body.Close()
 	return nil, err
 }
 
-/******************************************************************/
+/**************************************************Facebook login Api********************************************/
 func (r *crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string, flac_uuid string) (*models.Response, error) {
 	fmt.Println(c.Request)
 	fmt.Println(c.Response)
@@ -2695,6 +2719,7 @@ func (r *crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context
 	return nil, nil
 }
 
+/******************************************Facebook login Api callback****************************************/
 func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo.Context) (*models.Response, error) {
 	code := c.FormValue("code")
 	state := c.FormValue("state")
@@ -2732,6 +2757,8 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 	// return &models.Response{Status: "OK", Msg: "Success1", ResponseCode: http.StatusOK, FacebookGetAuthInfo: &info}, nil
 	return nil, nil
 }
+
+/************************************Add facebook Application**************************************************/
 func (r *crudRepository) AddFacebookApplication(ctx context.Context, domain_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error) {
 	if err := r.DBConn.Create(&models.FacebookLoginAppConfiguration{
 		DomainUUID: domain_uuid,
@@ -2744,7 +2771,7 @@ func (r *crudRepository) AddFacebookApplication(ctx context.Context, domain_uuid
 	return &models.Response{Status: "1", Msg: "Success", ResponseCode: http.StatusOK}, nil
 }
 
-/*******************************************************/
+/*******************************************************Show Facebook Application*******************************/
 func (r *crudRepository) ShowFacebookApplication(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	t := []models.FacebookLoginAppConfiguration{}
 	if err := r.DBConn.Model(&models.FacebookLoginAppConfiguration{}).Where("domain_uuid=?", domain_uuid).Find(&t).Error; err != nil {
@@ -2756,7 +2783,7 @@ func (r *crudRepository) ShowFacebookApplication(ctx context.Context, domain_uui
 	return &models.Response{Status: "1", Msg: "Success", ResponseCode: http.StatusOK, FacebookLoginAppConfiguration: &t}, nil
 }
 
-/*****************************************************************/
+/****************************************************Delete Facebook Application*********************************/
 func (r *crudRepository) DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error) {
 	if err := r.DBConn.Where("domain_uuid=? and flac_uuid=? ", domain_uuid, flac_uuid).Delete(&models.FacebookLoginAppConfiguration{}).Error; err != nil {
 		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
@@ -2764,6 +2791,7 @@ func (r *crudRepository) DeleteFacebookApplication(ctx context.Context, domain_u
 	return &models.Response{Status: "1", Msg: "Deleted", ResponseCode: http.StatusOK}, nil
 }
 
+/******************************************Assign Agent to Facebook Application******************************/
 func (r *crudRepository) AssignAgentToFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, agent_uuid string) (*models.Response, error) {
 	var l int64
 	l = 0
@@ -2781,6 +2809,7 @@ func (r *crudRepository) AssignAgentToFacebookApplication(ctx context.Context, d
 	return &models.Response{Status: "0", Msg: "Agent already assigned facebook account.", ResponseCode: http.StatusBadRequest}, nil
 }
 
+/******************************************Agent List in facebook Application************************************/
 func (r *crudRepository) AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error) {
 	t := []models.FacebookLoginAppConfigurationAgentList{}
 	if err := r.DBConn.Table("facebook_login_app_configuration_agents fa").Select("fa.*,va.username as agent_name").Joins(" inner join v_call_center_agents va on va.call_center_agent_uuid::text=fa.agent_uuid").Where("flac_uuid=?", flac_uuid).Find(&t).Error; err != nil {
@@ -2792,6 +2821,7 @@ func (r *crudRepository) AgentListAssignedToFacebookApplication(ctx context.Cont
 	return &models.Response{Status: "1", Msg: "List", ResponseCode: http.StatusOK, FacebookLoginAppConfigurationAgentList: &t}, nil
 }
 
+/*************************************Agent List Not in Facaebook Application*************************************/
 func (r *crudRepository) AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string, domain_uuid string) (*models.Response, error) {
 	t := []models.V_call_center_agents{}
 	if err := r.DBConn.Table("v_call_center_agents va").Select("va.call_center_agent_uuid,va.username as agent_name").Where("va.call_center_agent_uuid::text not in (select agent_uuid from facebook_login_app_configuration_agents where flac_uuid=? ) and domain_uuid = ? ", flac_uuid, domain_uuid).Find(&t).Error; err != nil {
@@ -2803,6 +2833,7 @@ func (r *crudRepository) AgentListNotInFacebookApplication(ctx context.Context, 
 	return &models.Response{Status: "1", Msg: "Assigned agent facebook account.", ResponseCode: http.StatusOK, AgentList: &t}, nil
 }
 
+/*******************************************Show Agent facebook Application****************************************/
 func (r *crudRepository) ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error) {
 	t := []models.FacebookLoginAppConfiguration{}
 	if err := r.DBConn.Model(&models.FacebookLoginAppConfiguration{}).Where("flac_uuid::text in (select flac_uuid from facebook_login_app_configuration_agents where agent_uuid=? )", agent_uuid).Find(&t).Error; err != nil {
@@ -2812,4 +2843,23 @@ func (r *crudRepository) ShowAgentFacebookApplication(ctx context.Context, agent
 		return &models.Response{Status: "0", Msg: "Empty", ResponseCode: http.StatusOK}, nil
 	}
 	return &models.Response{Status: "1", Msg: "Success", ResponseCode: http.StatusOK, FacebookLoginAppConfiguration: &t}, nil
+}
+
+/***************************************Convert access token in to longlived token*********************************/
+func (r *crudRepository) Convert_Access_Token_into_Longlived_Token(ctx context.Context, clientId string, clientSecret string, exchange_token string, access_token string) ([]byte, error) {
+
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/oauth/access_token?grant_type=fb_exchange_token&client_id="+clientId+"&client_secret="+clientSecret+"&fb_exchange_token="+exchange_token+"&access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+
+	defer res.Body.Close()
+	return nil, err
 }
