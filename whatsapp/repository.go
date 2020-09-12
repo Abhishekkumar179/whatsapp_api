@@ -83,4 +83,6 @@ type Repository interface {
 	AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string, domain_uuid string) (*models.Response, error)
 	ShowAgentFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
 	Convert_Access_Token_into_Longlived_Token(ctx context.Context, clientId string, clientSecret string, exchange_token string, access_token string) ([]byte, error)
+	RemoveAgentAssignedToFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
+	UpdateFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error)
 }

@@ -2642,7 +2642,7 @@ func (r *crudRepository) Publish_link_with_message_on_Post(ctx context.Context, 
 
 /******************************************Upload Photo on Post**************************************************/
 func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
-	IMAGE_DIR := "/home/startel/Downloads/temp_images/"
+	IMAGE_DIR := "C:/Users/Dell/go/src/whatsapp_api/temp_images/"
 	//C:\Users\Dell\go\src\whatsapp_api\temp-images
 	dir_location := IMAGE_DIR
 	getFileName := handler.Filename
@@ -2661,12 +2661,12 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 
 	defer f.Close()
 	io.Copy(f, file)
-	fmt.Println(f.Readdir(2))
-	// url, err := url.Parse(fb_image_path)
-	// if err != nil {
-	// 	panic(err)
-	// }
-	//fmt.Println(url, url.RequestURI(), url.String(), "asdfghjkjhgfddcfgh")
+
+	url, err := url.Parse(fb_image_path)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(url.Path, "asdfghjkjhgfddcfgh")
 	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+fb_image_path+"&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -2862,4 +2862,26 @@ func (r *crudRepository) Convert_Access_Token_into_Longlived_Token(ctx context.C
 
 	defer res.Body.Close()
 	return nil, err
+}
+
+/**************************************Remove Assigned Agent From Facebook Application******************************/
+func (r *crudRepository) RemoveAgentAssignedToFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error) {
+	al := models.FacebookLoginAppConfigurationAgent{
+		AgentUUID: agent_uuid,
+	}
+	db := r.DBConn.Where("agent_uuid = ?", agent_uuid).Find(&al).Delete(&al)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Agent is not removed.", ResponseCode: 404}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Agent successfully Removed.", ResponseCode: 200}, nil
+}
+
+/*****************************************Update Facebook Application******************************************/
+func (r *crudRepository) UpdateFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error) {
+	tl := &models.FacebookLoginAppConfiguration{}
+	if err := r.DBConn.Table("facebook_login_app_configurations").Where("flac_uuid = ? AND domain_uuid = ?", flac_uuid, domain_uuid).Find(&tl).Updates(map[string]interface{}{"app_id": app_id, "app_name": app_name, "app_secret": app_secret}).Error; err != nil {
+		return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Updated", ResponseCode: http.StatusOK}, nil
+
 }

@@ -1568,6 +1568,27 @@ func (r *CRUDController) ShowFacebookApplication(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/*************************************Update Facebook Application********************************************/
+func (r *CRUDController) UpdateFacebookApplication(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	flac_uuid := c.Param("flac_uuid")
+	var update map[string]interface{}
+	err := json.NewDecoder(c.Request().Body).Decode(&update)
+	if err != nil {
+		fmt.Println(err)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.UpdateFacebookApplication(ctx, domain_uuid, flac_uuid, update)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /*************************************Delete Facebook Application*************************************/
 func (r *CRUDController) DeleteFacebookApplication(c echo.Context) error {
 	flac_uuid := c.Param("flac_uuid")
@@ -1657,6 +1678,21 @@ func (r *CRUDController) AgentListNotInFacebookApplication(c echo.Context) error
 		ctx = context.Background()
 	}
 	authResponse, _ := r.usecase.AgentListNotInFacebookApplication(ctx, flac_uuid, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/*******************************************Remove Agent From assigned Facebook Application*************************/
+func (r *CRUDController) RemoveAgentAssignedToFacebookApplication(c echo.Context) error {
+	agent_uuid := c.Param("agent_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.RemoveAgentAssignedToFacebookApplication(ctx, agent_uuid)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -1775,7 +1811,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("get_page_id/:user_id/:access_token", handler.Get_Page_ID)
 	e.POST("schedule_post", handler.Schedule_Post)
 	e.POST("publish_link_with_message", handler.Publish_link_with_message_on_Post)
-	e.GET("convert_access_token_into_longlived_token/:client_id/:client_secret/:exchange_token/:access_token", handler.Convert_Access_Token_into_Longlived_Token)
+	e.GET("extend_access_token_expire_limit/:client_id/:client_secret/:exchange_token/:access_token", handler.Convert_Access_Token_into_Longlived_Token)
 	e.POST("upload_photo_on_post", handler.Upload_Photo_on_Post)
 
 	e.GET("/uvoice-facebook-login/:client_id/:client_secret/:flac_uuid", handler.UVoiceFacebookLogin)
@@ -1785,9 +1821,11 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("/add-facebook-application", handler.AddFacebookApplication)
 	e.GET("/show-facebook-application/:domain_uuid", handler.ShowFacebookApplication)
 	e.DELETE("/delete-facebook-application/:flac_uuid/:domain_uuid", handler.DeleteFacebookApplication)
+	e.POST("/update-facebook-application/:flac_uuid/:domain_uuid", handler.UpdateFacebookApplication)
 
 	e.POST("/assign-agent-to-facebook-application", handler.AssignAgentToFacebookApplication)
 	e.GET("/agent-list-assigned-to-facebook-application/:flac_uuid", handler.AgentListAssignedToFacebookApplication)
 	e.GET("/agent-list-not-in-facebook-application/:flac_uuid/:domain_uuid", handler.AgentListNotInFacebookApplication)
 	e.GET("/show-agent-facebook-application/:agent_uuid", handler.ShowAgentFacebookApplication)
+	e.DELETE("/remove-agent-from-facebook-application/:agent_uuid", handler.RemoveAgentAssignedToFacebookApplication)
 }

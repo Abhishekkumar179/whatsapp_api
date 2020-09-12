@@ -529,6 +529,14 @@ func (r *crudUsecase) DeleteFacebookApplication(ctx context.Context, domain_uuid
 	return r.repository.DeleteFacebookApplication(ctx, domain_uuid, flac_uuid)
 }
 
+/*************************************************Update Facebook Application*************************************/
+func (r *crudUsecase) UpdateFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, fb map[string]interface{}) (*models.Response, error) {
+	app_id := fmt.Sprintf("%v", fb["app_id"])
+	app_secret := fmt.Sprintf("%v", fb["app_secret"])
+	app_name := fmt.Sprintf("%v", fb["app_name"])
+	return r.repository.UpdateFacebookApplication(ctx, domain_uuid, flac_uuid, app_id, app_secret, app_name)
+}
+
 /*************************************************Assign Agent to Facebook Application******************************/
 func (r *crudUsecase) AssignAgentToFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, agent_uuid string) (*models.Response, error) {
 	return r.repository.AssignAgentToFacebookApplication(ctx, domain_uuid, flac_uuid, agent_uuid)
@@ -553,4 +561,10 @@ func (r *crudUsecase) ShowAgentFacebookApplication(ctx context.Context, agent_uu
 func (r *crudUsecase) Convert_Access_Token_into_Longlived_Token(ctx context.Context, clientId string, clientSecret string, exchange_token string, access_token string) ([]byte, error) {
 
 	return r.repository.Convert_Access_Token_into_Longlived_Token(ctx, clientId, clientSecret, exchange_token, access_token)
+}
+
+/*********************************************Remove Assigned Agent from Facebook Application*************************/
+func (r *crudUsecase) RemoveAgentAssignedToFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error) {
+
+	return r.repository.RemoveAgentAssignedToFacebookApplication(ctx, agent_uuid)
 }
