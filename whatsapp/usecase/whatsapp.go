@@ -498,9 +498,9 @@ func (r *crudUsecase) Publish_link_with_message_on_Post(ctx context.Context, flo
 
 /*******************************************Upload Photo with message on post**********************************/
 
-func (r *crudUsecase) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
+func (r *crudUsecase) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, message string, Type string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
 
-	return r.repository.Upload_Photo_on_Post(ctx, pageId, access_token, file, handler)
+	return r.repository.Upload_Photo_on_Post(ctx, pageId, access_token, message, Type, file, handler)
 }
 
 /********************************************Facebook Login Api**********************************************/

@@ -2601,13 +2601,6 @@ func (r *crudRepository) Get_Page_ID(ctx context.Context, userId string, access_
 func (r *crudRepository) Schedule_Post(ctx context.Context, pageId string, message string, scheduled_publish_time string, access_token string) ([]byte, error) {
 	message = strings.ReplaceAll(message, " ", "%20")
 	scheduled_publish_time = strings.ReplaceAll(scheduled_publish_time, ":", "%3A")
-	// layout := "2018-09-01T10:15:30+05:30"
-	// t, err := time.Parse(RFC3339, scheduled_publish_time)
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-
-	//fmt.Println(t, "time", scheduled_publish_time)
 	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/feed?published=false&message="+message+"&scheduled_publish_time="+scheduled_publish_time+"&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
@@ -2642,45 +2635,69 @@ func (r *crudRepository) Publish_link_with_message_on_Post(ctx context.Context, 
 }
 
 /******************************************Upload Photo on Post**************************************************/
-func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
-	IMAGE_DIR := "/home/ubuntu/Downloads/temp_images/"
-	//C:\Users\Dell\go\src\whatsapp_api\temp-images
-	dir_location := IMAGE_DIR
-	getFileName := handler.Filename
+func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, message string, Type string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
+	if Type == "image" {
+		IMAGE_DIR := "/home/ubuntu/Downloads/temp_images/"
+		dir_location := IMAGE_DIR
+		getFileName := handler.Filename
 
-	fb_image_path := "http://" + SERVER + dir_location + getFileName
-	fmt.Println("path...................>>", fb_image_path)
-	if err := os.MkdirAll(dir_location, os.FileMode(0777)); err != nil {
-		fmt.Println(err)
-		//return &models.Response{Status: "0", Msg: "Script file can not be added.", ResponseCode: http.StatusBadRequest}, nil
-	}
-	f, err := os.OpenFile(fb_image_path, os.O_WRONLY|os.O_CREATE, os.FileMode(0777))
-	if err != nil {
-		fmt.Println(err)
-		//return &models.Response{Status: "0", Msg: "Script file can not be added.", ResponseCode: http.StatusBadRequest}, nil
-	}
+		fb_image_path := "http://" + SERVER + dir_location + getFileName
 
-	defer f.Close()
-	io.Copy(f, file)
+		if err := os.MkdirAll(dir_location, os.FileMode(0777)); err != nil {
+			fmt.Println(err)
+		}
+		f, err := os.OpenFile(fb_image_path, os.O_WRONLY|os.O_CREATE, os.FileMode(0777))
+		if err != nil {
+			fmt.Println(err)
+		}
 
-	url, err := url.Parse(fb_image_path)
-	if err != nil {
-		panic(err)
+		defer f.Close()
+		io.Copy(f, file)
+
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
+		res.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		response, err := client.Do(res)
+		if err != nil {
+			fmt.Printf("error %s\n", err)
+		} else {
+			data, _ := ioutil.ReadAll(response.Body)
+			fmt.Println(string(data))
+			return data, nil
+		}
+		return nil, err
+	} else if Type == "video" {
+		VIDEO_DIR := "/home/ubuntu/Downloads/Fb_videos/"
+		dir_location := VIDEO_DIR
+		getFileName := handler.Filename
+
+		fb_video_path := "http://" + SERVER + dir_location + getFileName
+
+		if err := os.MkdirAll(dir_location, os.FileMode(0777)); err != nil {
+			fmt.Println(err)
+		}
+		f, err := os.OpenFile(fb_video_path, os.O_WRONLY|os.O_CREATE, os.FileMode(0777))
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		defer f.Close()
+		io.Copy(f, file)
+
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url="+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
+		res.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		response, err := client.Do(res)
+		if err != nil {
+			fmt.Printf("error %s\n", err)
+		} else {
+			data, _ := ioutil.ReadAll(response.Body)
+			fmt.Println(string(data))
+			return data, nil
+		}
+		return nil, err
 	}
-	fmt.Println(url.Path, "asdfghjkjhgfddcfgh")
-	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+fb_image_path+"&access_token="+access_token, nil)
-	res.Header.Set("Content-Type", "application/json")
-	client := &http.Client{}
-	response, err := client.Do(res)
-	if err != nil {
-		fmt.Printf("error %s\n", err)
-	} else {
-		data, _ := ioutil.ReadAll(response.Body)
-		fmt.Println(string(data))
-		return data, nil
-	}
-	//defer res.Body.Close()
-	return nil, err
+	return nil, nil
 }
 
 /**************************************************Facebook login Api********************************************/

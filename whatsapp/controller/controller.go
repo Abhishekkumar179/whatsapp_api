@@ -1609,6 +1609,8 @@ func (r *CRUDController) DeleteFacebookApplication(c echo.Context) error {
 func (r *CRUDController) Upload_Photo_on_Post(c echo.Context) error {
 	pageId := c.FormValue("page_id")
 	access_token := c.FormValue("access_token")
+	message := c.FormValue("message")
+	Type := c.FormValue("type")
 	err := c.Request().ParseMultipartForm(10 << 20) // 25Mb
 	if err != nil {
 		return err
@@ -1623,7 +1625,7 @@ func (r *CRUDController) Upload_Photo_on_Post(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Upload_Photo_on_Post(ctx, pageId, access_token, file, handler)
+	authResponse, _ := r.usecase.Upload_Photo_on_Post(ctx, pageId, access_token, message, Type, file, handler)
 
 	if authResponse == nil {
 		return c.JSONBlob(http.StatusUnauthorized, authResponse)
@@ -1812,7 +1814,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("schedule_post", handler.Schedule_Post)
 	e.POST("publish_link_with_message", handler.Publish_link_with_message_on_Post)
 	e.GET("extend_access_token_expire_limit/:client_id/:client_secret/:exchange_token/:access_token", handler.Convert_Access_Token_into_Longlived_Token)
-	e.POST("upload_photo_on_post", handler.Upload_Photo_on_Post)
+	e.POST("upload_photo_or_video_on_post", handler.Upload_Photo_on_Post)
 
 	e.GET("/uvoice-facebook-login/:client_id/:client_secret/:flac_uuid", handler.UVoiceFacebookLogin)
 	e.GET("/uvoice-facebook-login-callback", handler.UVoiceFacebookLoginCallback)

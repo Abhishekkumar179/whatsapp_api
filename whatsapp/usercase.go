@@ -77,7 +77,7 @@ type Usecase interface {
 	ShowFacebookApplication(ctx context.Context, domain_uuid string) (*models.Response, error)
 	DeleteFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string) (*models.Response, error)
 	Publish_link_with_message_on_Post(ctx context.Context, flow map[string]interface{}) ([]byte, error)
-	Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error)
+	Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, message string, Type string, file multipart.File, handler *multipart.FileHeader) ([]byte, error)
 	AssignAgentToFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, agent_uuid string) (*models.Response, error)
 	AgentListAssignedToFacebookApplication(ctx context.Context, flac_uuid string) (*models.Response, error)
 	AgentListNotInFacebookApplication(ctx context.Context, flac_uuid string, domain_uuid string) (*models.Response, error)
