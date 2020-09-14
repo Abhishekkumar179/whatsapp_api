@@ -30,6 +30,7 @@ import (
 const HTTPSERVERHOST = "localhost"
 const HTTPSECURE = "http"
 const PORT = "10000"
+const SERVER = "3.21.94.160"
 
 type crudRepository struct {
 	DBConn *gorm.DB
@@ -2647,7 +2648,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 	dir_location := IMAGE_DIR
 	getFileName := handler.Filename
 
-	fb_image_path := dir_location + getFileName
+	fb_image_path := "http://" + SERVER + dir_location + getFileName
 	fmt.Println("path...................>>", fb_image_path)
 	if err := os.MkdirAll(dir_location, os.FileMode(0777)); err != nil {
 		fmt.Println(err)
