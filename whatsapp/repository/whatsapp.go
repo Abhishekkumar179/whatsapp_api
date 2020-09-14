@@ -2642,7 +2642,7 @@ func (r *crudRepository) Publish_link_with_message_on_Post(ctx context.Context, 
 
 /******************************************Upload Photo on Post**************************************************/
 func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
-	IMAGE_DIR := "/home/ubuntu/Downloads/tempImages/"
+	IMAGE_DIR := "/home/ubuntu/Downloads/temp_images/"
 	//C:\Users\Dell\go\src\whatsapp_api\temp-images
 	dir_location := IMAGE_DIR
 	getFileName := handler.Filename
