@@ -28,7 +28,7 @@ import (
 )
 
 const HTTPSERVERHOST = "localhost"
-const HTTPSECURE = "http"
+const HTTPSECURE = "http://"
 const PORT = "10000"
 const SERVER = "3.21.94.160"
 
@@ -2641,7 +2641,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		dir_location := IMAGE_DIR
 		getFileName := handler.Filename
 
-		fb_image_path := "http://" + SERVER + dir_location + getFileName
+		fb_image_path := dir_location + getFileName
 
 		if err := os.MkdirAll(dir_location, os.FileMode(0777)); err != nil {
 			fmt.Println(err)
@@ -2650,11 +2650,10 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		if err != nil {
 			fmt.Println(err)
 		}
-
 		defer f.Close()
 		io.Copy(f, file)
 
-		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+HTTPSECURE+SERVER+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
 		res.Header.Set("Content-Type", "application/json")
 		client := &http.Client{}
 		response, err := client.Do(res)
@@ -2671,7 +2670,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		dir_location := VIDEO_DIR
 		getFileName := handler.Filename
 
-		fb_video_path := "http://" + SERVER + dir_location + getFileName
+		fb_video_path := dir_location + getFileName
 
 		if err := os.MkdirAll(dir_location, os.FileMode(0777)); err != nil {
 			fmt.Println(err)
@@ -2684,8 +2683,10 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		defer f.Close()
 		io.Copy(f, file)
 
-		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url="+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
-		res.Header.Set("Content-Type", "application/json")
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url="+HTTPSECURE+SERVER+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
+		//res.Header.Set("Content-Type", "application/json")
+		res.Header.Add("Content-Type", "multipart/form-data")
+
 		client := &http.Client{}
 		response, err := client.Do(res)
 		if err != nil {
