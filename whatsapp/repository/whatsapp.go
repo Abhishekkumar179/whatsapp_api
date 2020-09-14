@@ -2642,7 +2642,7 @@ func (r *crudRepository) Publish_link_with_message_on_Post(ctx context.Context, 
 
 /******************************************Upload Photo on Post**************************************************/
 func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
-	IMAGE_DIR := "C:/Users/Dell/go/src/whatsapp_api/temp_images/"
+	IMAGE_DIR := "/home/startel/Downloads/temp_images/"
 	//C:\Users\Dell\go\src\whatsapp_api\temp-images
 	dir_location := IMAGE_DIR
 	getFileName := handler.Filename
@@ -2667,7 +2667,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		panic(err)
 	}
 	fmt.Println(url.Path, "asdfghjkjhgfddcfgh")
-	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+fb_image_path+"&access_token="+access_token, nil)
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url=https://uvoice.ucall.co.ao"+fb_image_path+"&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
