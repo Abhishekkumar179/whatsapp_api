@@ -27,9 +27,9 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
-const HTTPSERVERHOST = "localhost"
+const HTTPSERVERHOST = "3.21.94.160"
 const HTTPSECURE = "http://"
-const PORT = "10000"
+const PORT = "30707"
 const SERVER = "3.21.94.160"
 
 type crudRepository struct {
@@ -2664,6 +2664,10 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		} else {
 			data, _ := ioutil.ReadAll(response.Body)
 			fmt.Println(string(data))
+			err := os.RemoveAll(dir_location)
+			if err != nil {
+				fmt.Println("errror", err)
+			}
 			return data, nil
 		}
 		return nil, err
@@ -2697,6 +2701,10 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		} else {
 			data, _ := ioutil.ReadAll(response.Body)
 			fmt.Println(string(data))
+			err := os.RemoveAll(dir_location)
+			if err != nil {
+				fmt.Println("errror", err)
+			}
 			return data, nil
 		}
 		return nil, err
