@@ -2636,7 +2636,9 @@ func (r *crudRepository) Publish_link_with_message_on_Post(ctx context.Context, 
 
 /******************************************Upload Photo on Post**************************************************/
 func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, message string, Type string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
+	fmt.Println(Type, "type")
 	if Type == "image" {
+		fmt.Println("image")
 		IMAGE_DIR := "/home/ubuntu/Downloads/temp_images/"
 		dir_location := IMAGE_DIR
 		getFileName := handler.Filename
@@ -2666,7 +2668,8 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		}
 		return nil, err
 	} else if Type == "video" {
-		VIDEO_DIR := "/home/ubuntu/Downloads/Fb_videos/"
+		fmt.Println("video")
+		VIDEO_DIR := "/home/ubuntu/Downloads/temp_videos/"
 		dir_location := VIDEO_DIR
 		getFileName := handler.Filename
 
@@ -2709,7 +2712,7 @@ func (r *crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context
 	oauthConf := &oauth2.Config{
 		ClientID:     client_id,
 		ClientSecret: client_secret,
-		RedirectURL:  HTTPSECURE + "://" + HTTPSERVERHOST + ":" + PORT + "/uvoice-facebook-login-callback",
+		RedirectURL:  HTTPSECURE + HTTPSERVERHOST + ":" + PORT + "/uvoice-facebook-login-callback",
 		Scopes:       []string{"public_profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
@@ -2757,7 +2760,7 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 	oauthConf := &oauth2.Config{
 		ClientID:     t.AppId,
 		ClientSecret: t.AppSecret,
-		RedirectURL:  HTTPSECURE + "://" + HTTPSERVERHOST + ":" + PORT + "/uvoice-facebook-login-callback",
+		RedirectURL:  HTTPSECURE + HTTPSERVERHOST + ":" + PORT + "/uvoice-facebook-login-callback",
 		Scopes:       []string{"public_profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
@@ -2772,7 +2775,7 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 	fmt.Printf("%v \n", token)
 	c.Response().Header().Set("access_token", token.AccessToken)
 	c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
-	c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+"://"+HTTPSERVERHOST+":"+PORT+"/uvoice-facebook-login-status")
+	c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+HTTPSERVERHOST+":"+PORT+"/uvoice-facebook-login-status")
 	// return &models.Response{Status: "OK", Msg: "Success1", ResponseCode: http.StatusOK, FacebookGetAuthInfo: &info}, nil
 	return nil, nil
 }
