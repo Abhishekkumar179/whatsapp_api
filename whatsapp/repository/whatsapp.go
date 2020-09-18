@@ -27,10 +27,10 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
-const HTTPSERVERHOST = "3.21.94.160"
-const HTTPSECURE = "http://"
+const HTTPSERVERHOST = "10.11.2.130"
+const HTTPSECURE = "https://"
 const PORT = "30707"
-const SERVER = "3.21.94.160"
+const SERVER = "10.11.2.130"
 
 type crudRepository struct {
 	DBConn *gorm.DB
@@ -66,12 +66,7 @@ func (r *crudRepository) Delete_AppUser(ctx context.Context, appUserId string, a
 		fmt.Println(string(data))
 
 		if string(data) == "{}" {
-			us := models.Appuser{}
 			re := models.ReceiveUserDetails{}
-			st := r.DBConn.Where("id = ?", appUserId).Delete(&us)
-			if st.Error != nil {
-				return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not Deleted"}, nil
-			}
 			db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Delete(&re)
 			if db.Error != nil {
 				return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not Deleted"}, nil
@@ -260,6 +255,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		IntegrationID:            f.Messages[0].Source.IntegrationID,
 		Is_enabled:               true,
 		UnreadCount:              0,
+		AfterOfficeTime:          false,
 	}
 	//queue := models.Queue{}
 	cou := []models.Count_Agent_customer{}
@@ -346,12 +342,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: fb.Message,
+				if u.AfterOfficeTime == false {
+
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+				} else {
+					fmt.Println("Repeated Message On same day.")
 				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
 					db := r.DBConn.Create(&u)
 					if db.Error != nil {
@@ -401,7 +402,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
 					return &models.Response{Received: &f}, nil
 				}
 				return &models.Response{Msg: "Userid already exist."}, nil
@@ -420,6 +420,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
+
 				fmt.Println("appUserId already exist.")
 				return &models.Response{Msg: "Userid already exist."}, nil
 
@@ -2581,8 +2582,8 @@ func (r *crudRepository) Comment_on_Post_of_Page(ctx context.Context, page_postI
 }
 
 /************************************************Get Page Id *************************************************/
-func (r *crudRepository) Get_Page_ID(ctx context.Context, userId string, access_token string) ([]byte, error) {
-	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+userId+"/accounts?access_token="+access_token, nil)
+func (r *crudRepository) Get_Page_ID(ctx context.Context, access_token string) ([]byte, error) {
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/me/accounts?access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
@@ -2703,7 +2704,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 			fmt.Println(string(data))
 			err := os.RemoveAll(dir_location)
 			if err != nil {
-				fmt.Println("errror", err)
+				fmt.Println("error", err)
 			}
 			return data, nil
 		}
@@ -2914,4 +2915,23 @@ func (r *crudRepository) UpdateFacebookApplication(ctx context.Context, domain_u
 	}
 	return &models.Response{Status: "1", Msg: "Updated", ResponseCode: http.StatusOK}, nil
 
+}
+
+/******************************************Send_private_Message**********************************************/
+func (r *crudRepository) Send_Private_Message(ctx context.Context, pageId string, postId string, message string, access_token string) ([]byte, error) {
+	message = strings.ReplaceAll(message, " ", "%20")
+
+	res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/messages?recipient="+postId+"&message="+message+"&message_type=RESPONSE&access_token="+access_token, nil)
+	res.Header.Set("Content-Type", "application/json")
+	client := &http.Client{}
+	response, err := client.Do(res)
+	if err != nil {
+		fmt.Printf("error %s\n", err)
+	} else {
+		data, _ := ioutil.ReadAll(response.Body)
+		fmt.Println(string(data), "enterrer")
+		return data, nil
+	}
+	defer res.Body.Close()
+	return nil, err
 }

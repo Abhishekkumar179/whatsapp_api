@@ -1484,14 +1484,13 @@ func (r *CRUDController) UVoiceFacebookLoginCallback(c echo.Context) error {
 
 /***********************************************Get Page Id************************************************/
 func (r *CRUDController) Get_Page_ID(c echo.Context) error {
-	userId := c.Param("user_id")
 	access_token := c.Param("access_token")
 
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Get_Page_ID(ctx, userId, access_token)
+	authResponse, _ := r.usecase.Get_Page_ID(ctx, access_token)
 
 	if authResponse == nil {
 		return c.JSONBlob(http.StatusUnauthorized, authResponse)
@@ -1736,6 +1735,26 @@ func (r *CRUDController) Convert_Access_Token_into_Longlived_Token(c echo.Contex
 	return c.JSONBlob(http.StatusOK, authResponse)
 }
 
+/***********************************************Private Message*******************************************/
+func (r *CRUDController) Send_Private_Message(c echo.Context) error {
+	var message map[string]interface{}
+	err := json.NewDecoder(c.Request().Body).Decode(&message)
+	if err != nil {
+		fmt.Println(err)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Send_Private_Message(ctx, message)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1810,11 +1829,12 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("get_comments_of_post/:page_post_id/:access_token", handler.Get_Comments_on_Post_of_Page)
 	e.GET("get_likes_of_post/:page_post_id/:access_token", handler.Get_Likes_on_Post_of_Page)
 	e.POST("comment_on_post/:page_postId/:message/:access_token", handler.Comment_on_Post_of_Page)
-	e.GET("get_page_id/:user_id/:access_token", handler.Get_Page_ID)
+	e.GET("get_page_id/:access_token", handler.Get_Page_ID)
 	e.POST("schedule_post", handler.Schedule_Post)
 	e.POST("publish_link_with_message", handler.Publish_link_with_message_on_Post)
 	e.GET("extend_access_token_expire_limit/:client_id/:client_secret/:exchange_token/:access_token", handler.Convert_Access_Token_into_Longlived_Token)
 	e.POST("upload_photo_or_video_on_post", handler.Upload_Photo_on_Post)
+	e.POST("send_private_message", handler.Send_Private_Message)
 
 	e.GET("/uvoice-facebook-login/:client_id/:client_secret/:flac_uuid", handler.UVoiceFacebookLogin)
 	e.GET("/uvoice-facebook-login-callback", handler.UVoiceFacebookLoginCallback)

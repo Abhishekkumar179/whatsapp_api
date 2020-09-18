@@ -473,9 +473,9 @@ func (r *crudUsecase) Comment_on_Post_of_Page(ctx context.Context, flow map[stri
 }
 
 /********************************************Get Page Id******************************************************/
-func (r *crudUsecase) Get_Page_ID(ctx context.Context, userId string, access_token string) ([]byte, error) {
+func (r *crudUsecase) Get_Page_ID(ctx context.Context, access_token string) ([]byte, error) {
 
-	return r.repository.Get_Page_ID(ctx, userId, access_token)
+	return r.repository.Get_Page_ID(ctx, access_token)
 }
 
 /*******************************************Schedule a Post*********************************************/
@@ -567,4 +567,13 @@ func (r *crudUsecase) Convert_Access_Token_into_Longlived_Token(ctx context.Cont
 func (r *crudUsecase) RemoveAgentAssignedToFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error) {
 
 	return r.repository.RemoveAgentAssignedToFacebookApplication(ctx, agent_uuid)
+}
+
+/********************************************Send Private Message***************************************************/
+func (r *crudUsecase) Send_Private_Message(ctx context.Context, flow map[string]interface{}) ([]byte, error) {
+	pageId := fmt.Sprintf("%v", flow["page_id"])
+	postId := fmt.Sprintf("%v", flow["post_id"])
+	message := fmt.Sprintf("%v", flow["message"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
+	return r.repository.Send_Private_Message(ctx, pageId, postId, message, access_token)
 }

@@ -71,7 +71,7 @@ type Usecase interface {
 	Comment_on_Post_of_Page(ctx context.Context, flow map[string]interface{}) ([]byte, error)
 	UVoiceFacebookLogin(ctx context.Context, c echo.Context, client_id string, client_secret string, flac_uuid string) (*models.Response, error)
 	UVoiceFacebookLoginCallback(ctx context.Context, c echo.Context) (*models.Response, error)
-	Get_Page_ID(ctx context.Context, userId string, access_token string) ([]byte, error)
+	Get_Page_ID(ctx context.Context, access_token string) ([]byte, error)
 	Schedule_Post(ctx context.Context, flow map[string]interface{}) ([]byte, error)
 	AddFacebookApplication(ctx context.Context, domain_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error)
 	ShowFacebookApplication(ctx context.Context, domain_uuid string) (*models.Response, error)
@@ -85,4 +85,5 @@ type Usecase interface {
 	Convert_Access_Token_into_Longlived_Token(ctx context.Context, clientId string, clientSecret string, exchange_token string, access_token string) ([]byte, error)
 	RemoveAgentAssignedToFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
 	UpdateFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, fb map[string]interface{}) (*models.Response, error)
+	Send_Private_Message(ctx context.Context, flow map[string]interface{}) ([]byte, error)
 }
