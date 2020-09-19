@@ -1828,7 +1828,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("update_post/:page_post_id/:message/:access_token", handler.Update_Post_of_Page)
 	e.GET("get_comments_of_post/:page_post_id/:access_token", handler.Get_Comments_on_Post_of_Page)
 	e.GET("get_likes_of_post/:page_post_id/:access_token", handler.Get_Likes_on_Post_of_Page)
-	e.POST("comment_on_post/:page_postId/:message/:access_token", handler.Comment_on_Post_of_Page)
+	e.POST("comment_on_post", handler.Comment_on_Post_of_Page)
 	e.GET("get_page_id/:access_token", handler.Get_Page_ID)
 	e.POST("schedule_post", handler.Schedule_Post)
 	e.POST("publish_link_with_message", handler.Publish_link_with_message_on_Post)

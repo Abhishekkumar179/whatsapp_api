@@ -225,6 +225,7 @@ func (r *crudRepository) GetAppUserDetails(ctx context.Context, appUserId string
 /**************************************************App User***************************************************/
 
 func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Response, error) {
+
 	f := models.Received{}
 	w := models.WhatsappConfiguration{}
 	fb := models.FacebookConfiguration{}
@@ -232,6 +233,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	fmt.Println(jsondata)
 	s := int64(f.Messages[0].Received)
 	myDate := time.Unix(s, 0)
+	_, _, date := myDate.Date()
 	u := models.ReceiveUserDetails{
 		Trigger:                  f.Trigger,
 		Version:                  f.Version,
@@ -255,8 +257,11 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		IntegrationID:            f.Messages[0].Source.IntegrationID,
 		Is_enabled:               true,
 		UnreadCount:              0,
+		Day:                      myDate.Weekday().String(),
+		Date:                     date,
 		AfterOfficeTime:          false,
 	}
+
 	//queue := models.Queue{}
 	cou := []models.Count_Agent_customer{}
 	agent := models.AgentQueue{}
@@ -278,24 +283,24 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			min = v.Count
 			min_uuid = v.Agent_uuid
 		}
-		fmt.Println(" min= ", min, " max= ", max, " min_uuid= ", min_uuid)
+		//fmt.Println(" min= ", min, " max= ", max, " min_uuid= ", min_uuid)
 	}
 	if min == max && min == 0 {
-		fmt.Println("if part")
+
 		agent.Agent_uuid = min_uuid
 		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
 	} else {
-		fmt.Println("else part")
+
 		agent.Agent_uuid = min_uuid
 		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
 	}
-	fmt.Println("2 min= ", min, " max= ", max, " min_uuid= ", min_uuid)
+	//fmt.Println("2 min= ", min, " max= ", max, " min_uuid= ", min_uuid)
 	customer := models.Customer_Agents{
 		Domain_uuid: agent.Tenant_domain_uuid,
 		AppUserId:   f.AppUser.ID,
 		Agent_uuid:  agent.Agent_uuid,
 	}
-	fmt.Println(agent, "cus ", customer)
+	//fmt.Println(agent, "cus ", customer)
 
 	if cust := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&customer).Error; cust != nil {
 		db := r.DBConn.Create(&customer)
@@ -342,26 +347,49 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				if u.AfterOfficeTime == false {
-
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
 						Role: "appMaker",
 						Type: "text",
 						Text: fb.Message,
 					}
 					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				} else {
-					fmt.Println("Repeated Message On same day.")
-				}
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				return &models.Response{Msg: "Userid already exist."}, nil
+
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -391,20 +419,49 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: fb.Message,
-				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
-					if db.Error != nil {
-
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
 					}
-					return &models.Response{Received: &f}, nil
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
 				}
-				return &models.Response{Msg: "Userid already exist."}, nil
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
+
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -435,21 +492,49 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: fb.Message,
-				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				return &models.Response{Msg: "Userid already exist."}, nil
+
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -479,21 +564,49 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: fb.Message,
-				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				return &models.Response{Msg: "Userid already exist."}, nil
+
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -523,21 +636,48 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: fb.Message,
-				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				return &models.Response{Msg: "Userid already exist."}, nil
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -567,21 +707,49 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: fb.Message,
-				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				return &models.Response{Msg: "Userid already exist."}, nil
+
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -610,22 +778,51 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			EndHour, _ := components1[0], components1[1]
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
-			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: fb.Message,
-				}
-				r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
-					if db.Error != nil {
 
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				return &models.Response{Msg: "Userid already exist."}, nil
+
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -645,9 +842,10 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				return &models.Response{Msg: "Userid already exist."}, nil
 
 			}
-		} else {
-			fmt.Println("User Not Registered.")
 		}
+		// else {
+		// 	fmt.Println("User Not Registered.")
+		// }
 	} else if f.Messages[0].Source.Type == "whatsapp" {
 		db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
 		if db.Error != nil {
@@ -663,22 +861,48 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				fmt.Println("appUserId already exist.")
-				return &models.Response{Msg: "Userid already exist."}, nil
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -709,22 +933,48 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				fmt.Println("appUserId already exist.")
-				return &models.Response{Msg: "Userid already exist."}, nil
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -755,22 +1005,48 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				fmt.Println("appUserId already exist.")
-				return &models.Response{Msg: "Userid already exist."}, nil
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -801,21 +1077,48 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
-					if db.Error != nil {
-
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
 					}
-					return &models.Response{Received: &f}, nil
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
 				}
-				fmt.Println("appUserId already exist.")
-				return &models.Response{Msg: "Userid already exist."}, nil
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -846,22 +1149,48 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
 
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
 					}
 
-					return &models.Response{Received: &f}, nil
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
 				}
-				fmt.Println("appUserId already exist.")
-				return &models.Response{Msg: "Userid already exist."}, nil
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -892,21 +1221,48 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
-					if db.Error != nil {
-
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
 					}
-					return &models.Response{Received: &f}, nil
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
 				}
-				fmt.Println("appUserId already exist.")
-				return &models.Response{Msg: "Userid already exist."}, nil
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -937,21 +1293,48 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			startHour, _ := strconv.Atoi(StartHour)
 			endHour, _ := strconv.Atoi(EndHour)
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
-				p := models.User{
-					Role: "appMaker",
-					Type: "text",
-					Text: w.Message,
-				}
-				r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
-				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
-					if db.Error != nil {
-
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
 					}
-					return &models.Response{Received: &f}, nil
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
 				}
-				fmt.Println("appUserId already exist.")
-				return &models.Response{Msg: "Userid already exist."}, nil
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Role: "appMaker",
+							Type: "text",
+							Text: fb.Message,
+						}
+						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Role: "appMaker",
+						Type: "text",
+						Text: fb.Message,
+					}
+					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
@@ -2637,10 +3020,11 @@ func (r *crudRepository) Publish_link_with_message_on_Post(ctx context.Context, 
 
 /******************************************Upload Photo on Post**************************************************/
 func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string, access_token string, message string, Type string, file multipart.File, handler *multipart.FileHeader) ([]byte, error) {
+	message = strings.ReplaceAll(message, " ", "%20")
 	fmt.Println(Type, "type")
 	if Type == "image" {
 		fmt.Println("image")
-		IMAGE_DIR := "/home/ubuntu/Downloads/temp_images/"
+		IMAGE_DIR := "C:/Users/Dell/go/src/whatsapp_api/temp_images/"
 		dir_location := IMAGE_DIR
 		getFileName := handler.Filename
 
@@ -2656,7 +3040,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		defer f.Close()
 		io.Copy(f, file)
 
-		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url="+HTTPSECURE+SERVER+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url=http://"+SERVER+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
 		res.Header.Set("Content-Type", "application/json")
 		client := &http.Client{}
 		response, err := client.Do(res)
@@ -2665,7 +3049,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		} else {
 			data, _ := ioutil.ReadAll(response.Body)
 			fmt.Println(string(data))
-			err := os.RemoveAll(dir_location)
+			err := os.Remove(fb_image_path)
 			if err != nil {
 				fmt.Println("errror", err)
 			}
@@ -2691,7 +3075,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		defer f.Close()
 		io.Copy(f, file)
 
-		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url="+HTTPSECURE+SERVER+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url=http://"+SERVER+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
 		//res.Header.Set("Content-Type", "application/json")
 		res.Header.Add("Content-Type", "multipart/form-data")
 
@@ -2702,7 +3086,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		} else {
 			data, _ := ioutil.ReadAll(response.Body)
 			fmt.Println(string(data))
-			err := os.RemoveAll(dir_location)
+			err := os.Remove(fb_video_path)
 			if err != nil {
 				fmt.Println("error", err)
 			}
