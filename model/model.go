@@ -221,8 +221,15 @@ type ReceiveUserDetails struct {
 	IntegrationID            string    `json:"integrationId,omitempty"`
 	Is_enabled               bool      `json:"is_enabled,omitempty"`
 	UnreadCount              int64     `json:"unread_count,omitempty"`
+	Day                      string    `json:"day,omitempty"`
+	Date                     int       `json:"date,omitempty"`
+	AfterOfficeTime          bool      `json:"after_office_time,omitempty"`
 }
-
+type AfterOfficeTime struct {
+	Day       string `json:"day,omitempty"`
+	Date      string `json:"date,omitempty"`
+	AppUserId string `json:"app_user_id,omitempty"`
+}
 type Tenant_details struct {
 	Id                int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
 	ConfigurationName string `json:"configuration_name,omitempty"`
@@ -400,6 +407,11 @@ type FacebookLoginAppConfigurationAgentList struct {
 	FlacUUID   string
 	AgentUUID  string
 	AgentName  string
+}
+type AccessToken struct {
+	AccessToken string `json:"access_token,omitempty"`
+	ExpiresIn   int64  `json:"expires_in,omitempty"`
+	TokenType   string `json:"token_type,omitempty"`
 }
 
 // 97a8b191dc46299a5eb349ea

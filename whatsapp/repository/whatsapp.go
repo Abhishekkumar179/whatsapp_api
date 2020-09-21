@@ -27,10 +27,10 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
-const HTTPSERVERHOST = "3.21.94.160"
+const HTTPSERVERHOST = "10.11.2.130"
 const HTTPSECURE = "https://"
 const PORT = "30707"
-const SERVER = "3.21.94.160"
+const SERVER = "10.11.2.130"
 
 type crudRepository struct {
 	DBConn *gorm.DB
@@ -2861,7 +2861,7 @@ func (r *crudRepository) Publish_Post_on_FB_Page(ctx context.Context, pageId str
 
 /**************************************Get all Post of a Page*****************************************/
 func (r *crudRepository) Getall_Post_of_Page(ctx context.Context, pageId string, access_token string) ([]byte, error) {
-	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+pageId+"/feed?access_token="+access_token, nil)
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+pageId+"?fields=id,name,feed{attachments,message}&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
@@ -2914,7 +2914,7 @@ func (r *crudRepository) Update_Post_of_Page(ctx context.Context, page_postId st
 
 /********************************************Get Comments on Page********************************************/
 func (r *crudRepository) Get_Comments_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error) {
-	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+page_postId+"/comments?access_token="+access_token, nil)
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+page_postId+"/comments?limit=100&summary=total_count&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
@@ -2931,7 +2931,7 @@ func (r *crudRepository) Get_Comments_on_Post_of_Page(ctx context.Context, page_
 
 /************************************************Get Likes of a page*******************************************/
 func (r *crudRepository) Get_Likes_on_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error) {
-	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+page_postId+"/likes?access_token="+access_token, nil)
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+page_postId+"/likes?fields=name,pic&summary=total_count&limit=100&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
@@ -2966,7 +2966,7 @@ func (r *crudRepository) Comment_on_Post_of_Page(ctx context.Context, page_postI
 
 /************************************************Get Page Id *************************************************/
 func (r *crudRepository) Get_Page_ID(ctx context.Context, access_token string) ([]byte, error) {
-	res, err := http.NewRequest("GET", "https://graph.facebook.com/me/accounts?access_token="+access_token, nil)
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/me/accounts?fields=redirect,picture,name&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
@@ -3024,7 +3024,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 	fmt.Println(Type, "type")
 	if Type == "image" {
 		fmt.Println("image")
-		IMAGE_DIR := "home/ubuntu/Downloads/temp_images/"
+		IMAGE_DIR := "C:/Users/Dell/go/src/whatsapp_api/temp_images/"
 		dir_location := IMAGE_DIR
 		getFileName := handler.Filename
 
@@ -3058,7 +3058,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		return nil, err
 	} else if Type == "video" {
 		fmt.Println("video")
-		VIDEO_DIR := "/home/ubuntu/Downloads/temp_images/"
+		VIDEO_DIR := "/home/ubuntu/Downloads/temp_videos/"
 		dir_location := VIDEO_DIR
 		getFileName := handler.Filename
 
