@@ -86,4 +86,5 @@ type Usecase interface {
 	RemoveAgentAssignedToFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
 	UpdateFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, fb map[string]interface{}) (*models.Response, error)
 	Send_Private_Message(ctx context.Context, flow map[string]interface{}) ([]byte, error)
+	Like_and_Unlike_Post_and_Comment(ctx context.Context, flow map[string]interface{}) ([]byte, error)
 }

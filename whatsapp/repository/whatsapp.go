@@ -27,10 +27,10 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
-const HTTPSERVERHOST = "10.11.2.130"
+const HTTPSERVERHOST = "3.21.94.160"
 const HTTPSECURE = "https://"
 const PORT = "30707"
-const SERVER = "10.11.2.130"
+const SERVER = "3.21.94.160"
 
 type crudRepository struct {
 	DBConn *gorm.DB
@@ -3024,7 +3024,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 	fmt.Println(Type, "type")
 	if Type == "image" {
 		fmt.Println("image")
-		IMAGE_DIR := "C:/Users/Dell/go/src/whatsapp_api/temp_images/"
+		IMAGE_DIR := "home/ubuntu/Downloads/temp_images/"
 		dir_location := IMAGE_DIR
 		getFileName := handler.Filename
 
@@ -3058,7 +3058,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		return nil, err
 	} else if Type == "video" {
 		fmt.Println("video")
-		VIDEO_DIR := "/home/ubuntu/Downloads/temp_videos/"
+		VIDEO_DIR := "/home/ubuntu/Downloads/temp_images/"
 		dir_location := VIDEO_DIR
 		getFileName := handler.Filename
 
@@ -3318,4 +3318,66 @@ func (r *crudRepository) Send_Private_Message(ctx context.Context, pageId string
 	}
 	defer res.Body.Close()
 	return nil, err
+}
+
+/**********************************************Likes and unlike Post ans comments*******************************/
+func (r *crudRepository) Like_and_Unlike_Post_and_Comment(ctx context.Context, postId string, commentId string, access_token string, Type string) ([]byte, error) {
+	if Type == "Like_Post" {
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+postId+"/likes?access_token="+access_token, nil)
+		res.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		response, err := client.Do(res)
+		if err != nil {
+			fmt.Printf("error %s\n", err)
+		} else {
+			data, _ := ioutil.ReadAll(response.Body)
+			fmt.Println(string(data), "enterrer")
+			return data, nil
+		}
+		defer res.Body.Close()
+		return nil, err
+	} else if Type == "Like_Comment" {
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+commentId+"/likes?access_token="+access_token, nil)
+		res.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		response, err := client.Do(res)
+		if err != nil {
+			fmt.Printf("error %s\n", err)
+		} else {
+			data, _ := ioutil.ReadAll(response.Body)
+			fmt.Println(string(data), "enterrer")
+			return data, nil
+		}
+		defer res.Body.Close()
+		return nil, err
+	} else if Type == "Unlike_Post" {
+		res, err := http.NewRequest("DELETE", "https://graph.facebook.com/"+postId+"/likes?access_token="+access_token, nil)
+		res.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		response, err := client.Do(res)
+		if err != nil {
+			fmt.Printf("error %s\n", err)
+		} else {
+			data, _ := ioutil.ReadAll(response.Body)
+			fmt.Println(string(data), "enterrer")
+			return data, nil
+		}
+		defer res.Body.Close()
+		return nil, err
+	} else if Type == "Unlike_Comment" {
+		res, err := http.NewRequest("DELETE", "https://graph.facebook.com/"+commentId+"/likes?access_token="+access_token, nil)
+		res.Header.Set("Content-Type", "application/json")
+		client := &http.Client{}
+		response, err := client.Do(res)
+		if err != nil {
+			fmt.Printf("error %s\n", err)
+		} else {
+			data, _ := ioutil.ReadAll(response.Body)
+			fmt.Println(string(data), "enterrer")
+			return data, nil
+		}
+		defer res.Body.Close()
+		return nil, err
+	}
+	return nil, nil
 }

@@ -86,4 +86,5 @@ type Repository interface {
 	RemoveAgentAssignedToFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
 	UpdateFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, app_id string, app_secret string, app_name string) (*models.Response, error)
 	Send_Private_Message(ctx context.Context, pageId string, postId string, message string, access_token string) ([]byte, error)
+	Like_and_Unlike_Post_and_Comment(ctx context.Context, postId string, commentId string, access_token string, Type string) ([]byte, error)
 }

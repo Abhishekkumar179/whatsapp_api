@@ -1755,6 +1755,26 @@ func (r *CRUDController) Send_Private_Message(c echo.Context) error {
 
 }
 
+/*******************************************************Likes post and Comment***********************************/
+func (r *CRUDController) Like_and_Unlike_Post_and_Comment(c echo.Context) error {
+	var message map[string]interface{}
+	err := json.NewDecoder(c.Request().Body).Decode(&message)
+	if err != nil {
+		fmt.Println(err)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Like_and_Unlike_Post_and_Comment(ctx, message)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1835,6 +1855,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("extend_access_token_expire_limit/:client_id/:client_secret/:exchange_token/:access_token", handler.Convert_Access_Token_into_Longlived_Token)
 	e.POST("upload_photo_or_video_on_post", handler.Upload_Photo_on_Post)
 	e.POST("send_private_message", handler.Send_Private_Message)
+	e.POST("likes_and_unlike_post_and_comments", handler.Like_and_Unlike_Post_and_Comment)
 
 	e.GET("/uvoice-facebook-login/:client_id/:client_secret/:flac_uuid", handler.UVoiceFacebookLogin)
 	e.GET("/uvoice-facebook-login-callback", handler.UVoiceFacebookLoginCallback)
