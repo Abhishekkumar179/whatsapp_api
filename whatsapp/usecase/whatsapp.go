@@ -210,9 +210,9 @@ func (r *crudUsecase) DeleteMessage(ctx context.Context, appId string, appUserId
 }
 
 /************************************************Post message******************************************/
-func (r *crudUsecase) PostMessage(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
+func (r *crudUsecase) PostMessage(ctx context.Context, appId string, ConversationId string, p models.User) ([]byte, error) {
 
-	return r.repository.PostMessage(ctx, appId, appUserId, p)
+	return r.repository.PostMessage(ctx, appId, ConversationId, p)
 
 }
 

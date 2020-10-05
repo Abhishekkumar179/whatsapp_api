@@ -38,24 +38,28 @@ func (r *CRUDController) DeleteAllMessage(c echo.Context) error {
 
 /**************************************************Post Message***************************************************/
 func (r *CRUDController) PostMessage(c echo.Context) error {
-	appUserId := c.Param("appUserId")
+	ConversationId := c.Param("conversationId")
 	appId := c.Param("appId")
 	u := models.User{}
 	if err := c.Bind(&u); err != nil {
 		return err
 	}
 	p := models.User{
-		Role:      "appMaker",
-		Type:      u.Type,
-		Text:      u.Text,
-		MediaType: u.MediaType,
-		MediaUrl:  u.MediaUrl,
+		Author: models.Author{
+			Type:        u.Author.Type,
+			DisplayName: u.Author.DisplayName,
+			AvatarURL:   u.Author.AvatarURL,
+		},
+		Content: models.Content{
+			Type: u.Content.Type,
+			Text: u.Content.Text,
+		},
 	}
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.PostMessage(ctx, appId, appUserId, p)
+	authResponse, _ := r.usecase.PostMessage(ctx, appId, ConversationId, p)
 
 	if authResponse == nil {
 		return c.JSONBlob(http.StatusUnauthorized, authResponse)
@@ -484,7 +488,7 @@ func (r *CRUDController) Send_Notification(c echo.Context) error {
 			IntegrationID: "5ef6b7c0a5e6d2000cd6533c",
 			DestinationID: u.Destination.DestinationID,
 		},
-		Author: models.Author{
+		Author: models.Authors{
 			Role: "appMaker",
 		},
 		Message: models.Messages{
@@ -1785,7 +1789,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.DELETE("delete_allMessage/:appId/:appUserId", handler.DeleteAllMessage)
 	e.GET("get_allMessage_byAppUserId/:appId/:appUserId", handler.GetAllMessageByAppUserId)
 	e.POST("pre-createUser/:appId", handler.Pre_createUser)
-	e.POST("post_message/:appId/:appUserId", handler.PostMessage)
+	e.POST("post_message/:appId/:conversationId", handler.PostMessage)
 	e.DELETE("delete_message/:appId/:appUserId/:messageId", handler.DeleteMessage)
 	e.POST("/messages", handler.App_user)
 	e.GET("/getall_appUserId/:domain_uuid", handler.Get_allId)

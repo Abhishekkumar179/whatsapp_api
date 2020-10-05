@@ -27,10 +27,10 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
-const HTTPSERVERHOST = "10.11.2.130"
+const HTTPSERVERHOST = "3.21.94.160"
 const HTTPSECURE = "https://"
 const PORT = "30707"
-const SERVER = "10.11.2.130"
+const SERVER = "3.21.94.160"
 
 type crudRepository struct {
 	DBConn *gorm.DB
@@ -2129,7 +2129,7 @@ func (r *crudRepository) Create_Compound_Template(ctx context.Context, appId str
 }
 
 /**************************************************Post Message*******************************************/
-func (r *crudRepository) PostMessage(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
+func (r *crudRepository) PostMessage(ctx context.Context, appId string, ConversationId string, p models.User) ([]byte, error) {
 	td := models.Tenant_details{}
 	db := r.DBConn.Where("app_id = ?", appId).Find(&td)
 	if db.Error != nil {
@@ -2137,7 +2137,7 @@ func (r *crudRepository) PostMessage(ctx context.Context, appId string, appUserI
 	}
 
 	jsonValue, _ := json.Marshal(p)
-	req, _ := http.NewRequest("POST", "https://api.smooch.io/v1.1/apps/"+appId+"/appusers/"+appUserId+"/messages", bytes.NewBuffer(jsonValue))
+	req, _ := http.NewRequest("POST", "https://api.smooch.io/v2/apps/"+appId+"/conversations/"+ConversationId+"/messages", bytes.NewBuffer(jsonValue))
 	req.Header.Set("Content-Type", "application/json")
 	req.SetBasicAuth(td.AppKey, td.AppSecret)
 	client := &http.Client{}
@@ -2861,7 +2861,7 @@ func (r *crudRepository) Publish_Post_on_FB_Page(ctx context.Context, pageId str
 
 /**************************************Get all Post of a Page*****************************************/
 func (r *crudRepository) Getall_Post_of_Page(ctx context.Context, pageId string, access_token string) ([]byte, error) {
-	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+pageId+"?fields=id,name,feed{attachments,message}&access_token="+access_token, nil)
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/"+pageId+"?fields=id,name,feed{created_time,message,attachments}&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
@@ -2966,7 +2966,7 @@ func (r *crudRepository) Comment_on_Post_of_Page(ctx context.Context, page_postI
 
 /************************************************Get Page Id *************************************************/
 func (r *crudRepository) Get_Page_ID(ctx context.Context, access_token string) ([]byte, error) {
-	res, err := http.NewRequest("GET", "https://graph.facebook.com/me/accounts?fields=redirect,picture,name&access_token="+access_token, nil)
+	res, err := http.NewRequest("GET", "https://graph.facebook.com/me/accounts?fields=redirect,access_token,picture,name&access_token="+access_token, nil)
 	res.Header.Set("Content-Type", "application/json")
 	client := &http.Client{}
 	response, err := client.Do(res)
@@ -3024,7 +3024,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 	fmt.Println(Type, "type")
 	if Type == "image" {
 		fmt.Println("image")
-		IMAGE_DIR := "C:/Users/Dell/go/src/whatsapp_api/temp_images/"
+		IMAGE_DIR := "/home/ubuntu/Downloads/temp_images/"
 		dir_location := IMAGE_DIR
 		getFileName := handler.Filename
 
@@ -3058,7 +3058,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		return nil, err
 	} else if Type == "video" {
 		fmt.Println("video")
-		VIDEO_DIR := "/home/ubuntu/Downloads/temp_videos/"
+		VIDEO_DIR := "/home/ubuntu/Downloads/temp_images/"
 		dir_location := VIDEO_DIR
 		getFileName := handler.Filename
 
@@ -3377,6 +3377,7 @@ func (r *crudRepository) Like_and_Unlike_Post_and_Comment(ctx context.Context, p
 			return data, nil
 		}
 		defer res.Body.Close()
+
 		return nil, err
 	}
 	return nil, nil
