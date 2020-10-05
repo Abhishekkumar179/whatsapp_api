@@ -32,7 +32,7 @@ type Usecase interface {
 	Delete_Facebook_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error)
 	List_integration(ctx context.Context, appId string) ([]byte, error)
 	DeleteAllMessage(ctx context.Context, appUserId string, appId string) (*models.Response, error)
-	PostMessage(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error)
+	PostMessage(ctx context.Context, appId string, ConversationId string, p models.User) ([]byte, error)
 	DeleteMessage(ctx context.Context, appId string, appUserId string, messageId string) (*models.Response, error)
 	Create_Text_Template(ctx context.Context, appId string, p models.Comtemplate) ([]byte, error)
 	Create_Carousel_Template(ctx context.Context, appId string, p models.Payload) ([]byte, error)
@@ -86,4 +86,5 @@ type Usecase interface {
 	RemoveAgentAssignedToFacebookApplication(ctx context.Context, agent_uuid string) (*models.Response, error)
 	UpdateFacebookApplication(ctx context.Context, domain_uuid string, flac_uuid string, fb map[string]interface{}) (*models.Response, error)
 	Send_Private_Message(ctx context.Context, flow map[string]interface{}) ([]byte, error)
+	Like_and_Unlike_Post_and_Comment(ctx context.Context, flow map[string]interface{}) ([]byte, error)
 }

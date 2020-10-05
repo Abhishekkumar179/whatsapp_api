@@ -38,24 +38,28 @@ func (r *CRUDController) DeleteAllMessage(c echo.Context) error {
 
 /**************************************************Post Message***************************************************/
 func (r *CRUDController) PostMessage(c echo.Context) error {
-	appUserId := c.Param("appUserId")
+	ConversationId := c.Param("conversationId")
 	appId := c.Param("appId")
 	u := models.User{}
 	if err := c.Bind(&u); err != nil {
 		return err
 	}
 	p := models.User{
-		Role:      "appMaker",
-		Type:      u.Type,
-		Text:      u.Text,
-		MediaType: u.MediaType,
-		MediaUrl:  u.MediaUrl,
+		Author: models.Author{
+			Type:        u.Author.Type,
+			DisplayName: u.Author.DisplayName,
+			AvatarURL:   u.Author.AvatarURL,
+		},
+		Content: models.Content{
+			Type: u.Content.Type,
+			Text: u.Content.Text,
+		},
 	}
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.PostMessage(ctx, appId, appUserId, p)
+	authResponse, _ := r.usecase.PostMessage(ctx, appId, ConversationId, p)
 
 	if authResponse == nil {
 		return c.JSONBlob(http.StatusUnauthorized, authResponse)
@@ -484,7 +488,7 @@ func (r *CRUDController) Send_Notification(c echo.Context) error {
 			IntegrationID: "5ef6b7c0a5e6d2000cd6533c",
 			DestinationID: u.Destination.DestinationID,
 		},
-		Author: models.Author{
+		Author: models.Authors{
 			Role: "appMaker",
 		},
 		Message: models.Messages{
@@ -1755,6 +1759,26 @@ func (r *CRUDController) Send_Private_Message(c echo.Context) error {
 
 }
 
+/*******************************************************Likes post and Comment***********************************/
+func (r *CRUDController) Like_and_Unlike_Post_and_Comment(c echo.Context) error {
+	var message map[string]interface{}
+	err := json.NewDecoder(c.Request().Body).Decode(&message)
+	if err != nil {
+		fmt.Println(err)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Like_and_Unlike_Post_and_Comment(ctx, message)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1765,7 +1789,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.DELETE("delete_allMessage/:appId/:appUserId", handler.DeleteAllMessage)
 	e.GET("get_allMessage_byAppUserId/:appId/:appUserId", handler.GetAllMessageByAppUserId)
 	e.POST("pre-createUser/:appId", handler.Pre_createUser)
-	e.POST("post_message/:appId/:appUserId", handler.PostMessage)
+	e.POST("post_message/:appId/:conversationId", handler.PostMessage)
 	e.DELETE("delete_message/:appId/:appUserId/:messageId", handler.DeleteMessage)
 	e.POST("/messages", handler.App_user)
 	e.GET("/getall_appUserId/:domain_uuid", handler.Get_allId)
@@ -1835,6 +1859,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("extend_access_token_expire_limit/:client_id/:client_secret/:exchange_token/:access_token", handler.Convert_Access_Token_into_Longlived_Token)
 	e.POST("upload_photo_or_video_on_post", handler.Upload_Photo_on_Post)
 	e.POST("send_private_message", handler.Send_Private_Message)
+	e.POST("likes_and_unlike_post_and_comments", handler.Like_and_Unlike_Post_and_Comment)
 
 	e.GET("/uvoice-facebook-login/:client_id/:client_secret/:flac_uuid", handler.UVoiceFacebookLogin)
 	e.GET("/uvoice-facebook-login-callback", handler.UVoiceFacebookLoginCallback)

@@ -210,9 +210,9 @@ func (r *crudUsecase) DeleteMessage(ctx context.Context, appId string, appUserId
 }
 
 /************************************************Post message******************************************/
-func (r *crudUsecase) PostMessage(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error) {
+func (r *crudUsecase) PostMessage(ctx context.Context, appId string, ConversationId string, p models.User) ([]byte, error) {
 
-	return r.repository.PostMessage(ctx, appId, appUserId, p)
+	return r.repository.PostMessage(ctx, appId, ConversationId, p)
 
 }
 
@@ -576,4 +576,13 @@ func (r *crudUsecase) Send_Private_Message(ctx context.Context, flow map[string]
 	message := fmt.Sprintf("%v", flow["message"])
 	access_token := fmt.Sprintf("%v", flow["access_token"])
 	return r.repository.Send_Private_Message(ctx, pageId, postId, message, access_token)
+}
+
+/*******************************************Likes and unlike post and comments***********************************/
+func (r *crudUsecase) Like_and_Unlike_Post_and_Comment(ctx context.Context, flow map[string]interface{}) ([]byte, error) {
+	postId := fmt.Sprintf("%v", flow["post_id"])
+	commentId := fmt.Sprintf("%v", flow["comment_id"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
+	Type := fmt.Sprintf("%v", flow["type"])
+	return r.repository.Like_and_Unlike_Post_and_Comment(ctx, postId, commentId, access_token, Type)
 }
