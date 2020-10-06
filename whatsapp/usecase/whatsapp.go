@@ -321,9 +321,9 @@ func (r *crudUsecase) Unlink_appUser_to_Channel(ctx context.Context, appId strin
 }
 
 /*************************************************Upload Attachments**********************************/
-func (r *crudUsecase) Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error) {
+func (r *crudUsecase) Upload_Attachments(ctx context.Context, displayName string, AvatarURL string, appId string, conversationId string, Type string, Text string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error) {
 
-	return r.repository.Upload_Attachments(ctx, appId, appUserId, Type, IntegrationID, Size, file, handler)
+	return r.repository.Upload_Attachments(ctx, displayName, AvatarURL, appId, conversationId, Type, Text, IntegrationID, Size, file, handler)
 }
 
 /***********************************TypingActivity**************************************************/

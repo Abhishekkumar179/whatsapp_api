@@ -6,9 +6,14 @@ import (
 	"github.com/google/uuid"
 )
 
+type Account_details struct {
+	Tenant_name string `json:"tenant_name,omitempty"`
+}
 type Sender struct {
-	Author  Author  `json:"author,omitempty"`
-	Content Content `json:"content,omitempty"`
+	Attachment struct {
+		MediaType string `json:"mediaType,omitempty"`
+		MediaUrl  string `json:"mediaUrl,omitempty"`
+	} `json:"attachment,omitempty"`
 }
 
 type Author struct {
@@ -17,8 +22,9 @@ type Author struct {
 	AvatarURL   string `json:"avatarUrl,omitempty"`
 }
 type Content struct {
-	Type string `json:"type,omitempty"`
-	Text string `json:"text,omitempty"`
+	Type     string `json:"type,omitempty"`
+	Text     string `json:"text,omitempty"`
+	MediaUrl string `json:"mediaUrl,omitempty"`
 }
 
 type User struct {
