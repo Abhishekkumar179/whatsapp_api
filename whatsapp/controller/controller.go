@@ -1066,9 +1066,13 @@ func (r *CRUDController) Unlink_appUser_to_Channel(c echo.Context) error {
 
 /**********************************************Upload Attachments******************************************/
 func (r *CRUDController) Upload_Attachments(c echo.Context) error {
+
+	displayName := c.FormValue("displayName")
+	AvatarURL := c.FormValue("avatarUrl")
 	appId := c.Param("appId")
-	appUserId := c.Param("appUserId")
+	conversationId := c.Param("conversationId")
 	Type := c.FormValue("type")
+	Text := c.FormValue("text")
 	IntegrationID := c.FormValue("integration_id")
 	var Size int64
 	err1 := json.NewDecoder(c.Request().Body).Decode(&Size)
@@ -1090,7 +1094,7 @@ func (r *CRUDController) Upload_Attachments(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Upload_Attachments(ctx, appId, appUserId, Type, IntegrationID, Size, file, handler)
+	authResponse, _ := r.usecase.Upload_Attachments(ctx, displayName, AvatarURL, appId, conversationId, Type, Text, IntegrationID, Size, file, handler)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -1833,7 +1837,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("list_integration/:appId", handler.List_integration)
 	e.POST("link_appUser_to_channel/:appId/:appUserId", handler.Link_appUser_to_Channel)
 	e.DELETE("unlink_appUser_to_channel/:appId/:appUserId/:channel", handler.Unlink_appUser_to_Channel)
-	e.POST("upload_attachments/:appId/:appUserId", handler.Upload_Attachments)
+	e.POST("upload_attachments/:appId/:conversationId", handler.Upload_Attachments)
 	e.POST("typing_activity/:appId/:appUserId", handler.TypingActivity)
 
 	e.POST("create_queue", handler.Create_Queue)

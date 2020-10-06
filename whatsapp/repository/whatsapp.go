@@ -225,7 +225,7 @@ func (r *crudRepository) GetAppUserDetails(ctx context.Context, appUserId string
 /**************************************************App User***************************************************/
 
 func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Response, error) {
-
+	T := models.Account_details{}
 	f := models.Received{}
 	w := models.WhatsappConfiguration{}
 	fb := models.FacebookConfiguration{}
@@ -337,6 +337,10 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		if db.Error != nil {
 			fmt.Println("error")
 		}
+		tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", fb.Domain_uuid).Find(&T)
+		if tenant.Error != nil {
+			fmt.Println("error")
+		}
 		if myDate.Weekday().String() == fb.Day1 {
 			workstart1 := fb.Workstart1
 			components := strings.Split(workstart1, ":")
@@ -349,11 +353,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -365,11 +375,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: fb.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -378,11 +394,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -398,11 +420,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 					}
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -421,11 +449,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -437,11 +471,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: fb.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -450,11 +490,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -470,11 +516,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 					}
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 
@@ -494,11 +546,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -510,11 +568,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: fb.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -523,11 +587,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -543,11 +613,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 					}
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -566,11 +642,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -582,11 +664,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: fb.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -595,11 +683,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -615,11 +709,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 					}
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -638,11 +738,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -654,11 +760,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: fb.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -667,11 +779,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -686,11 +804,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 					}
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -709,11 +833,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -725,11 +855,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: fb.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -738,11 +874,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -758,11 +900,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 					}
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -782,11 +930,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -798,11 +952,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: fb.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -811,11 +971,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -831,11 +997,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 					}
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -851,6 +1023,10 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		if db.Error != nil {
 			fmt.Println("error")
 		}
+		tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
+		if tenant.Error != nil {
+			fmt.Println("error")
+		}
 		if myDate.Weekday().String() == w.Day1 {
 			workstart1 := w.Workstart1
 			components := strings.Split(workstart1, ":")
@@ -863,11 +1039,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -879,11 +1061,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: w.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -892,11 +1080,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -912,11 +1106,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					}
 
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: w.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -935,11 +1135,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -951,11 +1157,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: w.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -964,11 +1176,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -984,11 +1202,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					}
 
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: w.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1007,11 +1231,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -1023,11 +1253,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: w.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -1036,11 +1272,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -1056,11 +1298,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					}
 
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: w.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1079,11 +1327,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -1095,11 +1349,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: w.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -1108,11 +1368,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -1128,11 +1394,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					}
 
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: w.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1151,11 +1423,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -1167,11 +1445,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: w.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -1180,11 +1464,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -1200,11 +1490,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					}
 
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: w.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1223,11 +1519,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -1239,11 +1541,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: w.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -1252,11 +1560,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -1272,11 +1586,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					}
 
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: w.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1295,11 +1615,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if myDate.Hour() < startHour || myDate.Hour() > endHour {
 				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -1311,11 +1637,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						fmt.Println("message already sent.")
 					} else if u.AfterOfficeTime == false {
 						p := models.User{
-							Role: "appMaker",
-							Type: "text",
-							Text: fb.Message,
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: w.Message,
+							},
 						}
-						r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 						if err.RowsAffected == 0 {
 							fmt.Println("rows not updated.")
@@ -1324,11 +1656,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 				} else {
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: fb.Message,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.Message,
+						},
 					}
-					r.PostMessage(ctx, fb.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
@@ -1343,11 +1681,17 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 					}
 					p := models.User{
-						Role: "appMaker",
-						Type: "text",
-						Text: w.TriggerMessage,
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
 					}
-					r.PostMessage(ctx, w.AppId, f.AppUser.ID, p)
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2429,7 +2773,7 @@ func (r *crudRepository) Unlink_appUser_to_Channel(ctx context.Context, appId st
 }
 
 /******************************************Upload Attachments********************************************/
-func (r *crudRepository) Upload_Attachments(ctx context.Context, appId string, appUserId string, Type string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error) {
+func (r *crudRepository) Upload_Attachments(ctx context.Context, displayName string, AvatarURL string, appId string, conversationId string, Type string, Text string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error) {
 	td := models.WhatsappConfiguration{}
 	db := r.DBConn.Table("whatsapp_configurations").Where("app_id = ? AND whatsapp_integration_id = ?", appId, IntegrationID).Find(&td)
 	if db.Error != nil {
@@ -2465,7 +2809,7 @@ func (r *crudRepository) Upload_Attachments(ctx context.Context, appId string, a
 
 			part.Write(fileBytes)
 			writer.Close()
-			req, _ := http.NewRequest("POST", "https://api.smooch.io/v1.1/apps/"+appId+"/attachments?access=public&for=message&appUserId="+appUserId, body)
+			req, _ := http.NewRequest("POST", "https://api.smooch.io/v2/apps/"+appId+"/attachments?access=public&for=message&conversationId="+conversationId, body)
 			req.Header.Add("Content-Type", "multipart/form-data")
 			req.Header.Set("Content-Type", writer.FormDataContentType())
 			req.SetBasicAuth(fb.AppKey, fb.AppSecret)
@@ -2474,17 +2818,23 @@ func (r *crudRepository) Upload_Attachments(ctx context.Context, appId string, a
 			if err != nil {
 				return nil, err
 			} else {
-				u := models.User{}
+				u := models.Sender{}
 				data, _ := ioutil.ReadAll(res.Body)
 				jsonData := json.Unmarshal(data, &u)
-				fmt.Println(jsonData, u.MediaUrl, u.MediaType, "ghvghvqv")
+				fmt.Println(jsonData, u.Attachment.MediaUrl, u.Attachment.MediaType, "ghvghvqv")
 				p := models.User{
-					Role:      "appMaker",
-					Type:      Type,
-					MediaType: u.MediaType,
-					MediaUrl:  u.MediaUrl,
+					Author: models.Author{
+						Type:        "business",
+						DisplayName: displayName,
+						AvatarURL:   AvatarURL,
+					},
+					Content: models.Content{
+						Type:     Type,
+						Text:     Text,
+						MediaUrl: u.Attachment.MediaUrl,
+					},
 				}
-				r.PostMessage(ctx, appId, appUserId, p)
+				r.PostMessage(ctx, appId, conversationId, p)
 				return &models.Response{Status: "1", Msg: "File is sent successfully.", ResponseCode: 200}, nil
 			}
 		}
@@ -2515,7 +2865,7 @@ func (r *crudRepository) Upload_Attachments(ctx context.Context, appId string, a
 
 		part.Write(fileBytes)
 		writer.Close()
-		req, _ := http.NewRequest("POST", "https://api.smooch.io/v1.1/apps/"+appId+"/attachments?access=public&for=message&appUserId="+appUserId, body)
+		req, _ := http.NewRequest("POST", "https://api.smooch.io/v2/apps/"+appId+"/attachments?access=public&for=message&conversationId="+conversationId, body)
 		req.Header.Add("Content-Type", "multipart/form-data")
 		req.Header.Set("Content-Type", writer.FormDataContentType())
 
@@ -2525,17 +2875,23 @@ func (r *crudRepository) Upload_Attachments(ctx context.Context, appId string, a
 		if err != nil {
 			return nil, err
 		} else {
-			u := models.User{}
+			u := models.Sender{}
 			data, _ := ioutil.ReadAll(res.Body)
 			jsonData := json.Unmarshal(data, &u)
-			fmt.Println(jsonData, string(data), u.MediaUrl, u.MediaType, "ghvghvqv")
+			fmt.Println(jsonData, u.Attachment.MediaUrl, u.Attachment.MediaType, "ghvghvqv")
 			p := models.User{
-				Role:      "appMaker",
-				Type:      Type,
-				MediaType: u.MediaType,
-				MediaUrl:  u.MediaUrl,
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: displayName,
+					AvatarURL:   AvatarURL,
+				},
+				Content: models.Content{
+					Type:     Type,
+					Text:     Text,
+					MediaUrl: u.Attachment.MediaUrl,
+				},
 			}
-			r.PostMessage(ctx, appId, appUserId, p)
+			r.PostMessage(ctx, appId, conversationId, p)
 			return &models.Response{Status: "1", Msg: "File is sent successfully.", ResponseCode: 200}, nil
 		}
 
