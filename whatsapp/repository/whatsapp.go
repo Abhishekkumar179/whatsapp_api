@@ -30,7 +30,6 @@ import (
 const HTTPSERVERHOST = "3.21.94.160"
 const HTTPSECURE = "https://"
 const PORT = "30707"
-const SERVER = "3.21.94.160"
 
 type crudRepository struct {
 	DBConn *gorm.DB
@@ -310,7 +309,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 		for _, oldu := range r.SList.Users {
 			if oldu.UName == customer.Agent_uuid {
-				msg := map[string]interface{}{"message_id": "5", "customer_id": customer.AppUserId, "user_id": customer.Agent_uuid, "user_type": "agent"}
+				msg := map[string]interface{}{"message_id": "5", "customer_id": customer.AppUserId, "surname": f.AppUser.Surname, "given_name": f.AppUser.GivenName, "signed_up_at": f.AppUser.SignedUpAt, "conversation_id": f.Conversation.ID, "type": f.Messages[0].Type, "text": f.Messages[0].Text, "role": f.Messages[0].Role, "received": f.Messages[0].Received, "name": f.Messages[0].Name, "author_id": f.Messages[0].AuthorID, "messageId": f.Messages[0].ID, "source_type": f.Messages[0].Source.Type, "integration_id": f.Messages[0].Source.IntegrationID, "unread_count": u.UnreadCount, "user_id": customer.Agent_uuid}
 				if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
 					log.Println("Can't send", err)
 				}
@@ -2648,6 +2647,7 @@ func (r *crudRepository) Send_Location(ctx context.Context, appId string, appUse
 	if err != nil {
 		return nil, err
 	} else {
+
 		data, _ := ioutil.ReadAll(res.Body)
 		return data, nil
 	}
@@ -2660,7 +2660,6 @@ func (r *crudRepository) Message_Action_Types(ctx context.Context, appId string,
 	if db.Error != nil {
 		return nil, db.Error
 	}
-
 	jsonValue, _ := json.Marshal(p)
 	req, _ := http.NewRequest("POST", "https://api.smooch.io/v1.1/apps/"+appId+"/appusers/"+appUserId+"/messages", bytes.NewBuffer(jsonValue))
 	req.Header.Set("Content-Type", "application/json")
@@ -2868,7 +2867,6 @@ func (r *crudRepository) Upload_Attachments(ctx context.Context, displayName str
 		req, _ := http.NewRequest("POST", "https://api.smooch.io/v2/apps/"+appId+"/attachments?access=public&for=message&conversationId="+conversationId, body)
 		req.Header.Add("Content-Type", "multipart/form-data")
 		req.Header.Set("Content-Type", writer.FormDataContentType())
-
 		req.SetBasicAuth(td.AppKey, td.AppSecret)
 		client := &http.Client{}
 		res, err := client.Do(req)
@@ -2933,15 +2931,15 @@ func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string) 
 		return &models.Response{Status: "0", Msg: "AppUserId Not Found.", ResponseCode: 404}, nil
 
 	}
-	db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Update("is_enabled", false)
+	db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Delete(&u)
 	if db.Error != nil {
-		return &models.Response{Status: "0", Msg: "AppUserId not Updated.", ResponseCode: 404}, nil
+		return &models.Response{Status: "0", Msg: "Customer not Disabled.", ResponseCode: 404}, nil
 	}
 	cust := r.DBConn.Where("app_user_id = ?", appUserId).Delete(&customer)
 	if cust.Error != nil {
 		return &models.Response{Status: "0", Msg: "Customer not Removed from queue.", ResponseCode: 404}, nil
 	}
-	return &models.Response{Status: "1", Msg: "AppUserId Disabled Successfully.", ResponseCode: 200}, nil
+	return &models.Response{Status: "1", Msg: "Customer Disabled Successfully.", ResponseCode: 200}, nil
 }
 
 /****************************************Reset Unread Count*******************************************/
@@ -3118,7 +3116,7 @@ func (r *crudRepository) Delete_Queue(ctx context.Context, queue_uuid string) (*
 	}
 	assignqueue := r.DBConn.Where("queue_uuid = ?", queue_uuid).Find(&a)
 	if assignqueue.Error != nil {
-		return &models.Response{Status: "0", Msg: "Queue not found.", ResponseCode: 404}, nil
+		// return &models.Response{Status: "0", Msg: "Queue not found.", ResponseCode: 404}, nil
 	}
 	db := r.DBConn.Where("queue_uuid = ?", queue_uuid).Delete(&u)
 	if db.RowsAffected == 0 {
@@ -3126,7 +3124,7 @@ func (r *crudRepository) Delete_Queue(ctx context.Context, queue_uuid string) (*
 	}
 	que := r.DBConn.Where("queue_uuid = ?", queue_uuid).Delete(&a)
 	if que.RowsAffected == 0 {
-		return &models.Response{Status: "0", Msg: "Queue not Deleted.", ResponseCode: 404}, nil
+		//return &models.Response{Status: "0", Msg: "Queue not Deleted.", ResponseCode: 404}, nil
 	}
 	return &models.Response{Status: "1", Msg: "Queue Delete Successfully.", ResponseCode: 200}, nil
 
@@ -3396,7 +3394,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		defer f.Close()
 		io.Copy(f, file)
 
-		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url=http://"+SERVER+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url=http://"+HTTPSERVERHOST+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
 		res.Header.Set("Content-Type", "application/json")
 		client := &http.Client{}
 		response, err := client.Do(res)
@@ -3431,7 +3429,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		defer f.Close()
 		io.Copy(f, file)
 
-		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url=http://"+SERVER+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url=http://"+HTTPSERVERHOST+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
 		//res.Header.Set("Content-Type", "application/json")
 		res.Header.Add("Content-Type", "multipart/form-data")
 
