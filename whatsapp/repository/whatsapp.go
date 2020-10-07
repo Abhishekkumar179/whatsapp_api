@@ -120,21 +120,21 @@ func (r *crudRepository) Delete_AppUser_Profile(ctx context.Context, appId strin
 
 /**************************************************Getall Id***************************************************/
 
-func (r *crudRepository) Get_allId(ctx context.Context, agent_uuid string) (*models.Response, error) {
-	//td := models.Tenant_details{}
+func (r *crudRepository) Get_allId(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	td := models.Tenant_details{}
 	list := make([]models.ReceiveUserDetails, 0)
-	// if db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&td).Error; db != nil {
+	if db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&td).Error; db != nil {
 
-	// 	return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
-	// }
-	if rows, err := r.DBConn.Raw("select app_id, app_user_id, surname, given_name,type,text,role,name,author_id,message_id,original_message_id,integration_id,source_type, signed_up_at, conversation_started, unread_count, domain_uuid, agent_uuid from receive_user_details where agent_uuid = ?", agent_uuid).Rows(); err != nil {
+		return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
+	}
+	if rows, err := r.DBConn.Raw("select app_id, app_user_id, surname, given_name,type,text,role,name,author_id,message_id,original_message_id,integration_id,source_type, signed_up_at, conversation_started, unread_count from receive_user_details where is_enabled = true").Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			f := models.ReceiveUserDetails{}
-			if err := rows.Scan(&f.AppId, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Message_id, &f.OriginalMessageID, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.ConversationStarted, &f.UnreadCount, &f.Domain_uuid, &f.Agent_uuid); err != nil {
+			if err := rows.Scan(&f.AppId, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Message_id, &f.OriginalMessageID, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.ConversationStarted, &f.UnreadCount); err != nil {
 
 				return nil, err
 			}
@@ -157,14 +157,14 @@ func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, agent_u
 
 		return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
 	}
-	if rows, err := r.DBConn.Raw("select domain_uuid, app_user_id from customer_agents where agent_uuid = ?", agent_uuid).Rows(); err != nil {
+	if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid,app_user_id, surname, given_name,type,text,role,name,author_id,conversation_id,received,message_id,integration_id,source_type, signed_up_at, unread_count from customer_agents where agent_uuid = ?", agent_uuid).Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			f := models.Customer_Agents{}
-			if err := rows.Scan(&f.Domain_uuid, &f.AppUserId); err != nil {
+			if err := rows.Scan(&f.Domain_uuid, &f.Agent_uuid, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Conversation_id, &f.Received, &f.Message_id, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.UnreadCount); err != nil {
 
 				return nil, err
 			}
@@ -233,13 +233,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	s := int64(f.Messages[0].Received)
 	myDate := time.Unix(s, 0)
 	_, _, date := myDate.Date()
-	cou := []models.Count_Agent_customer{}
-	agent := models.AgentQueue{}
-	db := r.DBConn.Table("customer_agents ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
-	if db.Error != nil {
-		fmt.Println(db.Error)
-	}
-	fmt.Println(agent.Agent_uuid, agent.Tenant_domain_uuid, "response........")
 	u := models.ReceiveUserDetails{
 		Trigger:                  f.Trigger,
 		Version:                  f.Version,
@@ -261,16 +254,20 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		OriginalMessageTimestamp: f.Messages[0].Source.OriginalMessageTimestamp,
 		Source_Type:              f.Messages[0].Source.Type,
 		IntegrationID:            f.Messages[0].Source.IntegrationID,
+		Is_enabled:               true,
 		UnreadCount:              0,
 		Day:                      myDate.Weekday().String(),
 		Date:                     date,
 		AfterOfficeTime:          false,
-		Domain_uuid:              agent.Tenant_domain_uuid,
-		Agent_uuid:               agent.Agent_uuid,
 	}
 
 	//queue := models.Queue{}
-
+	cou := []models.Count_Agent_customer{}
+	agent := models.AgentQueue{}
+	db := r.DBConn.Table("customer_agents ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
+	if db.Error != nil {
+		fmt.Println(db.Error)
+	}
 	var min int64 = 0
 	var max int64 = 0
 	//max_uuid := cou[0].Agent_uuid
@@ -297,30 +294,44 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
 	}
 	//fmt.Println("2 min= ", min, " max= ", max, " min_uuid= ", min_uuid)
-	// customer := models.Customer_Agents{
-	// 	Domain_uuid: agent.Tenant_domain_uuid,
-	// 	AppUserId:   f.AppUser.ID,
-	// 	Agent_uuid:  agent.Agent_uuid,
-	// }
+	customer := models.Customer_Agents{
+		Domain_uuid:     agent.Tenant_domain_uuid,
+		AppUserId:       f.AppUser.ID,
+		Agent_uuid:      agent.Agent_uuid,
+		Surname:         f.AppUser.Surname,
+		GivenName:       f.AppUser.GivenName,
+		SignedUpAt:      f.AppUser.SignedUpAt,
+		Conversation_id: f.Conversation.ID,
+		Type:            f.Messages[0].Type,
+		Text:            f.Messages[0].Text,
+		Role:            f.Messages[0].Role,
+		Received:        f.Messages[0].Received,
+		Name:            f.Messages[0].Name,
+		AuthorID:        f.Messages[0].AuthorID,
+		Message_id:      f.Messages[0].ID,
+		Source_Type:     f.Messages[0].Source.Type,
+		IntegrationID:   f.Messages[0].Source.IntegrationID,
+		UnreadCount:     0,
+	}
 	//fmt.Println(agent, "cus ", customer)
 
-	if cust := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; cust != nil {
-		db := r.DBConn.Create(&u)
+	if cust := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&customer).Error; cust != nil {
+		db := r.DBConn.Create(&customer)
 		if db.Error != nil {
 			fmt.Println(db.Error)
 		}
 
 		for _, oldu := range r.SList.Users {
-			if oldu.UName == u.Agent_uuid {
-				msg := map[string]interface{}{"message_id": "5", "customer_id": u.AppUserId, "surname": f.AppUser.Surname, "given_name": f.AppUser.GivenName, "signed_up_at": f.AppUser.SignedUpAt, "conversation_id": f.Conversation.ID, "type": f.Messages[0].Type, "text": f.Messages[0].Text, "role": f.Messages[0].Role, "received": f.Messages[0].Received, "name": f.Messages[0].Name, "author_id": f.Messages[0].AuthorID, "messageId": f.Messages[0].ID, "source_type": f.Messages[0].Source.Type, "integration_id": f.Messages[0].Source.IntegrationID, "unread_count": u.UnreadCount, "user_id": u.Agent_uuid}
+			if oldu.UName == customer.Agent_uuid {
+				msg := map[string]interface{}{"message_id": "5", "customer_id": customer.AppUserId, "surname": f.AppUser.Surname, "given_name": f.AppUser.GivenName, "signed_up_at": f.AppUser.SignedUpAt, "conversation_id": f.Conversation.ID, "type": f.Messages[0].Type, "text": f.Messages[0].Text, "role": f.Messages[0].Role, "received": f.Messages[0].Received, "name": f.Messages[0].Name, "author_id": f.Messages[0].AuthorID, "messageId": f.Messages[0].ID, "source_type": f.Messages[0].Source.Type, "integration_id": f.Messages[0].Source.IntegrationID, "unread_count": u.UnreadCount, "user_id": customer.Agent_uuid}
 				if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
 					log.Println("Can't send", err)
 				}
 			}
 		}
 	}
-	// errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
-	// fmt.Println(errs.Error)
+	errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
+	fmt.Println(errs.Error)
 	if f.Messages[0].Role == "appUser" {
 		count := r.DBConn.Table("receive_user_details").Where("conversation_id = ? AND app_user_id = ?", f.Conversation.ID, f.AppUser.ID).Update("unread_count", u.UnreadCount+1)
 		if count.Error != nil {
@@ -2926,9 +2937,9 @@ func (r *crudRepository) TypingActivity(ctx context.Context, appId string, appUs
 /*************************************************Disable AppUser*************************************************/
 func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error) {
 	u := models.ReceiveUserDetails{}
-	// customer := models.Customer_Agents{
-	// 	AppUserId: appUserId,
-	// }
+	customer := models.Customer_Agents{
+		AppUserId: appUserId,
+	}
 	err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&u)
 	if err.Error != nil {
 		return &models.Response{Status: "0", Msg: "AppUserId Not Found.", ResponseCode: 404}, nil
@@ -2938,10 +2949,10 @@ func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string) 
 	if db.Error != nil {
 		return &models.Response{Status: "0", Msg: "Customer not Disabled.", ResponseCode: 404}, nil
 	}
-	// cust := r.DBConn.Where("app_user_id = ?", appUserId).Delete(&customer)
-	// if cust.Error != nil {
-	// 	return &models.Response{Status: "0", Msg: "Customer not Removed from queue.", ResponseCode: 404}, nil
-	// }
+	cust := r.DBConn.Where("app_user_id = ?", appUserId).Delete(&customer)
+	if cust.Error != nil {
+		return &models.Response{Status: "0", Msg: "Customer not Removed from queue.", ResponseCode: 404}, nil
+	}
 	return &models.Response{Status: "1", Msg: "Customer Disabled Successfully.", ResponseCode: 200}, nil
 }
 
@@ -3167,13 +3178,14 @@ func (r *crudRepository) Available_Agents(ctx context.Context, domain_uuid strin
 
 /************************************************Transfer customer**********************************************/
 func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid string, appUserId string) (*models.Response, error) {
-	app := models.ReceiveUserDetails{}
-
-	err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Find(&app)
+	app := models.Customer_Agents{
+		AppUserId: appUserId,
+	}
+	err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&app)
 	if err.Error != nil {
 		return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
 	}
-	db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Update("agent_uuid", agent_uuid)
+	db := r.DBConn.Table("customer_agents").Where("app_user_id = ?", appUserId).Update("agent_uuid", agent_uuid)
 	if db.Error != nil {
 		return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
 	}
