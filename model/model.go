@@ -247,6 +247,8 @@ type ReceiveUserDetails struct {
 	Day                      string    `json:"day,omitempty"`
 	Date                     int       `json:"date,omitempty"`
 	AfterOfficeTime          bool      `json:"after_office_time,omitempty"`
+	Domain_uuid              string    `json:"domain_uuid,omitempty"`
+	Agent_uuid               string    `json:"agent_uuid,omitempty"`
 }
 type AfterOfficeTime struct {
 	Day       string `json:"day,omitempty"`
