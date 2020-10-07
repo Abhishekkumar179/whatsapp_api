@@ -5,8 +5,7 @@ import (
 	"sync"
 	adapterdatabase "whatsapp_api/adapter"
 	config "whatsapp_api/config"
-
-	//	logging "whatsapp_api/logger"
+	logging "whatsapp_api/logger"
 	crudController "whatsapp_api/whatsapp/controller"
 	crudRepo "whatsapp_api/whatsapp/repository"
 	crudUsecase "whatsapp_api/whatsapp/usecase"
@@ -23,7 +22,7 @@ func main() {
 		//Setting up the config
 		config := config.GetConfig()
 		//Setting up the Logger
-		//logger := logging.NewLogger(config.Log.LogFile, config.Log.LogLevel)
+		logger := logging.NewLogger(config.Log.LogFile, config.Log.LogLevel)
 		e.Use(middleware.Logger())
 		e.Use(middleware.Recover())
 
@@ -40,9 +39,9 @@ func main() {
 
 		go newServerUser.Controller(e)
 
-		if err := e.StartTLS("0.0.0.0:30707", "../keys/cert.pem", "../keys/privkey.pem"); err != nil {
+		if err := e.StartTLS("0.0.0.0:30707", "../keys/ucall.crt", "../keys/ucall.key"); err != nil {
 			fmt.Println("not connected")
-			//logger.WithError(err).Fatal("avb")
+			logger.WithError(err).Fatal("Unable to start the callCenter service")
 		}
 
 	})
