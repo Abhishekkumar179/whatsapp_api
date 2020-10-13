@@ -264,12 +264,106 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	//queue := models.Queue{}
 	cou := []models.Count_Agent_customer{}
 	agent := models.AgentQueue{}
-	db := r.DBConn.Table("customer_agents ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
+	db := r.DBConn.Table("customer_agents ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues inner join v_call_center_agents on agent_queues.agent_uuid=v_call_center_agents.call_center_agent_uuid where agent_status='Available' and queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
 	if db.Error != nil {
 		fmt.Println(db.Error)
 	}
+	fmt.Println(cou, len(cou))
 	var min int64 = 0
 	var max int64 = 0
+	lengtharray := len(cou)
+	if lengtharray == 0 {
+		if f.Messages[0].Source.Type == "messenger" {
+			db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			fmt.Println("enterrrrrrr.....")
+			tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", fb.Domain_uuid).Find(&T)
+			if tenant.Error != nil {
+				fmt.Println("error")
+			}
+
+			uuid1, _ := myNewUUID.NewUUID()
+			uuid := uuid1.String()
+			tic := models.Tickets{
+				Ticket_uuid:     uuid,
+				Domain_uuid:     T.Domain_uuid,
+				Ticket_name:     f.Messages[0].Source.Type,
+				CustomerId:      f.AppUser.ID,
+				CustomerName:    f.Messages[0].Name,
+				Message:         f.Messages[0].Text,
+				MessageType:     f.Messages[0].Type,
+				IntegrationID:   f.Messages[0].Source.IntegrationID,
+				Source_type:     f.Messages[0].Source.Type,
+				Conversation_id: f.Conversation.ID,
+				Timestamp:       time.Now(),
+			}
+			if db := r.DBConn.Table("tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
+				fmt.Println("enterrrrrrr.....1111111")
+				row := r.DBConn.Create(&tic)
+				if row.Error != nil {
+					fmt.Println("Ticket not created.")
+				}
+				p := models.User{
+					Author: models.Author{
+						Type:        "business",
+						DisplayName: T.Tenant_name,
+						AvatarURL:   "https://www.gravatar.com/image.jpg",
+					},
+					Content: models.Content{
+						Type: "text",
+						Text: "Sorry for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
+					},
+				}
+				r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+			}
+		} else if f.Messages[0].Source.Type == "whatsapp" {
+			db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
+			if tenant.Error != nil {
+				fmt.Println("error")
+			}
+			uuid1, _ := myNewUUID.NewUUID()
+			uuid := uuid1.String()
+			tic := models.Tickets{
+				Ticket_uuid:     uuid,
+				Domain_uuid:     T.Domain_uuid,
+				Ticket_name:     f.Messages[0].Source.Type,
+				CustomerId:      f.AppUser.ID,
+				CustomerName:    f.Messages[0].Name,
+				Message:         f.Messages[0].Text,
+				MessageType:     f.Messages[0].Type,
+				IntegrationID:   f.Messages[0].Source.IntegrationID,
+				Source_type:     f.Messages[0].Source.Type,
+				Conversation_id: f.Conversation.ID,
+				Timestamp:       time.Now(),
+			}
+			if db := r.DBConn.Table("tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
+				row := r.DBConn.Create(&tic)
+				if row.Error != nil {
+					fmt.Println("Ticket not created.")
+				}
+				p := models.User{
+					Author: models.Author{
+						Type:        "business",
+						DisplayName: T.Tenant_name,
+						AvatarURL:   "https://www.gravatar.com/image.jpg",
+					},
+					Content: models.Content{
+						Type: "text",
+						Text: "Sorry for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
+					},
+				}
+				r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+
+			}
+
+		}
+	}
 	//max_uuid := cou[0].Agent_uuid
 	min_uuid := cou[0].Agent_uuid
 	for k, v := range cou {
@@ -1881,13 +1975,7 @@ func (r *crudRepository) Update_Smooch_configuration(ctx context.Context, id int
 
 /***************************************Get smooch configuration*****************************************/
 func (r *crudRepository) Get_Smooch_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
-	s := int64(1597047140)
-	myDate := time.Unix(s, 0)
-
-	fmt.Println(myDate.Hour(), myDate.Weekday())
-
 	w := models.Tenant_details{}
-	fmt.Println(myDate, myDate.Hour(), myDate.Day(), myDate.Weekday(), "vjhwvhj")
 	list := make([]models.Tenant_details, 0)
 	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
 	if db.Error != nil {
@@ -3746,4 +3834,48 @@ func (r *crudRepository) Like_and_Unlike_Post_and_Comment(ctx context.Context, p
 		return nil, err
 	}
 	return nil, nil
+}
+
+/************************************************Delete Tickets********************************************/
+func (r *crudRepository) Delete_Tickets(ctx context.Context, ticket_uuid string) (*models.Response, error) {
+	u := models.Tickets{}
+
+	err := r.DBConn.Where("ticket_uuid = ?", ticket_uuid).Find(&u)
+	if err.Error != nil {
+		return &models.Response{Status: "0", Msg: "Ticket not found.", ResponseCode: 404}, nil
+	}
+	db := r.DBConn.Where("ticket_uuid = ?", ticket_uuid).Delete(&u)
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "0", Msg: "Ticket not Deleted.", ResponseCode: 404}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Ticket Delete Successfully.", ResponseCode: 200}, nil
+
+}
+
+/********************************************Get All Tickets**********************************************/
+func (r *crudRepository) GetAll_Tickets(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	td := models.Tickets{}
+	list := make([]models.Tickets, 0)
+	if db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&td).Error; db != nil {
+
+		return &models.Response{Status: "0", Msg: "Tickets list is not available", ResponseCode: 404}, nil
+	}
+
+	if rows, err := r.DBConn.Raw("select ticket_uuid,domain_uuid,ticket_name,customer_id,customer_name,message,message_type,integration_id,source_type,conversation_id,timestamp from tickets where domain_uuid = ?", domain_uuid).Rows(); err != nil {
+
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.Tickets{}
+			if err := rows.Scan(&f.Ticket_uuid, &f.Domain_uuid, &f.Ticket_name, &f.CustomerId, &f.CustomerName, &f.Message, &f.MessageType, &f.IntegrationID, &f.Source_type, &f.Conversation_id, &f.Timestamp); err != nil {
+
+				return nil, err
+			}
+
+			list = append(list, f)
+		}
+
+		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, TicketList: list}, nil
+	}
 }

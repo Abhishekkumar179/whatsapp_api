@@ -586,3 +586,15 @@ func (r *crudUsecase) Like_and_Unlike_Post_and_Comment(ctx context.Context, flow
 	Type := fmt.Sprintf("%v", flow["type"])
 	return r.repository.Like_and_Unlike_Post_and_Comment(ctx, postId, commentId, access_token, Type)
 }
+
+/*************************************************Delete Tickets***********************************************/
+func (r *crudUsecase) Delete_Tickets(ctx context.Context, ticket_uuid string) (*models.Response, error) {
+
+	return r.repository.Delete_Tickets(ctx, ticket_uuid)
+}
+
+/***************************************************Get All Tickets******************************************/
+func (r *crudUsecase) GetAll_Tickets(ctx context.Context, domain_uuid string) (*models.Response, error) {
+
+	return r.repository.GetAll_Tickets(ctx, domain_uuid)
+}

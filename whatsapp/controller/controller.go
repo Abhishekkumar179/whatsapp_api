@@ -1783,6 +1783,37 @@ func (r *CRUDController) Like_and_Unlike_Post_and_Comment(c echo.Context) error 
 
 }
 
+/*********************************************Delete Tickets***********************************************/
+func (r *CRUDController) Delete_Tickets(c echo.Context) error {
+	ticket_uuid := c.Param("ticket_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Delete_Tickets(ctx, ticket_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/***********************************************Get all Tickets******************************************/
+func (r *CRUDController) GetAll_Tickets(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.GetAll_Tickets(ctx, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -1879,4 +1910,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("/agent-list-not-in-facebook-application/:flac_uuid/:domain_uuid", handler.AgentListNotInFacebookApplication)
 	e.GET("/show-agent-facebook-application/:agent_uuid", handler.ShowAgentFacebookApplication)
 	e.DELETE("/remove-agent-from-facebook-application/:agent_uuid", handler.RemoveAgentAssignedToFacebookApplication)
+
+	e.DELETE("delete_ticket/:ticket_uuid", handler.Delete_Tickets)
+	e.GET("getall_tickets/:domain_uuid", handler.GetAll_Tickets)
 }
