@@ -286,7 +286,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			uuid1, _ := myNewUUID.NewUUID()
 			uuid := uuid1.String()
-			tic := models.Tickets{
+			tic := models.SocialMediaTickets{
 				Ticket_uuid:     uuid,
 				Domain_uuid:     T.Domain_uuid,
 				Ticket_name:     f.Messages[0].Source.Type,
@@ -299,7 +299,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				Conversation_id: f.Conversation.ID,
 				Timestamp:       time.Now(),
 			}
-			if db := r.DBConn.Table("tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
+			if db := r.DBConn.Table("social_media_tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
 				fmt.Println("enterrrrrrr.....1111111")
 				row := r.DBConn.Create(&tic)
 				if row.Error != nil {
@@ -329,7 +329,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			}
 			uuid1, _ := myNewUUID.NewUUID()
 			uuid := uuid1.String()
-			tic := models.Tickets{
+			tic := models.SocialMediaTickets{
 				Ticket_uuid:     uuid,
 				Domain_uuid:     T.Domain_uuid,
 				Ticket_name:     f.Messages[0].Source.Type,
@@ -342,7 +342,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 				Conversation_id: f.Conversation.ID,
 				Timestamp:       time.Now(),
 			}
-			if db := r.DBConn.Table("tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
+			if db := r.DBConn.Table("social_media_tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
 				row := r.DBConn.Create(&tic)
 				if row.Error != nil {
 					fmt.Println("Ticket not created.")
@@ -3838,7 +3838,7 @@ func (r *crudRepository) Like_and_Unlike_Post_and_Comment(ctx context.Context, p
 
 /************************************************Delete Tickets********************************************/
 func (r *crudRepository) Delete_Tickets(ctx context.Context, ticket_uuid string) (*models.Response, error) {
-	u := models.Tickets{}
+	u := models.SocialMediaTickets{}
 
 	err := r.DBConn.Where("ticket_uuid = ?", ticket_uuid).Find(&u)
 	if err.Error != nil {
@@ -3854,20 +3854,20 @@ func (r *crudRepository) Delete_Tickets(ctx context.Context, ticket_uuid string)
 
 /********************************************Get All Tickets**********************************************/
 func (r *crudRepository) GetAll_Tickets(ctx context.Context, domain_uuid string) (*models.Response, error) {
-	td := models.Tickets{}
-	list := make([]models.Tickets, 0)
+	td := models.SocialMediaTickets{}
+	list := make([]models.SocialMediaTickets, 0)
 	if db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&td).Error; db != nil {
 
 		return &models.Response{Status: "0", Msg: "Tickets list is not available", ResponseCode: 404}, nil
 	}
 
-	if rows, err := r.DBConn.Raw("select ticket_uuid,domain_uuid,ticket_name,customer_id,customer_name,message,message_type,integration_id,source_type,conversation_id,timestamp from tickets where domain_uuid = ?", domain_uuid).Rows(); err != nil {
+	if rows, err := r.DBConn.Raw("select ticket_uuid,domain_uuid,ticket_name,customer_id,customer_name,message,message_type,integration_id,source_type,conversation_id,timestamp from social_media_tickets where domain_uuid = ?", domain_uuid).Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
-			f := models.Tickets{}
+			f := models.SocialMediaTickets{}
 			if err := rows.Scan(&f.Ticket_uuid, &f.Domain_uuid, &f.Ticket_name, &f.CustomerId, &f.CustomerName, &f.Message, &f.MessageType, &f.IntegrationID, &f.Source_type, &f.Conversation_id, &f.Timestamp); err != nil {
 
 				return nil, err

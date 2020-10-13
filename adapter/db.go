@@ -29,7 +29,7 @@ func DB(config *config.Config) *gorm.DB {
 	db.AutoMigrate(models.Customer_Agents{})
 	db.AutoMigrate(models.FacebookLoginAppConfiguration{})
 	db.AutoMigrate(models.FacebookLoginAppConfigurationAgent{})
-	db.AutoMigrate(models.Tickets{})
+	db.AutoMigrate(models.SocialMediaTickets{})
 	fmt.Println("Successfully connected!")
 	return db
 }
