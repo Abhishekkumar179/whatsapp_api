@@ -262,7 +262,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		Date:                     date,
 		AfterOfficeTime:          false,
 	}
-
+	fmt.Println(f.Messages[0].Source.Type, f.Messages[0].Source.IntegrationID, "values.......")
 	//queue := models.Queue{}
 	cou := []models.Count_Agent_customer{}
 	agent := models.AgentQueue{}
@@ -369,7 +369,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			if db.Error != nil {
 				fmt.Println("error")
 			}
-			tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
+			tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", tw.Domain_uuid).Find(&T)
 			if tenant.Error != nil {
 				fmt.Println("error")
 			}
@@ -1859,7 +1859,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		if db.Error != nil {
 			fmt.Println("error")
 		}
-		tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
+		tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", tw.Domain_uuid).Find(&T)
 		if tenant.Error != nil {
 			fmt.Println("error")
 		}
