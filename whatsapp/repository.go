@@ -66,7 +66,7 @@ type Repository interface {
 	Update_Queue(ctx context.Context, queue_uuid string, Name string, IntegrationID string, Map_with string, Domain_uuid string) (*models.Response, error)
 	Delete_Queue(ctx context.Context, domain_uuid string) (*models.Response, error)
 	Available_Agents(ctx context.Context, domain_uuid string, queue_uuid string) (*models.Response, error)
-	Transfer_customer(ctx context.Context, new_agent_uuid string, current_agent_uuid string, appUserId string) (*models.Response, error)
+	Transfer_customer(ctx context.Context, agent_uuid string, appUserId string) (*models.Response, error)
 	Publish_Post_on_FB_Page(ctx context.Context, pageId string, message string, access_token string) ([]byte, error)
 	Getall_Post_of_Page(ctx context.Context, pageId string, access_token string) ([]byte, error)
 	Delete_Post_of_Page(ctx context.Context, page_postId string, access_token string) ([]byte, error)

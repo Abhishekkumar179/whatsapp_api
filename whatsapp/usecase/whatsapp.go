@@ -424,11 +424,10 @@ func (r *crudUsecase) Available_Agents(ctx context.Context, domain_uuid string, 
 
 /**********************************************Transfer customer*********************************************/
 func (r *crudUsecase) Transfer_customer(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
-	new_agent_uuid := fmt.Sprintf("%v", flow["new_agent_uuid"])
-	current_agent_uuid := fmt.Sprintf("%v", flow["current_agent_uuid"])
+	agent_uuid := fmt.Sprintf("%v", flow["new_agent_uuid"])
 	appUserId := fmt.Sprintf("%v", flow["appUserId"])
 
-	return r.repository.Transfer_customer(ctx, new_agent_uuid, current_agent_uuid, appUserId)
+	return r.repository.Transfer_customer(ctx, agent_uuid, appUserId)
 }
 
 /************************************************Post on FB page**********************************************/
