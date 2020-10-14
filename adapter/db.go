@@ -24,6 +24,7 @@ func DB(config *config.Config) *gorm.DB {
 	db.AutoMigrate(models.Tenant_details{})
 	db.AutoMigrate(models.WhatsappConfiguration{})
 	db.AutoMigrate(models.FacebookConfiguration{})
+	db.AutoMigrate(models.TwitterConfiguration{})
 	db.AutoMigrate(models.Queue{})
 	db.AutoMigrate(models.AgentQueue{})
 	db.AutoMigrate(models.Customer_Agents{})

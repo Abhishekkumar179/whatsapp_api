@@ -227,6 +227,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	T := models.Account_details{}
 	f := models.Received{}
 	w := models.WhatsappConfiguration{}
+	tw := models.TwitterConfiguration{}
 	fb := models.FacebookConfiguration{}
 	jsondata := json.Unmarshal(body, &f)
 	fmt.Println(jsondata)
@@ -362,6 +363,49 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			}
 
+		} else if f.Messages[0].Source.Type == "twitter" {
+			db := r.DBConn.Where("twitter_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&tw)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
+			if tenant.Error != nil {
+				fmt.Println("error")
+			}
+			uuid1, _ := myNewUUID.NewUUID()
+			uuid := uuid1.String()
+			tic := models.SocialMediaTickets{
+				Ticket_uuid:     uuid,
+				Domain_uuid:     T.Domain_uuid,
+				Ticket_name:     f.Messages[0].Source.Type,
+				CustomerId:      f.AppUser.ID,
+				CustomerName:    f.Messages[0].Name,
+				Message:         f.Messages[0].Text,
+				MessageType:     f.Messages[0].Type,
+				IntegrationID:   f.Messages[0].Source.IntegrationID,
+				Source_type:     f.Messages[0].Source.Type,
+				Conversation_id: f.Conversation.ID,
+				Timestamp:       time.Now(),
+			}
+			if db := r.DBConn.Table("social_media_tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
+				row := r.DBConn.Create(&tic)
+				if row.Error != nil {
+					fmt.Println("Ticket not created.")
+				}
+				p := models.User{
+					Author: models.Author{
+						Type:        "business",
+						DisplayName: T.Tenant_name,
+						AvatarURL:   "https://www.gravatar.com/image.jpg",
+					},
+					Content: models.Content{
+						Type: "text",
+						Text: "Sorry for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
+					},
+				}
+				r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+
+			}
 		}
 	}
 	//max_uuid := cou[0].Agent_uuid
@@ -1809,6 +1853,687 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			fmt.Println("user NOT Registered.")
 		}
 
+	} else if f.Messages[0].Source.Type == "twitter" {
+		db := r.DBConn.Where("twitter_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&tw)
+		if db.Error != nil {
+			fmt.Println("error")
+		}
+		tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
+		if tenant.Error != nil {
+			fmt.Println("error")
+		}
+		if myDate.Weekday().String() == tw.Day1 {
+			workstart1 := tw.Workstart1
+			components := strings.Split(workstart1, ":")
+			StartHour, _ := components[0], components[1]
+			workend1 := tw.Workend1
+			components1 := strings.Split(workend1, ":")
+			EndHour, _ := components1[0], components1[1]
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: tw.Message,
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			}
+		} else if myDate.Weekday().String() == tw.Day2 {
+			workstart2 := tw.Workstart2
+			components := strings.Split(workstart2, ":")
+			StartHour, _ := components[0], components[1]
+			workend2 := tw.Workend2
+			components1 := strings.Split(workend2, ":")
+			EndHour, _ := components1[0], components1[1]
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: tw.Message,
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			}
+		} else if myDate.Weekday().String() == tw.Day3 {
+			workstart3 := tw.Workstart3
+			components := strings.Split(workstart3, ":")
+			StartHour, _ := components[0], components[1]
+			workend3 := tw.Workend3
+			components1 := strings.Split(workend3, ":")
+			EndHour, _ := components1[0], components1[1]
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: tw.Message,
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			}
+		} else if myDate.Weekday().String() == tw.Day4 {
+			workstart4 := tw.Workstart4
+			components := strings.Split(workstart4, ":")
+			StartHour, _ := components[0], components[1]
+			workend4 := tw.Workend4
+			components1 := strings.Split(workend4, ":")
+			EndHour, _ := components1[0], components1[1]
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: tw.Message,
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			}
+		} else if myDate.Weekday().String() == tw.Day5 {
+			workstart5 := tw.Workstart5
+			components := strings.Split(workstart5, ":")
+			StartHour, _ := components[0], components[1]
+			workend5 := tw.Workend5
+			components1 := strings.Split(workend5, ":")
+			EndHour, _ := components1[0], components1[1]
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: tw.Message,
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			}
+		} else if myDate.Weekday().String() == tw.Day6 {
+			workstart6 := tw.Workstart6
+			components := strings.Split(workstart6, ":")
+			StartHour, _ := components[0], components[1]
+			workend6 := tw.Workend6
+			components1 := strings.Split(workend6, ":")
+			EndHour, _ := components1[0], components1[1]
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: tw.Message,
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			}
+		} else if myDate.Weekday().String() == tw.Day7 {
+			workstart7 := tw.Workstart7
+			components := strings.Split(workstart7, ":")
+			StartHour, _ := components[0], components[1]
+			workend7 := tw.Workend7
+			components1 := strings.Split(workend7, ":")
+			EndHour, _ := components1[0], components1[1]
+			startHour, _ := strconv.Atoi(StartHour)
+			endHour, _ := strconv.Atoi(EndHour)
+			if myDate.Hour() < startHour || myDate.Hour() > endHour {
+				if aot := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; aot != nil {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					if db.Error != nil {
+						fmt.Println(db.Error)
+					}
+				}
+
+				if myDate.Weekday().String() == u.Day && date == u.Date {
+					if u.AfterOfficeTime == true {
+						fmt.Println("message already sent.")
+					} else if u.AfterOfficeTime == false {
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: T.Tenant_name,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: tw.Message,
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+						err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+						if err.RowsAffected == 0 {
+							fmt.Println("rows not updated.")
+						}
+					}
+
+				} else {
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.Message,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"day": myDate.Weekday().String(), "date": date, "after_office_time": true})
+					if err.RowsAffected == 0 {
+						fmt.Println("rows not updated.")
+					}
+
+				}
+
+			} else {
+				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
+					db := r.DBConn.Create(&u)
+					if db.Error != nil {
+
+					}
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: T.Tenant_name,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					return &models.Response{Received: &f}, nil
+				}
+				fmt.Println("appUserId already exist.")
+				return &models.Response{Msg: "Userid already exist."}, nil
+
+			}
+		}
 	} else {
 		return &models.Response{Msg: "Userid already exist."}, nil
 	}
@@ -2433,6 +3158,219 @@ func (r *crudRepository) Delete_Facebook_configuration(ctx context.Context, id i
 		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
 	}
 	return &models.Response{Status: "1", Msg: "Facebook Configuration deleted.", ResponseCode: 200}, nil
+}
+
+/****************************************Save tenant details*********************************************/
+func (r *crudRepository) Add_Twitter_configuration(ctx context.Context, td models.TwitterConfigurations) (*models.Response, error) {
+
+	ts := models.TwitterConfiguration{
+		Domain_uuid:          td.Domain_uuid,
+		ConfigurationName:    td.ConfigurationName,
+		AppId:                td.AppId,
+		AppKey:               td.AppKey,
+		AppSecret:            td.AppSecret,
+		Message:              td.Message,
+		Size:                 td.Size,
+		TriggerWhen:          td.Trigger.When,
+		TriggerName:          td.Trigger.Name,
+		TriggerMessage:       td.Trigger.Message,
+		TwitterIntegrationID: td.TwitterIntegrationID,
+		Day1:                 td.WorkingDays[0].Day,
+		Day2:                 td.WorkingDays[1].Day,
+		Day3:                 td.WorkingDays[2].Day,
+		Day4:                 td.WorkingDays[3].Day,
+		Day5:                 td.WorkingDays[4].Day,
+		Day6:                 td.WorkingDays[5].Day,
+		Day7:                 td.WorkingDays[6].Day,
+		Workstart1:           td.WorkingDays[0].WorkingHourStartTime,
+		Workstart2:           td.WorkingDays[1].WorkingHourStartTime,
+		Workstart3:           td.WorkingDays[2].WorkingHourStartTime,
+		Workstart4:           td.WorkingDays[3].WorkingHourStartTime,
+		Workstart5:           td.WorkingDays[4].WorkingHourStartTime,
+		Workstart6:           td.WorkingDays[5].WorkingHourStartTime,
+		Workstart7:           td.WorkingDays[6].WorkingHourStartTime,
+		Workend1:             td.WorkingDays[0].WorkingHourEndTime,
+		Workend2:             td.WorkingDays[1].WorkingHourEndTime,
+		Workend3:             td.WorkingDays[2].WorkingHourEndTime,
+		Workend4:             td.WorkingDays[3].WorkingHourEndTime,
+		Workend5:             td.WorkingDays[4].WorkingHourEndTime,
+		Workend6:             td.WorkingDays[5].WorkingHourEndTime,
+		Workend7:             td.WorkingDays[6].WorkingHourEndTime,
+	}
+	if err := r.DBConn.Table("twitter_configurations").Where("app_id = ?", td.AppId).Or("twitter_integration_id = ?", td.TwitterIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&ts).Error; err != nil {
+		st := r.DBConn.Create(&ts)
+		if st.Error != nil {
+			return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Not created"}, nil
+		}
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Twitter configuration saved successfully."}, nil
+	}
+	if ts.AppId == td.AppId {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "AppId Already Exist."}, nil
+	} else if ts.TwitterIntegrationID == td.TwitterIntegrationID {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "Twitter Integration Id  Already Exist."}, nil
+	} else if ts.ConfigurationName == td.ConfigurationName {
+		return &models.Response{ResponseCode: 409, Status: "Error", Msg: "configuration name Already Exist."}, nil
+	}
+	return &models.Response{ResponseCode: 201, Status: "Ok", Msg: "Twitter configuration saved successfully."}, nil
+}
+
+/**********************************************Get appID by tenant_domain_uuid******************************/
+func (r *crudRepository) Get_Twitter_configuration(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	w := models.TwitterConfiguration{}
+	list := make([]models.TwitterConfiguration, 0)
+	db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&w)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
+
+	}
+
+	row, err := r.DBConn.Raw("select * from twitter_configurations WHERE domain_uuid = ?", domain_uuid).Rows()
+	if err != nil {
+		return &models.Response{Status: "0", Msg: "Record Not Found", ResponseCode: 401}, nil
+	}
+	defer row.Close()
+	for row.Next() {
+		f := models.TwitterConfiguration{}
+		if err := row.Scan(&f.Id, &f.ConfigurationName, &f.Domain_uuid, &f.AppId, &f.AppKey, &f.AppSecret, &f.Message, &f.Size, &f.TwitterIntegrationID, &f.Day1, &f.Day2, &f.Day3, &f.Day4, &f.Day5, &f.Day6, &f.Day7, &f.Workstart1, &f.Workstart2, &f.Workstart3, &f.Workstart4, &f.Workstart5, &f.Workstart6, &f.Workstart7, &f.Workend1, &f.Workend2, &f.Workend3, &f.Workend4, &f.Workend5, &f.Workend6, &f.Workend7, &f.TriggerWhen, &f.TriggerName, &f.TriggerMessage); err != nil {
+
+			return nil, err
+		}
+		list = append(list, f)
+	}
+	return &models.Response{Status: "1", Msg: "Record Found", ResponseCode: 200, Twitter: list}, nil
+}
+
+/**********************************************Update Tenant details*************************************/
+func (r *crudRepository) Update_Twitter_configuration(ctx context.Context, id int64, domain_uuid string, td models.TwitterConfigurations) (*models.Response, error) {
+	w := models.TwitterConfiguration{}
+	db1 := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Find(&w)
+	if db1.Error != nil {
+		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
+	}
+
+	if td.TwitterIntegrationID == w.TwitterIntegrationID && td.AppId == w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part1")
+
+		if db := r.DBConn.Table("twitter_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+			return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+		}
+
+		return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+	} else if td.TwitterIntegrationID != w.TwitterIntegrationID && td.AppId != w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part2")
+		w := models.TwitterConfiguration{}
+		if row := r.DBConn.Table("twitter_configurations").Where("app_id = ?", td.AppId).Or("twitter_integration_id = ?", td.TwitterIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; row != nil {
+			//if err := r.DBConn.Table("whatsapp_configurations").Where("whatsapp_integration_id = ?", td.WhatsappIntegrationID).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("twitter_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "twitter_integration_id": td.TwitterIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+		}
+		if w.TwitterIntegrationID == td.TwitterIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Twitter id already exist."}, nil
+
+		} else if w.AppId == td.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		} else if w.ConfigurationName == td.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+	} else if td.TwitterIntegrationID == w.TwitterIntegrationID && td.AppId != w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part3")
+		w := models.TwitterConfiguration{}
+		if row := r.DBConn.Where("app_id = ?", td.AppId).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; row != nil {
+			if db := r.DBConn.Table("twitter_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 201, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+		}
+		if w.AppId == td.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		} else if w.ConfigurationName == td.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+	} else if td.TwitterIntegrationID == w.TwitterIntegrationID && td.AppId == w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part4")
+		w := models.TwitterConfiguration{}
+		if err := r.DBConn.Where("configuration_name = ?", td.ConfigurationName).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("twitter_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+		}
+		return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+	} else if td.TwitterIntegrationID != w.TwitterIntegrationID && td.AppId != w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part5")
+		w := models.TwitterConfiguration{}
+		if err := r.DBConn.Where("twitter_integration_id = ?", td.TwitterIntegrationID).Or("app_id = ?", td.AppId).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("twitter_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "twitter_integration_id": td.TwitterIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+		}
+		if w.TwitterIntegrationID == td.TwitterIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Twitter id already exist."}, nil
+		} else if w.AppId == td.AppId {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+		}
+	} else if td.TwitterIntegrationID != w.TwitterIntegrationID && td.AppId == w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part6")
+		w := models.TwitterConfiguration{}
+		if err := r.DBConn.Where("twitter_integration_id = ?", td.TwitterIntegrationID).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("twitter_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "twitter_integration_id": td.TwitterIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+		}
+		return &models.Response{ResponseCode: 409, Status: "0", Msg: "Twitter id already exist."}, nil
+	} else if td.TwitterIntegrationID != w.TwitterIntegrationID && td.AppId == w.AppId && td.ConfigurationName != w.ConfigurationName {
+		fmt.Println("part7")
+		w := models.TwitterConfiguration{}
+		if err := r.DBConn.Where("twitter_integration_id = ?", td.TwitterIntegrationID).Or("configuration_name = ?", td.ConfigurationName).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("twitter_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"configuration_name": td.ConfigurationName, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "twitter_integration_id": td.TwitterIntegrationID, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+		}
+		if w.TwitterIntegrationID == td.TwitterIntegrationID {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Twitter id already exist."}, nil
+		} else if w.ConfigurationName == td.ConfigurationName {
+			return &models.Response{ResponseCode: 409, Status: "0", Msg: "Configuration name already exist."}, nil
+		}
+	} else if td.TwitterIntegrationID == w.TwitterIntegrationID && td.AppId != w.AppId && td.ConfigurationName == w.ConfigurationName {
+		fmt.Println("part8")
+		w := models.TwitterConfiguration{}
+		if err := r.DBConn.Where("app_id = ?", td.AppId).Find(&w).Error; err != nil {
+			if db := r.DBConn.Table("twitter_configurations").Where("domain_uuid = ? AND id = ?", domain_uuid, id).Updates(map[string]interface{}{"app_id": td.AppId, "app_key": td.AppKey, "app_secret": td.AppSecret, "message": td.Message, "size": td.Size, "trigger_name": td.Trigger.Name, "trigger_message": td.Trigger.Message, "trigger_when": td.Trigger.When, "day1": td.WorkingDays[0].Day, "day2": td.WorkingDays[1].Day, "day3": td.WorkingDays[2].Day, "day4": td.WorkingDays[3].Day, "day5": td.WorkingDays[4].Day, "day6": td.WorkingDays[5].Day, "day7": td.WorkingDays[6].Day, "workstart1": td.WorkingDays[0].WorkingHourStartTime, "workstart2": td.WorkingDays[1].WorkingHourStartTime, "workstart3": td.WorkingDays[2].WorkingHourStartTime, "workstart4": td.WorkingDays[3].WorkingHourStartTime, "workstart5": td.WorkingDays[4].WorkingHourStartTime, "workstart6": td.WorkingDays[5].WorkingHourStartTime, "workstart7": td.WorkingDays[6].WorkingHourStartTime, "workend1": td.WorkingDays[0].WorkingHourEndTime, "workend2": td.WorkingDays[1].WorkingHourEndTime, "workend3": td.WorkingDays[2].WorkingHourEndTime, "workend4": td.WorkingDays[3].WorkingHourEndTime, "workend5": td.WorkingDays[4].WorkingHourEndTime, "workend6": td.WorkingDays[5].WorkingHourEndTime, "workend7": td.WorkingDays[6].WorkingHourEndTime}).Error; db != nil {
+				return &models.Response{Status: "0", Msg: "Oops! There is some problem! Try again.", ResponseCode: http.StatusBadRequest}, nil
+			}
+
+			return &models.Response{ResponseCode: 200, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+		}
+		return &models.Response{ResponseCode: 409, Status: "0", Msg: "AppId already exist."}, nil
+	} else {
+		return &models.Response{ResponseCode: 401, Status: "Not Ok", Msg: "Twitter integration Not Updated."}, nil
+	}
+	return &models.Response{ResponseCode: 204, Status: "OK", Msg: "Twitter integration Updated successfully."}, nil
+
+}
+
+/**********************************************Delete Tenant details*************************************/
+func (r *crudRepository) Delete_Twitter_configuration(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+	td := models.TwitterConfiguration{}
+	db := r.DBConn.Where("domain_uuid = ? AND id = ?", domain_uuid, id).Delete(&td)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Table not deleted", ResponseCode: 404}, nil
+	}
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "Not Found", Msg: "Record Doesn't Exist", ResponseCode: 401}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Twitter Configuration deleted.", ResponseCode: 200}, nil
 }
 
 /**********************************************List integration**************************************/

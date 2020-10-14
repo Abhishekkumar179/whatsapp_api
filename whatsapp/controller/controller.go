@@ -1001,6 +1001,135 @@ func (r *CRUDController) Delete_Facebook_configuration(c echo.Context) error {
 
 }
 
+/********************************************Twitter configuration****************************************/
+func (r *CRUDController) Add_Twitter_configuration(c echo.Context) error {
+	u := models.TwitterConfigurations{}
+	if err := c.Bind(&u); err != nil {
+		return err
+	}
+	td := models.TwitterConfigurations{
+		Domain_uuid:          u.Domain_uuid,
+		ConfigurationName:    u.ConfigurationName,
+		AppId:                u.AppId,
+		AppKey:               u.AppKey,
+		Message:              u.Message,
+		Size:                 u.Size,
+		AppSecret:            u.AppSecret,
+		TwitterIntegrationID: u.TwitterIntegrationID,
+		Trigger: models.Trigger{
+			When:    u.Trigger.When,
+			Name:    u.Trigger.Name,
+			Message: u.Trigger.Message,
+		},
+		WorkingDays: []models.WorkingDays{
+			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
+			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
+			{Day: u.WorkingDays[2].Day, WorkingHourStartTime: u.WorkingDays[2].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[2].WorkingHourEndTime},
+			{Day: u.WorkingDays[3].Day, WorkingHourStartTime: u.WorkingDays[3].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[3].WorkingHourEndTime},
+			{Day: u.WorkingDays[4].Day, WorkingHourStartTime: u.WorkingDays[4].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[4].WorkingHourEndTime},
+			{Day: u.WorkingDays[5].Day, WorkingHourStartTime: u.WorkingDays[5].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[5].WorkingHourEndTime},
+			{Day: u.WorkingDays[6].Day, WorkingHourStartTime: u.WorkingDays[6].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[6].WorkingHourEndTime},
+		},
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Add_Twitter_configuration(ctx, td)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/*********************************************** Get facebook configuration******************************************/
+func (r *CRUDController) Get_Twitter_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Twitter_configuration(ctx, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/**********************************************Update Facebook configuration**************************************/
+func (r *CRUDController) Update_Twitter_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, err)
+	}
+	id := int64(idP)
+	u := models.TwitterConfigurations{}
+	if err := c.Bind(&u); err != nil {
+		return err
+	}
+	td := models.TwitterConfigurations{
+		Domain_uuid:          u.Domain_uuid,
+		ConfigurationName:    u.ConfigurationName,
+		AppId:                u.AppId,
+		AppKey:               u.AppKey,
+		AppSecret:            u.AppSecret,
+		Message:              u.Message,
+		Size:                 u.Size,
+		TwitterIntegrationID: u.TwitterIntegrationID,
+		Trigger: models.Trigger{
+			When:    u.Trigger.When,
+			Name:    u.Trigger.Name,
+			Message: u.Trigger.Message,
+		},
+		WorkingDays: []models.WorkingDays{
+			{Day: u.WorkingDays[0].Day, WorkingHourStartTime: u.WorkingDays[0].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[0].WorkingHourEndTime},
+			{Day: u.WorkingDays[1].Day, WorkingHourStartTime: u.WorkingDays[1].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[1].WorkingHourEndTime},
+			{Day: u.WorkingDays[2].Day, WorkingHourStartTime: u.WorkingDays[2].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[2].WorkingHourEndTime},
+			{Day: u.WorkingDays[3].Day, WorkingHourStartTime: u.WorkingDays[3].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[3].WorkingHourEndTime},
+			{Day: u.WorkingDays[4].Day, WorkingHourStartTime: u.WorkingDays[4].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[4].WorkingHourEndTime},
+			{Day: u.WorkingDays[5].Day, WorkingHourStartTime: u.WorkingDays[5].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[5].WorkingHourEndTime},
+			{Day: u.WorkingDays[6].Day, WorkingHourStartTime: u.WorkingDays[6].WorkingHourStartTime, WorkingHourEndTime: u.WorkingDays[6].WorkingHourEndTime},
+		},
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Update_Twitter_configuration(ctx, id, domain_uuid, td)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/***********************************************Delete Twitter configuration*******************************/
+func (r *CRUDController) Delete_Twitter_configuration(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, err := strconv.Atoi(c.Param("id"))
+	if err != nil {
+		return c.JSON(http.StatusNotFound, err)
+	}
+	id := int64(idP)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Delete_Twitter_configuration(ctx, id, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
 /**********************************************List integration*******************************************/
 func (r *CRUDController) List_integration(c echo.Context) error {
 	appId := c.Param("appId")
@@ -1865,6 +1994,11 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("update_facebookConfiguration/:id/:domain_uuid", handler.Update_Facebook_configuration)
 	e.DELETE("delete_facebookConfiguration/:id/:domain_uuid", handler.Delete_Facebook_configuration)
 
+	e.POST("add_twitter_configuration", handler.Add_Twitter_configuration)
+	e.POST("update_twitter_configuration/:id/:domain_uuid", handler.Update_Twitter_configuration)
+	e.GET("get_twitter_configuration/:domain_uuid", handler.Get_Twitter_configuration)
+	e.DELETE("delete_twitter_configuration/:id/:domain_uuid", handler.Delete_Twitter_configuration)
+
 	e.GET("list_integration/:appId", handler.List_integration)
 	e.POST("link_appUser_to_channel/:appId/:appUserId", handler.Link_appUser_to_Channel)
 	e.DELETE("unlink_appUser_to_channel/:appId/:appUserId/:channel", handler.Unlink_appUser_to_Channel)
@@ -1913,4 +2047,5 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 
 	e.DELETE("delete_ticket/:ticket_uuid", handler.Delete_Tickets)
 	e.GET("getall_tickets/:domain_uuid", handler.GetAll_Tickets)
+
 }
