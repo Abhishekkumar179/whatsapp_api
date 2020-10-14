@@ -4203,31 +4203,41 @@ func (r *crudRepository) Available_Agents(ctx context.Context, domain_uuid strin
 }
 
 /************************************************Transfer customer**********************************************/
-func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid string, appUserId string) (*models.Response, error) {
+func (r *crudRepository) Transfer_customer(ctx context.Context, new_agent_uuid string, current_agent_uuid string, appUserId string) (*models.Response, error) {
+	v_call_agents := models.V_call_center_agents{}
 	app := models.Customer_Agents{
 		AppUserId: appUserId,
 	}
-	err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&app)
-	if err.Error != nil {
-		return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
+	agent := r.DBConn.Table("v_call_center_agents").Where("call_center_agent_uuid = ?", current_agent_uuid).Find(&v_call_agents)
+	if agent.Error != nil {
+		return &models.Response{Status: "0", Msg: "Agent not Found.", ResponseCode: 404}, nil
 	}
-	db := r.DBConn.Table("customer_agents").Where("app_user_id = ?", appUserId).Update("agent_uuid", agent_uuid)
-	if db.Error != nil {
-		return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
-	}
-	msg := map[string]interface{}{"message_id": "5", "customer_id": appUserId, "user_id": agent_uuid, "user_type": "agent"}
+	if v_call_agents.AgentStatus == "Available" {
 
-	for _, oldu := range r.SList.Users {
-		if oldu.UName == agent_uuid {
-			log.Println("found user: ", oldu)
-			if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
-				log.Println("Can't send", err)
-			}
-			fmt.Println("sucessfully sent ", oldu, appUserId)
-
+		err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&app)
+		if err.Error != nil {
+			return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
 		}
+		db := r.DBConn.Table("customer_agents").Where("app_user_id = ?", appUserId).Update("agent_uuid", new_agent_uuid)
+		if db.Error != nil {
+			return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
+		}
+		msg := map[string]interface{}{"message_id": "5", "customer_id": appUserId, "user_id": new_agent_uuid, "user_type": "agent"}
+
+		for _, oldu := range r.SList.Users {
+			if oldu.UName == new_agent_uuid {
+				log.Println("found user: ", oldu)
+				if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
+					log.Println("Can't send", err)
+				}
+				fmt.Println("sucessfully sent ", oldu, appUserId)
+
+			}
+		}
+		return &models.Response{Status: "1", Msg: "Customer assigned to agent successfully.", ResponseCode: 200}, nil
+	} else {
+		return &models.Response{Status: "0", Msg: "Agent is not Available.", ResponseCode: 409}, nil
 	}
-	return &models.Response{Status: "1", Msg: "Customer assigned to agent successfully.", ResponseCode: 200}, nil
 }
 
 /*****************************************************Post page on Fb*****************************************/

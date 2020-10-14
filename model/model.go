@@ -458,6 +458,7 @@ type AgentQueue struct {
 type V_call_center_agents struct {
 	CallCenterAgentUUID uuid.UUID `json:"call_center_agent_uuid,omitempty" gorm:"type:uuid"`
 	AgentName           string    `json:"agent_name,omitempty"`
+	AgentStatus         string    `json:"agent_status,omitempty"`
 }
 type Customer_Agents struct {
 	Domain_uuid     string    `json:"domain_uuid,omitempty" gorm:"type:uuid"`
