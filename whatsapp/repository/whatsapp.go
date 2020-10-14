@@ -4202,6 +4202,33 @@ func (r *crudRepository) Available_Agents(ctx context.Context, domain_uuid strin
 	}
 }
 
+/*************************************************Available Agents in Queue********************************/
+func (r *crudRepository) Get_Available_Agents_Queue_List(ctx context.Context, agent_uuid string, queue_uuid string) (*models.Response, error) {
+	list := make([]models.AgentQueue, 0)
+	a := models.AgentQueue{}
+	err := r.DBConn.Where("queue_uuid = ?", queue_uuid).Find(&a)
+	if err.Error != nil {
+		return &models.Response{Status: "Not Found", Msg: "Agents Not Found", ResponseCode: 404}, nil
+	}
+	if rows, err := r.DBConn.Raw("select agent_name,agent_uuid from agent_queues where queue_uuid = ? And agent_uuid != ?", queue_uuid, agent_uuid).Rows(); err != nil {
+
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.AgentQueue{}
+			if err := rows.Scan(&f.AgentName, &f.Agent_uuid); err != nil {
+
+				return nil, err
+			}
+
+			list = append(list, f)
+		}
+
+		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, AssignAgent: list}, nil
+	}
+}
+
 /************************************************Transfer customer**********************************************/
 func (r *crudRepository) Transfer_customer(ctx context.Context, new_agent_uuid string, current_agent_uuid string, appUserId string) (*models.Response, error) {
 	v_call_agents := models.V_call_center_agents{}

@@ -391,6 +391,12 @@ func (r *crudUsecase) Get_Queue_List(ctx context.Context, domain_uuid string) (*
 
 }
 
+/************************************Get Available Agents List In Queue**********************************/
+func (r *crudUsecase) Get_Available_Agents_Queue_List(ctx context.Context, agent_uuid string, queue_uuid string) (*models.Response, error) {
+
+	return r.repository.Get_Available_Agents_Queue_List(ctx, agent_uuid, queue_uuid)
+}
+
 /**********************************************Update_Queue*****************************************************/
 func (r *crudUsecase) Update_Queue(ctx context.Context, queue_uuid string, flow map[string]interface{}) (*models.Response, error) {
 

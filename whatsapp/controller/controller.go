@@ -1423,6 +1423,22 @@ func (r *CRUDController) Get_Queue_List(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/*********************************************Available Agents in Queue****************************************/
+func (r *CRUDController) Get_Available_Agents_Queue_List(c echo.Context) error {
+	agent_uuid := c.Param("agent_uuid")
+	queue_uuid := c.Param("queue_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Available_Agents_Queue_List(ctx, agent_uuid, queue_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /*************************************************Available Agents************************************************/
 func (r *CRUDController) Available_Agents(c echo.Context) error {
 	domain_uuid := c.Param("domain_uuid")
@@ -2047,5 +2063,6 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 
 	e.DELETE("delete_ticket/:ticket_uuid", handler.Delete_Tickets)
 	e.GET("getall_tickets/:domain_uuid", handler.GetAll_Tickets)
+	e.GET("get_available_agent_in_queue/:queue_uuid/:agent_uuid", handler.Get_Available_Agents_Queue_List)
 
 }
