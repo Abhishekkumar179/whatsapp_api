@@ -19,6 +19,7 @@ import (
 	crud "whatsapp_api/whatsapp"
 	controller "whatsapp_api/whatsapp/controller"
 
+	"github.com/google/uuid"
 	myNewUUID "github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"github.com/labstack/echo"
@@ -4235,7 +4236,8 @@ func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid strin
 	app := models.Customer_Agents{
 		AppUserId: appUserId,
 	}
-	agent := r.DBConn.Table("v_call_center_agents").Where("call_center_agent_uuid = ?", agent_uuid).Find(&v_call_agents)
+	agent_uuid1, _ := uuid.Parse(agent_uuid)
+	agent := r.DBConn.Table("v_call_center_agents").Where("call_center_agent_uuid = ?", agent_uuid1).Find(&v_call_agents)
 	if agent.Error != nil {
 		return &models.Response{Status: "0", Msg: "Agent not Found.", ResponseCode: 404}, nil
 	}
