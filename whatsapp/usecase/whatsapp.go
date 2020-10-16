@@ -606,3 +606,38 @@ func (r *crudUsecase) GetAll_Tickets(ctx context.Context, domain_uuid string) (*
 
 	return r.repository.GetAll_Tickets(ctx, domain_uuid)
 }
+
+/*************************************************Save Twitter Auth***************************************/
+func (r *crudUsecase) SaveTwitterAuth(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	Id := fmt.Sprintf("%v", flow["id"])
+	id, _ := strconv.ParseInt(Id, 10, 64)
+	domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
+	api_key := fmt.Sprintf("%v", flow["api_key"])
+	api_secret := fmt.Sprintf("%v", flow["api_secret"])
+	bearer_token := fmt.Sprintf("%v", flow["bearer_token"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
+	token_secret := fmt.Sprintf("%v", flow["token_secret"])
+	return r.repository.SaveTwitterAuth(ctx, id, domain_uuid, api_key, api_secret, bearer_token, access_token, token_secret)
+}
+
+/*************************************************Update Twitter Auth************************************/
+func (r *crudUsecase) UpdateTwitterAuth(ctx context.Context, id int64, domain_uuid string, flow map[string]interface{}) (*models.Response, error) {
+	api_key := fmt.Sprintf("%v", flow["api_key"])
+	api_secret := fmt.Sprintf("%v", flow["api_secret"])
+	bearer_token := fmt.Sprintf("%v", flow["bearer_token"])
+	access_token := fmt.Sprintf("%v", flow["access_token"])
+	token_secret := fmt.Sprintf("%v", flow["token_secret"])
+	return r.repository.UpdateTwitterAuth(ctx, id, domain_uuid, api_key, api_secret, bearer_token, access_token, token_secret)
+}
+
+/***********************************************Get Twitter Auth*****************************************/
+func (r *crudUsecase) GetTwitterAuth(ctx context.Context, domain_uuid string) (*models.Response, error) {
+
+	return r.repository.GetTwitterAuth(ctx, domain_uuid)
+}
+
+/***********************************************Delete Twitter Auth**************************************/
+func (r *crudUsecase) DeleteTwitterAuth(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+
+	return r.repository.DeleteTwitterAuth(ctx, id, domain_uuid)
+}

@@ -94,4 +94,8 @@ type Repository interface {
 	Like_and_Unlike_Post_and_Comment(ctx context.Context, postId string, commentId string, access_token string, Type string) ([]byte, error)
 	Delete_Tickets(ctx context.Context, ticket_uuid string) (*models.Response, error)
 	GetAll_Tickets(ctx context.Context, domain_uuid string) (*models.Response, error)
+	SaveTwitterAuth(ctx context.Context, id int64, domain_uuid string, api_key string, api_secret string, bearer_token string, access_token string, token_secret string) (*models.Response, error)
+	UpdateTwitterAuth(ctx context.Context, id int64, domain_uuid string, api_key string, api_secret string, bearer_token string, access_token string, token_secret string) (*models.Response, error)
+	GetTwitterAuth(ctx context.Context, domain_uuid string) (*models.Response, error)
+	DeleteTwitterAuth(ctx context.Context, id int64, domain_uuid string) (*models.Response, error)
 }

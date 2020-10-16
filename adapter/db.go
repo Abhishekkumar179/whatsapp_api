@@ -31,6 +31,7 @@ func DB(config *config.Config) *gorm.DB {
 	db.AutoMigrate(models.FacebookLoginAppConfiguration{})
 	db.AutoMigrate(models.FacebookLoginAppConfigurationAgent{})
 	db.AutoMigrate(models.SocialMediaTickets{})
+	db.AutoMigrate(models.SaveTwitterAuth{})
 	fmt.Println("Successfully connected!")
 	return db
 }

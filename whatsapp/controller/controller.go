@@ -1959,6 +1959,80 @@ func (r *CRUDController) GetAll_Tickets(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/**********************************************Save Twitter App Details*********************************/
+func (r *CRUDController) SaveTwitterAuth(c echo.Context) error {
+	var auth map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&auth)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.SaveTwitterAuth(ctx, auth)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/*********************************************Update Twitter Auth******************************************/
+func (r *CRUDController) UpdateTwitterAuth(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, _ := strconv.Atoi(c.Param("id"))
+	id := int64(idP)
+
+	var auth map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&auth)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.UpdateTwitterAuth(ctx, id, domain_uuid, auth)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/***********************************************Get Twitter Auth******************************************/
+func (r *CRUDController) GetTwitterAuth(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.GetTwitterAuth(ctx, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/**********************************************Delete Twitter Auth*****************************************/
+func (r *CRUDController) DeleteTwitterAuth(c echo.Context) error {
+	domain_uuid := c.Param("domain_uuid")
+	idP, _ := strconv.Atoi(c.Param("id"))
+	id := int64(idP)
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.DeleteTwitterAuth(ctx, id, domain_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -2065,4 +2139,8 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("getall_tickets/:domain_uuid", handler.GetAll_Tickets)
 	e.GET("get_available_agent_in_queue/:queue_uuid/:agent_uuid", handler.Get_Available_Agents_Queue_List)
 
+	e.POST("save_twitter_auth", handler.SaveTwitterAuth)
+	e.POST("update_twitter_auth/:id/:domain_uuid", handler.UpdateTwitterAuth)
+	e.DELETE("delete_twitter_auth/:id/:domain_uuid", handler.DeleteTwitterAuth)
+	e.GET("get_twitter_auth_list/:domain_uuid", handler.GetTwitterAuth)
 }

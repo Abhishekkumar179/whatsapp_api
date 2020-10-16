@@ -94,4 +94,8 @@ type Usecase interface {
 	Like_and_Unlike_Post_and_Comment(ctx context.Context, flow map[string]interface{}) ([]byte, error)
 	Delete_Tickets(ctx context.Context, ticket_uuid string) (*models.Response, error)
 	GetAll_Tickets(ctx context.Context, domain_uuid string) (*models.Response, error)
+	SaveTwitterAuth(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
+	UpdateTwitterAuth(ctx context.Context, id int64, domain_uuid string, flow map[string]interface{}) (*models.Response, error)
+	GetTwitterAuth(ctx context.Context, domain_uuid string) (*models.Response, error)
+	DeleteTwitterAuth(ctx context.Context, id int64, domain_uuid string) (*models.Response, error)
 }

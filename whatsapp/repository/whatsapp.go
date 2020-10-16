@@ -315,7 +315,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					},
 					Content: models.Content{
 						Type: "text",
-						Text: "Sorry for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
+						Text: "Sorry " + f.Messages[0].Name + "! for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
 					},
 				}
 				r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
@@ -357,7 +357,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					},
 					Content: models.Content{
 						Type: "text",
-						Text: "Sorry for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
+						Text: "Sorry " + f.Messages[0].Name + "! for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
 					},
 				}
 				r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
@@ -401,7 +401,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					},
 					Content: models.Content{
 						Type: "text",
-						Text: "Sorry for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
+						Text: "Sorry " + f.Messages[0].Name + "! for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
 					},
 				}
 				r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
@@ -4856,4 +4856,95 @@ func (r *crudRepository) GetAll_Tickets(ctx context.Context, domain_uuid string)
 
 		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, TicketList: list}, nil
 	}
+}
+
+/*******************************************Save Twitter Auth******************************************/
+func (r *crudRepository) SaveTwitterAuth(ctx context.Context, id int64, domain_uuid string, api_key string, api_secret string, bearer_token string, access_token string, token_secret string) (*models.Response, error) {
+	au := models.SaveTwitterAuth{
+		Id:           id,
+		Domain_uuid:  domain_uuid,
+		Api_Key:      api_key,
+		Api_Secret:   api_secret,
+		Bearer_Token: bearer_token,
+		Access_Token: access_token,
+		Token_Secret: token_secret,
+	}
+	if db := r.DBConn.Where("api_key = ?", api_key).Find(&au).Error; db != nil {
+		err := r.DBConn.Create(&au)
+		if err.Error != nil {
+			return &models.Response{Status: "0", Msg: "Twitter Auth is not saved.", ResponseCode: 409}, nil
+		}
+		return &models.Response{Status: "1", Msg: "Twitter Auth is saved successfully.", ResponseCode: 200}, nil
+	}
+	if api_key == au.Api_Key {
+		return &models.Response{Status: "0", Msg: "Twitter Api key is already exist.", ResponseCode: 409}, nil
+	}
+
+	return &models.Response{Status: "1", Msg: "Twitter Auth is saved successfully.", ResponseCode: 200}, nil
+}
+
+/********************************************Update Twitter Auth********************************************/
+func (r *crudRepository) UpdateTwitterAuth(ctx context.Context, id int64, domain_uuid string, api_key string, api_secret string, bearer_token string, access_token string, token_secret string) (*models.Response, error) {
+	au := models.SaveTwitterAuth{}
+
+	db := r.DBConn.Where("domain_uuid = ? and id = ?", domain_uuid, id).Find(&au)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Twitter Auth is not found.", ResponseCode: 204}, nil
+	}
+	if api_key == au.Api_Key {
+		up := r.DBConn.Table("save_twitter_auths").Where("domain_uuid = ? and id = ?", domain_uuid, id).Updates(map[string]interface{}{"api_secret": api_secret, "bearer_token": bearer_token, "access_token": access_token, "token_secret": token_secret})
+		if up.RowsAffected == 0 {
+			return &models.Response{Status: "0", Msg: "Twitter Auth is not Updated.", ResponseCode: 204}, nil
+		}
+		return &models.Response{Status: "1", Msg: "Twitter Auth is Updated successfully.", ResponseCode: 200}, nil
+	} else if api_key != au.Api_Key {
+		up := r.DBConn.Table("save_twitter_auths").Where("domain_uuid = ? and id = ?", domain_uuid, id).Updates(map[string]interface{}{"api_key": api_key, "api_secret": api_secret, "bearer_token": bearer_token, "access_token": access_token, "token_secret": token_secret})
+		if up.RowsAffected == 0 {
+			return &models.Response{Status: "0", Msg: "Twitter Auth is not Updated.", ResponseCode: 204}, nil
+		}
+		return &models.Response{Status: "1", Msg: "Twitter Auth is Updated successfully.", ResponseCode: 200}, nil
+	}
+
+	return &models.Response{Status: "1", Msg: "Twitter Auth is Updated successfully.", ResponseCode: 200}, nil
+}
+
+/************************************************Get Twitter Auth********************************************/
+func (r *crudRepository) GetTwitterAuth(ctx context.Context, domain_uuid string) (*models.Response, error) {
+	td := models.SaveTwitterAuth{}
+	list := make([]models.SaveTwitterAuth, 0)
+	if db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&td).Error; db != nil {
+
+		return &models.Response{Status: "0", Msg: "Twitter Auth list is not available", ResponseCode: 404}, nil
+	}
+	if rows, err := r.DBConn.Raw("select id,domain_uuid,api_key, api_secret,bearer_token,access_token,token_secret from save_twitter_auth where domain_uuid = ?", domain_uuid).Rows(); err != nil {
+
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.SaveTwitterAuth{}
+			if err := rows.Scan(&f.Id, &f.Domain_uuid, &f.Api_Key, &f.Api_Secret, &f.Bearer_Token, &f.Access_Token, &f.Token_Secret); err != nil {
+
+				return nil, err
+			}
+
+			list = append(list, f)
+		}
+
+		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, TwitterAuthList: list}, nil
+	}
+
+}
+
+/**********************************************Delete Twitter Auth******************************************/
+func (r *crudRepository) DeleteTwitterAuth(ctx context.Context, id int64, domain_uuid string) (*models.Response, error) {
+	au := models.SaveTwitterAuth{}
+	db := r.DBConn.Where("domain_uuid = ? and id = ?", domain_uuid, id).Find(&au).Delete(&au)
+	if db.Error != nil {
+		return &models.Response{Status: "0", Msg: "Twiter Auth not found.", ResponseCode: 204}, nil
+	}
+	if db.RowsAffected == 0 {
+		return &models.Response{Status: "0", Msg: "Twiter Auth not deleted.", ResponseCode: 204}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Twiter Auth deleted successfully.", ResponseCode: 200}, nil
 }
