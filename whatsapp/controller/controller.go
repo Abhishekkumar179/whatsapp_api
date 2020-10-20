@@ -2033,6 +2033,26 @@ func (r *CRUDController) DeleteTwitterAuth(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/**********************************************Twitter Api*********************************************/
+func (r *CRUDController) Twitter_Apis(c echo.Context) error {
+	var auth map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&auth)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Twitter_Apis(ctx, auth)
+
+	if authResponse == nil {
+		return c.JSONBlob(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSONBlob(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -2050,6 +2070,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("getcustomerbyagent_uuid/:agent_uuid", handler.Get_Customer_by_agent_uuid)
 	e.GET("/get_appUser_details/:appId/:appUserId", handler.GetAppUserDetails)
 	e.POST("/create_text_template/:appId", handler.Create_Text_Template)
+
 	e.POST("/create_compound_template/:appId", handler.Create_Compound_Template)
 	e.POST("/create_carousel_template/:appId", handler.Create_Carousel_Template)
 	e.POST("/create_quickreply_template/:appId", handler.Create_Quickreply_Template)
@@ -2143,4 +2164,6 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("update_twitter_auth/:id/:domain_uuid", handler.UpdateTwitterAuth)
 	e.DELETE("delete_twitter_auth/:id/:domain_uuid", handler.DeleteTwitterAuth)
 	e.GET("get_twitter_auth_list/:domain_uuid", handler.GetTwitterAuth)
+
+	e.POST("twitter_apis", handler.Twitter_Apis)
 }

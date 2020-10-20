@@ -19,6 +19,8 @@ import (
 	crud "whatsapp_api/whatsapp"
 	controller "whatsapp_api/whatsapp/controller"
 
+	oauth1 "github.com/klaidas/go-oauth1"
+
 	"github.com/google/uuid"
 	myNewUUID "github.com/google/uuid"
 	"github.com/jinzhu/gorm"
@@ -4916,7 +4918,7 @@ func (r *crudRepository) GetTwitterAuth(ctx context.Context, domain_uuid string)
 
 		return &models.Response{Status: "0", Msg: "Twitter Auth list is not available", ResponseCode: 404}, nil
 	}
-	if rows, err := r.DBConn.Raw("select id,domain_uuid,api_key, api_secret,bearer_token,access_token,token_secret from save_twitter_auth where domain_uuid = ?", domain_uuid).Rows(); err != nil {
+	if rows, err := r.DBConn.Raw("select id,domain_uuid,api_key, api_secret,bearer_token,access_token,token_secret from save_twitter_auths where domain_uuid = ?", domain_uuid).Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
 	} else {
@@ -4948,3 +4950,250 @@ func (r *crudRepository) DeleteTwitterAuth(ctx context.Context, id int64, domain
 	}
 	return &models.Response{Status: "1", Msg: "Twiter Auth deleted successfully.", ResponseCode: 200}, nil
 }
+
+/******************************************Get Timeline******************************************************/
+func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, screen_name string, api_key string, api_type string) ([]byte, error) {
+	value := models.SaveTwitterAuth{}
+	db := r.DBConn.Where("api_key = ?", api_key).Find(&value)
+	if db.Error != nil {
+		fmt.Println("error")
+	}
+	if api_type == "getall_tweets" {
+		fmt.Println("part1")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+		fmt.Println(value.Api_Key, value.Api_Secret, value.Access_Token, value.Token_Secret, "credential...s")
+		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name="+screen_name, map[string]string{
+			"screen_name": screen_name,
+		})
+
+		req, _ := http.NewRequest("GET", "https://api.twitter.com/1.1/statuses/user_timeline.json?screen_name="+screen_name, nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "getsingle_tweet" {
+		fmt.Println("part2")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/1.1/statuses/show.json?id="+tweet_id, map[string]string{
+			"id": tweet_id,
+		})
+		req, _ := http.NewRequest("GET", "https://api.twitter.com/1.1/statuses/show.json?id="+tweet_id, nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "retweet" {
+		fmt.Println("part3")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("POST", "https://api.twitter.com/1.1/statuses/retweet/"+tweet_id+".json", nil)
+
+		req, _ := http.NewRequest("POST", "https://api.twitter.com/1.1/statuses/retweet/"+tweet_id+".json", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "un-retweet" {
+		fmt.Println("part4")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("POST", "https://api.twitter.com/1.1/statuses/unretweet/"+tweet_id+".json", nil)
+
+		req, _ := http.NewRequest("POST", "https://api.twitter.com/1.1/statuses/unretweet/"+tweet_id+".json", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "retweet_status" {
+		fmt.Println("part5")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/1.1/statuses/retweets/"+tweet_id+".json", nil)
+
+		req, _ := http.NewRequest("GET", "https://api.twitter.com/1.1/statuses/retweets/"+tweet_id+".json", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+
+	} else if api_type == "like_tweet" {
+		fmt.Println("part6")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("POST", "https://api.twitter.com/1.1/favorites/create.json?id="+tweet_id, map[string]string{
+			"id": tweet_id,
+		})
+
+		req, _ := http.NewRequest("POST", "https://api.twitter.com/1.1/favorites/create.json?id="+tweet_id, nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "unlike_tweet" {
+		fmt.Println("part7")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("POST", "https://api.twitter.com/1.1/favorites/destroy.json?id="+tweet_id, map[string]string{
+			"id": tweet_id,
+		})
+
+		req, _ := http.NewRequest("POST", "https://api.twitter.com/1.1/favorites/destroy.json?id="+tweet_id, nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "list_of_likes" {
+		fmt.Println("part8")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/1.1/favorites/list.json?count=20&screen_name="+screen_name, map[string]string{
+			"screen_name": screen_name,
+			"count":       "20",
+		})
+
+		req, _ := http.NewRequest("GET", "https://api.twitter.com/1.1/favorites/list.json?count=20&screen_name="+screen_name, nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	}
+	return nil, nil
+}
+
+// auth := oauth1.OAuth1{
+// 	ConsumerKey:    value.Api_Key,
+// 	ConsumerSecret: value.Api_Secret,
+// 	AccessToken:    value.Access_Token,
+// 	AccessSecret:   value.Token_Secret,
+// }
+
+// authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/1.1/statuses/user_timeline.json", nil)
+
+// req, _ := http.NewRequest("GET", "https://api.twitter.com/1.1/statuses/user_timeline.json", nil)
+// req.Header.Set("Content-Type", "application/json")
+// req.Header.Set("Authorization", authHeader)
+// client := &http.Client{}
+// res, err := client.Do(req)
+// if err != nil {
+// 	return nil, err
+// } else {
+// 	data, _ := ioutil.ReadAll(res.Body)
+// 	fmt.Println(string(data), "values.....")
+// 	return &models.Response{Msg: string(data)}, nil
+// }
+//}
+
+// auth := oauth1.OAuth1{
+// 	ConsumerKey: "xvz1evFS4wEEPTGEFPHBog",
+// 	ConsumerSecret: "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw",
+// 	AccessToken: "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
+// 	AccessSecret: "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE",
+// }
+
+// authHeader := auth.BuildOAuth1Header(method, url, map[string]string {
+// 	"include_entities": "true",
+// 	"status": "Hello Ladies + Gentlemen, a signed OAuth request!",
+// })
+
+// Generated by curl-to-Go: https://mholt.github.io/curl-to-go
+
+// req, err := http.NewRequest("POST", "https://api.twitter.com/1.1/statuses/update.json?status=Hello%20world", nil)
+// if err != nil {
+// 	// handle err
+// }
+// req.Header.Set("Authorization", "OAuth oauth_consumer_key=\"CONSUMER_API_KEY\", oauth_nonce=\"OAUTH_NONCE\", oauth_signature=\"OAUTH_SIGNATURE\", oauth_signature_method=\"HMAC-SHA1\", oauth_timestamp=\"OAUTH_TIMESTAMP\", oauth_token=\"ACCESS_TOKEN\", oauth_version=\"1.0\"")
+
+// resp, err := http.DefaultClient.Do(req)
+// if err != nil {
+// 	// handle err
+// }
+// defer resp.Body.Close()

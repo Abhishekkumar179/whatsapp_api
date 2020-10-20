@@ -98,4 +98,5 @@ type Repository interface {
 	UpdateTwitterAuth(ctx context.Context, id int64, domain_uuid string, api_key string, api_secret string, bearer_token string, access_token string, token_secret string) (*models.Response, error)
 	GetTwitterAuth(ctx context.Context, domain_uuid string) (*models.Response, error)
 	DeleteTwitterAuth(ctx context.Context, id int64, domain_uuid string) (*models.Response, error)
+	Twitter_Apis(ctx context.Context, tweet_id string, screen_name string, api_key string, api_type string) ([]byte, error)
 }
