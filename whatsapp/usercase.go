@@ -99,4 +99,7 @@ type Usecase interface {
 	GetTwitterAuth(ctx context.Context, domain_uuid string) (*models.Response, error)
 	DeleteTwitterAuth(ctx context.Context, id int64, domain_uuid string) (*models.Response, error)
 	Twitter_Apis(ctx context.Context, flow map[string]interface{}) ([]byte, error)
+	AssignAgentToTwitter(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
+	TwitterAssignAgentList(ctx context.Context, domain_uuid string, twitter_uuid string) (*models.Response, error)
+	RemoveTwitterAssignAgent(ctx context.Context, agent_uuid string, twitter_uuid string) (*models.Response, error)
 }

@@ -2053,6 +2053,58 @@ func (r *CRUDController) Twitter_Apis(c echo.Context) error {
 	return c.JSONBlob(http.StatusOK, authResponse)
 }
 
+/**********************************************Assign Agent to Twitter************************************/
+func (r *CRUDController) AssignAgentToTwitter(c echo.Context) error {
+	var auth map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&auth)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
+
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.AssignAgentToTwitter(ctx, auth)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/***********************************************Assign Agent list twitter**********************************/
+func (r *CRUDController) TwitterAssignAgentList(c echo.Context) error {
+	twitter_uuid := c.Param("twitter_uuid")
+	domain_uuid := c.Param("domain_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.TwitterAssignAgentList(ctx, domain_uuid, twitter_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
+/**********************************************Remove Assigned Agent Twitter******************************/
+func (r *CRUDController) RemoveTwitterAssignAgent(c echo.Context) error {
+	twitter_uuid := c.Param("twitter_uuid")
+	agent_uuid := c.Param("agent_uuid")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.RemoveTwitterAssignAgent(ctx, agent_uuid, twitter_uuid)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -2166,4 +2218,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("get_twitter_auth_list/:domain_uuid", handler.GetTwitterAuth)
 
 	e.POST("twitter_apis", handler.Twitter_Apis)
+	e.POST("twitter_assign_agents", handler.AssignAgentToTwitter)
+	e.GET("twitter_assigned_agents_list/:domain_uuid/:twitter_uuid", handler.TwitterAssignAgentList)
+	e.DELETE("remove_twitter_assigned_agents/:agent_uuid/:twitter_uuid", handler.RemoveTwitterAssignAgent)
 }

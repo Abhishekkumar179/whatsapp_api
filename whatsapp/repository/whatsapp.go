@@ -4862,8 +4862,11 @@ func (r *crudRepository) GetAll_Tickets(ctx context.Context, domain_uuid string)
 
 /*******************************************Save Twitter Auth******************************************/
 func (r *crudRepository) SaveTwitterAuth(ctx context.Context, id int64, domain_uuid string, api_key string, api_secret string, bearer_token string, access_token string, token_secret string) (*models.Response, error) {
+	uuid1, _ := myNewUUID.NewUUID()
+	uuid := uuid1.String()
 	au := models.SaveTwitterAuth{
 		Id:           id,
+		Twitter_uuid: uuid,
 		Domain_uuid:  domain_uuid,
 		Api_Key:      api_key,
 		Api_Secret:   api_secret,
@@ -4918,14 +4921,14 @@ func (r *crudRepository) GetTwitterAuth(ctx context.Context, domain_uuid string)
 
 		return &models.Response{Status: "0", Msg: "Twitter Auth list is not available", ResponseCode: 404}, nil
 	}
-	if rows, err := r.DBConn.Raw("select id,domain_uuid,api_key, api_secret,bearer_token,access_token,token_secret from save_twitter_auths where domain_uuid = ?", domain_uuid).Rows(); err != nil {
+	if rows, err := r.DBConn.Raw("select id,domain_uuid,twitter_uuid,api_key, api_secret,bearer_token,access_token,token_secret from save_twitter_auths where domain_uuid = ?", domain_uuid).Rows(); err != nil {
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
 	} else {
 		defer rows.Close()
 		for rows.Next() {
 			f := models.SaveTwitterAuth{}
-			if err := rows.Scan(&f.Id, &f.Domain_uuid, &f.Api_Key, &f.Api_Secret, &f.Bearer_Token, &f.Access_Token, &f.Token_Secret); err != nil {
+			if err := rows.Scan(&f.Id, &f.Domain_uuid, &f.Twitter_uuid, &f.Api_Key, &f.Api_Secret, &f.Bearer_Token, &f.Access_Token, &f.Token_Secret); err != nil {
 
 				return nil, err
 			}
@@ -5149,51 +5152,63 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 	return nil, nil
 }
 
-// auth := oauth1.OAuth1{
-// 	ConsumerKey:    value.Api_Key,
-// 	ConsumerSecret: value.Api_Secret,
-// 	AccessToken:    value.Access_Token,
-// 	AccessSecret:   value.Token_Secret,
-// }
+/*******************************************Assign agent To Twitter**************************************/
+func (r *crudRepository) AssignAgentToTwitter(ctx context.Context, twitter_uuid string, domain_uuid string, api_key string, agent_uuid string) (*models.Response, error) {
+	asgn := models.TwitterAssignedAgents{
+		Twitter_uuid: twitter_uuid,
+		Domain_uuid:  domain_uuid,
+		Agent_uuid:   agent_uuid,
+		Api_Key:      api_key,
+	}
+	if db := r.DBConn.Table("twitter_assigned_agents").Where("agent_uuid = ? and twitter_uuid = ?", agent_uuid, twitter_uuid).Find(&asgn).Error; db != nil {
+		create := r.DBConn.Create(&asgn)
+		if create.Error != nil {
+			return &models.Response{Status: "0", Msg: "Agent is not assigned.", ResponseCode: 204}, nil
+		}
+		return &models.Response{Status: "1", Msg: "Agent Assigned Successfully.", ResponseCode: 200}, nil
+	}
+	return &models.Response{Status: "0", Msg: "Agent Already Assigned.", ResponseCode: 204}, nil
 
-// authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/1.1/statuses/user_timeline.json", nil)
+}
 
-// req, _ := http.NewRequest("GET", "https://api.twitter.com/1.1/statuses/user_timeline.json", nil)
-// req.Header.Set("Content-Type", "application/json")
-// req.Header.Set("Authorization", authHeader)
-// client := &http.Client{}
-// res, err := client.Do(req)
-// if err != nil {
-// 	return nil, err
-// } else {
-// 	data, _ := ioutil.ReadAll(res.Body)
-// 	fmt.Println(string(data), "values.....")
-// 	return &models.Response{Msg: string(data)}, nil
-// }
-//}
+/*****************************************Assign agent Twitter List***************************************/
+func (r *crudRepository) TwitterAssignAgentList(ctx context.Context, domain_uuid string, twitter_uuid string) (*models.Response, error) {
+	td := models.TwitterAssignedAgents{}
+	list := make([]models.TwitterAssignedAgents, 0)
+	if db := r.DBConn.Where("domain_uuid = ? and twitter_uuid = ?", domain_uuid, twitter_uuid).Find(&td).Error; db != nil {
 
-// auth := oauth1.OAuth1{
-// 	ConsumerKey: "xvz1evFS4wEEPTGEFPHBog",
-// 	ConsumerSecret: "kAcSOqF21Fu85e7zjz7ZN2U4ZRhfV3WpwPAoE3Z7kBw",
-// 	AccessToken: "370773112-GmHxMAgYyLbNEtIKZeRNFsMKPR9EyMZeS9weJAEb",
-// 	AccessSecret: "LswwdoUaIvS8ltyTt5jkRh4J50vUPVVHtR2YPi5kE",
-// }
+		return &models.Response{Status: "0", Msg: "Agent list is not available", ResponseCode: 404}, nil
+	}
+	if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid, twitter_uuid, api_key from twitter_assigned_agents where domain_uuid = ? and twitter_uuid = ?", domain_uuid, twitter_uuid).Rows(); err != nil {
 
-// authHeader := auth.BuildOAuth1Header(method, url, map[string]string {
-// 	"include_entities": "true",
-// 	"status": "Hello Ladies + Gentlemen, a signed OAuth request!",
-// })
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.TwitterAssignedAgents{}
+			if err := rows.Scan(&f.Domain_uuid, &f.Agent_uuid, &f.Twitter_uuid, &f.Api_Key); err != nil {
 
-// Generated by curl-to-Go: https://mholt.github.io/curl-to-go
+				return nil, err
+			}
 
-// req, err := http.NewRequest("POST", "https://api.twitter.com/1.1/statuses/update.json?status=Hello%20world", nil)
-// if err != nil {
-// 	// handle err
-// }
-// req.Header.Set("Authorization", "OAuth oauth_consumer_key=\"CONSUMER_API_KEY\", oauth_nonce=\"OAUTH_NONCE\", oauth_signature=\"OAUTH_SIGNATURE\", oauth_signature_method=\"HMAC-SHA1\", oauth_timestamp=\"OAUTH_TIMESTAMP\", oauth_token=\"ACCESS_TOKEN\", oauth_version=\"1.0\"")
+			list = append(list, f)
+		}
 
-// resp, err := http.DefaultClient.Do(req)
-// if err != nil {
-// 	// handle err
-// }
-// defer resp.Body.Close()
+		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, TwitterAssignAgentList: list}, nil
+	}
+
+}
+
+/************************************************Remove Assigned Agent Twitter***********************************/
+func (r *crudRepository) RemoveTwitterAssignAgent(ctx context.Context, agent_uuid string, twitter_uuid string) (*models.Response, error) {
+	agt := models.TwitterAssignedAgents{}
+
+	if db := r.DBConn.Table("twitter_assigned_agents").Where("agent_uuid = ? and twitter_uuid = ?", agent_uuid, twitter_uuid).Find(&agt).Error; db != nil {
+		return &models.Response{Status: "0", Msg: "Agent Not removed.", ResponseCode: 204}, nil
+	}
+	del := r.DBConn.Delete(&agt)
+	if del.RowsAffected == 0 {
+		return &models.Response{Status: "0", Msg: "Agent not Found.", ResponseCode: 204}, nil
+	}
+	return &models.Response{Status: "1", Msg: "Agent Reoved successfully.", ResponseCode: 200}, nil
+}

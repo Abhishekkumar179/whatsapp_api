@@ -650,3 +650,26 @@ func (r *crudUsecase) Twitter_Apis(ctx context.Context, flow map[string]interfac
 	api_type := fmt.Sprintf("%v", flow["api_type"])
 	return r.repository.Twitter_Apis(ctx, tweet_id, screen_name, api_key, api_type)
 }
+
+/**********************************************Assign agent to twitter*************************************/
+func (r *crudUsecase) AssignAgentToTwitter(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	twitter_uuid := fmt.Sprintf("%v", flow["twitter_uuid"])
+	domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
+	api_key := fmt.Sprintf("%v", flow["api_key"])
+	agent_uuid := fmt.Sprintf("%v", flow["agent_uuid"])
+
+	return r.repository.AssignAgentToTwitter(ctx, twitter_uuid, domain_uuid, api_key, agent_uuid)
+}
+
+/**************************************Twitter Assigned agent list**************************************/
+func (r *crudUsecase) TwitterAssignAgentList(ctx context.Context, domain_uuid string, twitter_uuid string) (*models.Response, error) {
+
+	return r.repository.TwitterAssignAgentList(ctx, domain_uuid, twitter_uuid)
+}
+
+/*****************************************Remove Twitter Assigned Agent************************************/
+
+func (r *crudUsecase) RemoveTwitterAssignAgent(ctx context.Context, agent_uuid string, twitter_uuid string) (*models.Response, error) {
+
+	return r.repository.RemoveTwitterAssignAgent(ctx, agent_uuid, twitter_uuid)
+}
