@@ -466,11 +466,11 @@ type Queue struct {
 	Domain_uuid   string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
 }
 type AgentQueue struct {
-	QueueName   string `json:"queue_name,omitempty"`
-	AgentName   string `json:"agent_name,omitempty"`
-	Queue_uuid  string `json:"queue_uuid,omitempty" gorm:"type:uuid"`
-	Agent_uuid  string `json:"agent_uuid,omitempty" gorm:"type:uuid"`
-	Domain_uuid string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
+	QueueName          string `json:"queue_name,omitempty"`
+	AgentName          string `json:"agent_name,omitempty"`
+	Queue_uuid         string `json:"queue_uuid,omitempty" gorm:"type:uuid"`
+	Agent_uuid         string `json:"agent_uuid,omitempty" gorm:"type:uuid"`
+	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty" gorm:"type:uuid"`
 }
 type V_call_center_agents struct {
 	CallCenterAgentUUID uuid.UUID `json:"call_center_agent_uuid,omitempty" gorm:"type:uuid"`
