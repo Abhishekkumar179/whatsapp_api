@@ -466,11 +466,11 @@ type Queue struct {
 	Domain_uuid   string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
 }
 type AgentQueue struct {
-	QueueName          string `json:"queue_name,omitempty"`
-	AgentName          string `json:"agent_name,omitempty"`
-	Queue_uuid         string `json:"queue_uuid,omitempty" gorm:"type:uuid"`
-	Agent_uuid         string `json:"agent_uuid,omitempty" gorm:"type:uuid"`
-	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty" gorm:"type:uuid"`
+	QueueName   string `json:"queue_name,omitempty"`
+	AgentName   string `json:"agent_name,omitempty"`
+	Queue_uuid  string `json:"queue_uuid,omitempty" gorm:"type:uuid"`
+	Agent_uuid  string `json:"agent_uuid,omitempty" gorm:"type:uuid"`
+	Domain_uuid string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
 }
 type V_call_center_agents struct {
 	CallCenterAgentUUID uuid.UUID `json:"call_center_agent_uuid,omitempty" gorm:"type:uuid"`
@@ -532,19 +532,3 @@ type AccessToken struct {
 	ExpiresIn   int64  `json:"expires_in,omitempty"`
 	TokenType   string `json:"token_type,omitempty"`
 }
-
-// 97a8b191dc46299a5eb349ea
-// 6a88e08e1828ca95ea97f305
-// 93b6e7aac00d360dec27cc1b
-// fd97b30e00bef024d299f90d
-// 866f9006f016e19489194921
-// 0372777fd23e11b60f009d65
-// 21faa13735fe544ba7396b5b
-// 454b8b4a14d40e44326875bb
-// 4a54c37fe46fd12409aa3e42
-// d23095efa00166fff3af155a
-// e3c249966d31f73b943fd168
-// 19709560f99d553e86939ea6
-// 96a4aee8726abacb8f9555b6
-// 58a5627d25aca54f82b381b8
-// update receive_user_details set unread_count = 0 where app_user_id = '58a5627d25aca54f82b381b8';

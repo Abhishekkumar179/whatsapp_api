@@ -268,7 +268,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	//queue := models.Queue{}
 	cou := []models.Count_Agent_customer{}
 	agent := models.AgentQueue{}
-	db := r.DBConn.Table("customer_agents ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues inner join v_call_center_agents on agent_queues.agent_uuid=v_call_center_agents.call_center_agent_uuid where agent_status='Available' and queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
+	db := r.DBConn.Table("customer_agents ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.domain_uuid").Joins("right join (select agent_uuid,domain_uuid from agent_queues inner join v_call_center_agents on agent_queues.agent_uuid=v_call_center_agents.call_center_agent_uuid where agent_status='Available' and queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.domain_uuid").Find(&cou)
 	if db.Error != nil {
 		fmt.Println(db.Error)
 	}
@@ -428,15 +428,15 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	if min == max && min == 0 {
 
 		agent.Agent_uuid = min_uuid
-		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
+		agent.Domain_uuid = cou[0].Tenant_domain_uuid
 	} else {
 
 		agent.Agent_uuid = min_uuid
-		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
+		agent.Domain_uuid = cou[0].Tenant_domain_uuid
 	}
 	//fmt.Println("2 min= ", min, " max= ", max, " min_uuid= ", min_uuid)
 	customer := models.Customer_Agents{
-		Domain_uuid:     agent.Tenant_domain_uuid,
+		Domain_uuid:     agent.Domain_uuid,
 		AppUserId:       f.AppUser.ID,
 		Agent_uuid:      agent.Agent_uuid,
 		Surname:         f.AppUser.Surname,
@@ -4045,11 +4045,11 @@ func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid 
 /***************************************************Assign_Agent********************************************/
 func (r *crudRepository) Assign_Agent_To_Queue(ctx context.Context, Agent_name string, Agent_uuid string, Queue_name string, tenant_domain_uuid string, Queue_uuid string) (*models.Response, error) {
 	u := models.AgentQueue{
-		AgentName:          Agent_name,
-		Agent_uuid:         Agent_uuid,
-		QueueName:          Queue_name,
-		Tenant_domain_uuid: tenant_domain_uuid,
-		Queue_uuid:         Queue_uuid,
+		AgentName:   Agent_name,
+		Agent_uuid:  Agent_uuid,
+		QueueName:   Queue_name,
+		Domain_uuid: tenant_domain_uuid,
+		Queue_uuid:  Queue_uuid,
 	}
 	if err := r.DBConn.Where("agent_uuid = ? AND queue_name = ?", Agent_uuid, Queue_name).Find(&u).Error; err != nil {
 		Queue := r.DBConn.Create(&u)
@@ -5210,5 +5210,5 @@ func (r *crudRepository) RemoveTwitterAssignAgent(ctx context.Context, agent_uui
 	if del.RowsAffected == 0 {
 		return &models.Response{Status: "0", Msg: "Agent not Found.", ResponseCode: 204}, nil
 	}
-	return &models.Response{Status: "1", Msg: "Agent Reoved successfully.", ResponseCode: 200}, nil
+	return &models.Response{Status: "1", Msg: "Agent Removed successfully.", ResponseCode: 200}, nil
 }
