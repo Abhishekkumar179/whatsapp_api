@@ -648,7 +648,9 @@ func (r *crudUsecase) Twitter_Apis(ctx context.Context, flow map[string]interfac
 	screen_name := fmt.Sprintf("%v", flow["screen_name"])
 	api_key := fmt.Sprintf("%v", flow["api_key"])
 	api_type := fmt.Sprintf("%v", flow["api_type"])
-	return r.repository.Twitter_Apis(ctx, tweet_id, screen_name, api_key, api_type)
+	author_id := fmt.Sprintf("%v", flow["author_id"])
+	message := fmt.Sprintf("%v", flow["message"])
+	return r.repository.Twitter_Apis(ctx, tweet_id, screen_name, api_key, api_type, author_id, message)
 }
 
 /**********************************************Assign agent to twitter*************************************/

@@ -4955,7 +4955,7 @@ func (r *crudRepository) DeleteTwitterAuth(ctx context.Context, id int64, domain
 }
 
 /******************************************Get Timeline******************************************************/
-func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, screen_name string, api_key string, api_type string) ([]byte, error) {
+func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, screen_name string, api_key string, api_type string, author_id string, message string) ([]byte, error) {
 	value := models.SaveTwitterAuth{}
 	db := r.DBConn.Where("api_key = ?", api_key).Find(&value)
 	if db.Error != nil {
@@ -5123,8 +5123,8 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 			data, _ := ioutil.ReadAll(res.Body)
 			return data, nil
 		}
-	} else if api_type == "list_of_likes" {
-		fmt.Println("part8")
+	} else if api_type == "get_user" {
+		fmt.Println("part7")
 		auth := oauth1.OAuth1{
 			ConsumerKey:    value.Api_Key,
 			ConsumerSecret: value.Api_Secret,
@@ -5132,12 +5132,102 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 			AccessSecret:   value.Token_Secret,
 		}
 
-		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/1.1/favorites/list.json?count=20&screen_name="+screen_name, map[string]string{
-			"screen_name": screen_name,
-			"count":       "20",
-		})
+		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/2/users/"+author_id, nil)
+		req, _ := http.NewRequest("GET", "https://api.twitter.com/2/users/"+author_id, nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "getreply_list" {
+		fmt.Println("part2")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
 
-		req, _ := http.NewRequest("GET", "https://api.twitter.com/1.1/favorites/list.json?count=20&screen_name="+screen_name, nil)
+		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/1.1/statuses/mentions_timeline.json?count=10", map[string]string{
+			"count": "10",
+		})
+		req, _ := http.NewRequest("GET", "https://api.twitter.com/1.1/statuses/mentions_timeline.json?count=10", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "getquoted_retweet_list" {
+		fmt.Println("part2")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/2/tweets/search/recent?query="+tweet_id+"&tweet.fields=author_id", map[string]string{
+			"query":        tweet_id,
+			"tweet.fields": "author_id",
+		})
+		req, _ := http.NewRequest("GET", "https://api.twitter.com/2/tweets/search/recent?query="+tweet_id+"&tweet.fields=author_id", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "tweet_reply" {
+		fmt.Println("part2")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("POST", "https://api.twitter.com/1.1/statuses/update.json?status= welcome&in_reply_to_status_id="+tweet_id+"&auto_populate_reply_metadata=true", map[string]string{
+
+			"status":                       message,
+			"in_reply_to_status_id":        tweet_id,
+			"auto_populate_reply_metadata": "true",
+		})
+		req, _ := http.NewRequest("POST", "https://api.twitter.com/1.1/statuses/update.json?status="+message+"&in_reply_to_status_id="+tweet_id+"&auto_populate_reply_metadata=true", nil)
+		req.Header.Set("Content-Type", "application/json")
+		req.Header.Set("Authorization", authHeader)
+		client := &http.Client{}
+		res, err := client.Do(req)
+		if err != nil {
+			return nil, err
+		} else {
+			data, _ := ioutil.ReadAll(res.Body)
+			return data, nil
+		}
+	} else if api_type == "delete_reply" {
+		fmt.Println("part2")
+		auth := oauth1.OAuth1{
+			ConsumerKey:    value.Api_Key,
+			ConsumerSecret: value.Api_Secret,
+			AccessToken:    value.Access_Token,
+			AccessSecret:   value.Token_Secret,
+		}
+
+		authHeader := auth.BuildOAuth1Header("POST", "https://api.twitter.com/1.1/statuses/destroy/"+tweet_id+".json", nil)
+		req, _ := http.NewRequest("POST", "https://api.twitter.com/1.1/statuses/destroy/"+tweet_id+".json", nil)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", authHeader)
 		client := &http.Client{}
