@@ -5124,7 +5124,7 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 			return data, nil
 		}
 	} else if api_type == "get_user" {
-		fmt.Println("part7")
+		fmt.Println("part8")
 		auth := oauth1.OAuth1{
 			ConsumerKey:    value.Api_Key,
 			ConsumerSecret: value.Api_Secret,
@@ -5145,7 +5145,7 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 			return data, nil
 		}
 	} else if api_type == "getreply_list" {
-		fmt.Println("part2")
+		fmt.Println("part9")
 		auth := oauth1.OAuth1{
 			ConsumerKey:    value.Api_Key,
 			ConsumerSecret: value.Api_Secret,
@@ -5168,7 +5168,7 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 			return data, nil
 		}
 	} else if api_type == "getquoted_retweet_list" {
-		fmt.Println("part2")
+		fmt.Println("part10")
 		auth := oauth1.OAuth1{
 			ConsumerKey:    value.Api_Key,
 			ConsumerSecret: value.Api_Secret,
@@ -5176,11 +5176,11 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 			AccessSecret:   value.Token_Secret,
 		}
 
-		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/2/tweets/search/recent?query="+tweet_id+"&tweet.fields=author_id", map[string]string{
-			"query":        tweet_id,
-			"tweet.fields": "author_id",
+		authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/2/tweets/search/recent?query="+tweet_id+"&expansions=attachments.media_keys,author_id,entities.mentions.username,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id", map[string]string{
+			"query":      tweet_id,
+			"expansions": "attachments.media_keys,author_id,entities.mentions.username,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id",
 		})
-		req, _ := http.NewRequest("GET", "https://api.twitter.com/2/tweets/search/recent?query="+tweet_id+"&tweet.fields=author_id", nil)
+		req, _ := http.NewRequest("GET", "https://api.twitter.com/2/tweets/search/recent?query="+tweet_id+"&expansions=attachments.media_keys,author_id,entities.mentions.username,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id", nil)
 		req.Header.Set("Content-Type", "application/json")
 		req.Header.Set("Authorization", authHeader)
 		client := &http.Client{}
@@ -5192,7 +5192,7 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 			return data, nil
 		}
 	} else if api_type == "tweet_reply" {
-		fmt.Println("part2")
+		fmt.Println("part11")
 		auth := oauth1.OAuth1{
 			ConsumerKey:    value.Api_Key,
 			ConsumerSecret: value.Api_Secret,
@@ -5218,7 +5218,7 @@ func (r *crudRepository) Twitter_Apis(ctx context.Context, tweet_id string, scre
 			return data, nil
 		}
 	} else if api_type == "delete_reply" {
-		fmt.Println("part2")
+		fmt.Println("part12")
 		auth := oauth1.OAuth1{
 			ConsumerKey:    value.Api_Key,
 			ConsumerSecret: value.Api_Secret,
