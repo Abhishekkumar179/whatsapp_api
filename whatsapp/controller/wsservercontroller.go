@@ -535,6 +535,9 @@ func (s *ServerUserList) UserRegister(c echo.Context) error {
 		var msg map[string]interface{}
 		var rsp models.MyResponse
 		for {
+			if err := websocket.JSON.Send(ws, "register"); err != nil {
+				log.Println("Can't send", err)
+			}
 			if err := websocket.JSON.Receive(ws, &msg); err != nil {
 				log.Println("Can't receive", err)
 				break

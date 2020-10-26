@@ -2053,6 +2053,22 @@ func (r *CRUDController) Twitter_Apis(c echo.Context) error {
 	return c.JSONBlob(http.StatusOK, authResponse)
 }
 
+/**********************************************Get Quoted Tweet Api***************************************/
+func (r *CRUDController) Get_Quoted_Retweet_List(c echo.Context) error {
+	api_key := c.Param("api_key")
+	tweet_id := c.Param("tweet_id")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.Get_Quoted_Retweet_List(ctx, api_key, tweet_id)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /**********************************************Assign Agent to Twitter************************************/
 func (r *CRUDController) AssignAgentToTwitter(c echo.Context) error {
 	var auth map[string]interface{}
@@ -2218,6 +2234,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("get_twitter_auth_list/:domain_uuid", handler.GetTwitterAuth)
 
 	e.POST("twitter_apis", handler.Twitter_Apis)
+	e.GET("get_quote_retweet_list/:api_key/:tweet_id", handler.Get_Quoted_Retweet_List)
 	e.POST("twitter_assign_agents", handler.AssignAgentToTwitter)
 	e.GET("twitter_assigned_agents_list/:domain_uuid/:twitter_uuid", handler.TwitterAssignAgentList)
 	e.DELETE("remove_twitter_assigned_agents/:agent_uuid/:twitter_uuid", handler.RemoveTwitterAssignAgent)

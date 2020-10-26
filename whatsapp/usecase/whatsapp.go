@@ -675,3 +675,9 @@ func (r *crudUsecase) RemoveTwitterAssignAgent(ctx context.Context, agent_uuid s
 
 	return r.repository.RemoveTwitterAssignAgent(ctx, agent_uuid, twitter_uuid)
 }
+
+/****************************************Get Quoted Retweet List****************************************/
+func (r *crudUsecase) Get_Quoted_Retweet_List(ctx context.Context, api_key string, tweet_id string) (*models.Response, error) {
+
+	return r.repository.Get_Quoted_Retweet_List(ctx, api_key, tweet_id)
+}

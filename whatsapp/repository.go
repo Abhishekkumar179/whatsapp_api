@@ -102,4 +102,5 @@ type Repository interface {
 	AssignAgentToTwitter(ctx context.Context, twitter_uuid string, domain_uuid string, api_key string, agent_uuid string) (*models.Response, error)
 	TwitterAssignAgentList(ctx context.Context, domain_uuid string, twitter_uuid string) (*models.Response, error)
 	RemoveTwitterAssignAgent(ctx context.Context, agent_uuid string, twitter_uuid string) (*models.Response, error)
+	Get_Quoted_Retweet_List(ctx context.Context, api_key string, tweet_id string) (*models.Response, error)
 }

@@ -563,7 +563,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if err.RowsAffected == 0 {
 						fmt.Println("rows not updated.")
 					}
-
 				}
 
 			} else {
@@ -5301,4 +5300,59 @@ func (r *crudRepository) RemoveTwitterAssignAgent(ctx context.Context, agent_uui
 		return &models.Response{Status: "0", Msg: "Agent not Found.", ResponseCode: 204}, nil
 	}
 	return &models.Response{Status: "1", Msg: "Agent Removed successfully.", ResponseCode: 200}, nil
+}
+
+/**********************************************Get Quoted  Retweet List************************************/
+func (r *crudRepository) Get_Quoted_Retweet_List(ctx context.Context, api_key string, tweet_id string) (*models.Response, error) {
+	value := models.SaveTwitterAuth{}
+	db := r.DBConn.Where("api_key = ?", api_key).Find(&value)
+	if db.Error != nil {
+		fmt.Println("error")
+	}
+	val := models.QuotedTweet{}
+	datas := []models.QuotedTweet{}
+	vak := make([]models.Result, 0)
+	auth := oauth1.OAuth1{
+		ConsumerKey:    value.Api_Key,
+		ConsumerSecret: value.Api_Secret,
+		AccessToken:    value.Access_Token,
+		AccessSecret:   value.Token_Secret,
+	}
+
+	authHeader := auth.BuildOAuth1Header("GET", "https://api.twitter.com/2/tweets/search/recent?query="+tweet_id+"&expansions=attachments.media_keys,author_id,entities.mentions.username,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id&tweet.fields=created_at", map[string]string{
+		"query":        tweet_id,
+		"expansions":   "attachments.media_keys,author_id,entities.mentions.username,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id",
+		"tweet.fields": "created_at",
+	})
+	req, _ := http.NewRequest("GET", "https://api.twitter.com/2/tweets/search/recent?query="+tweet_id+"&expansions=attachments.media_keys,author_id,entities.mentions.username,in_reply_to_user_id,referenced_tweets.id,referenced_tweets.id.author_id&tweet.fields=created_at", nil)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Authorization", authHeader)
+	client := &http.Client{}
+	res, err := client.Do(req)
+	if err != nil {
+		return &models.Response{Status: "0", Msg: "Quote Retweet List not found.", ResponseCode: 204}, nil
+	} else {
+		data, _ := ioutil.ReadAll(res.Body)
+		json := json.Unmarshal(data, &val)
+		datas = append(datas, val)
+		fmt.Println(json, len(val.Data), len(val.Includes.Users))
+		j := 0
+		for i := 0; i < len(val.Data) && j < len(val.Includes.Users); i++ {
+
+			result := models.Result{
+				Text:      val.Data[i].Text,
+				Author_id: val.Includes.Users[j].Id,
+				Username:  val.Includes.Users[j].Username,
+				Name:      val.Includes.Users[j].Name,
+				RetweetId: val.Data[i].Author_id,
+				CreatedAt: val.Data[i].CreatedAt,
+			}
+			vak = append(vak, result)
+
+		}
+
+		return &models.Response{Status: "1", Msg: "Quote Retweet list", ResponseCode: 200, Quote_retweet_list: vak}, nil
+
+	}
+
 }
