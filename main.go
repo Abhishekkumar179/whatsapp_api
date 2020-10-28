@@ -34,13 +34,13 @@ func main() {
 
 		db := adapterdatabase.DB(config)
 		newServerUser := crudController.NewServerUser(db)
-		crudRepo := crudRepo.NewcrudRepository(db, newServerUser)
+		crudRepo := crudRepo.NewcrudRepository(db, newServerUser, config)
 		crudUc := crudUsecase.NewcrudUsecase(crudRepo)
 		crudController.NewCRUDController(e, crudUc)
 
 		go newServerUser.Controller(e)
 
-		if err := e.StartTLS("0.0.0.0:30707", "../keys/ucall.crt", "../keys/ucall.key"); err != nil {
+		if err := e.StartTLS(config.HttpConfig.HostPort, config.HttpConfig.HostCert, config.HttpConfig.HostKey); err != nil {
 			fmt.Println("not connected")
 			//logger.WithError(err).Fatal("Unable to start the callCenter service")
 		}

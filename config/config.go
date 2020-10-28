@@ -27,7 +27,10 @@ type logConfig struct {
 }
 
 type httpConfig struct {
-	HostPort string
+	HostPort       string
+	HostCert       string
+	HostKey        string
+	HTTPSERVERHOST string
 }
 
 // Config - configuration object
@@ -36,6 +39,10 @@ type Config struct {
 	Log        logConfig
 	HttpConfig httpConfig
 	Database   dbConfig
+	Server     ServerConfig
+}
+type ServerConfig struct {
+	OsUser string
 }
 
 var conf *Config
@@ -60,7 +67,10 @@ func GetConfig() *Config {
 	}
 
 	httpConf := httpConfig{
-		HostPort: v.GetString("http.host"),
+		HostPort:       v.GetString("http.host"),
+		HostCert:       v.GetString("http.cert"),
+		HostKey:        v.GetString("http.key"),
+		HTTPSERVERHOST: v.GetString("http.httpserverhost"),
 	}
 
 	dbConf := dbConfig{
@@ -72,11 +82,16 @@ func GetConfig() *Config {
 		DBType:   v.GetString("db.type"),
 		PoolSize: v.GetInt("db.poolsize"),
 	}
+	serverConf := ServerConfig{
+		OsUser: v.GetString("os.user"),
+	}
+
 	conf = &Config{
 		Cache:      cacheConf,
 		Log:        logConf,
 		HttpConfig: httpConf,
 		Database:   dbConf,
+		Server:     serverConf,
 	}
 	return conf
 }

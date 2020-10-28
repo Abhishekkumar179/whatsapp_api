@@ -15,6 +15,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	config "whatsapp_api/config"
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
 	controller "whatsapp_api/whatsapp/controller"
@@ -30,7 +32,10 @@ import (
 	"golang.org/x/oauth2/facebook"
 )
 
-const HTTPSERVERHOST = "10.11.2.130"
+var UserOs string
+
+var HTTPSERVERHOST string
+
 const HTTPSECURE = "https://"
 const PORT = "30707"
 
@@ -39,11 +44,19 @@ type crudRepository struct {
 	SList  *controller.ServerUserList
 }
 
-func NewcrudRepository(conn *gorm.DB, slist *controller.ServerUserList) crud.Repository {
+func NewcrudRepository(conn *gorm.DB, slist *controller.ServerUserList, conf *config.Config) crud.Repository {
+	UserOs = conf.Server.OsUser
+	HTTPSERVERHOST = conf.HttpConfig.HTTPSERVERHOST
 	return &crudRepository{
 		DBConn: conn,
 		SList:  slist,
 	}
+}
+func getServerOs() string {
+	return UserOs
+}
+func getserverhost() string {
+	return HTTPSERVERHOST
 }
 
 /******************************************Create_text_template**************************************/
@@ -151,32 +164,31 @@ func (r *crudRepository) Get_allId(ctx context.Context, domain_uuid string) (*mo
 }
 
 /**********************************************Get customer by appUserId*********************************************/
-func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string) (*models.Response, error) {
+func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, customer_id string) (*models.Response, error) {
 	customer := models.Customer_Agents{
-		Agent_uuid: agent_uuid,
+		AppUserId: customer_id,
 	}
-	list := make([]models.Customer_Agents, 0)
-	if db := r.DBConn.Where("agent_uuid = ?", agent_uuid).Find(&customer).Error; db != nil {
+	//list := make([]models.Customer_Agents, 0)
+	if db := r.DBConn.Where("app_user_id = ?", customer_id).Find(&customer).Error; db != nil {
 
 		return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
 	}
-	if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid,app_user_id, surname, given_name,type,text,role,name,author_id,conversation_id,received,message_id,integration_id,source_type, signed_up_at, unread_count from customer_agents where agent_uuid = ?", agent_uuid).Rows(); err != nil {
+	// if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid,app_user_id, surname, given_name,type,text,role,name,author_id,conversation_id,received,message_id,integration_id,source_type, signed_up_at, unread_count from customer_agents where app_user_id = ?", customer_id).Rows(); err != nil {
 
-		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
-	} else {
-		defer rows.Close()
-		for rows.Next() {
-			f := models.Customer_Agents{}
-			if err := rows.Scan(&f.Domain_uuid, &f.Agent_uuid, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Conversation_id, &f.Received, &f.Message_id, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.UnreadCount); err != nil {
+	// 	return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	// } else {
+	// 	defer rows.Close()
+	// 	for rows.Next() {
+	// 		f := models.Customer_Agents{}
+	// 		if err := rows.Scan(&f.Domain_uuid, &f.Agent_uuid, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Conversation_id, &f.Received, &f.Message_id, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.UnreadCount); err != nil {
 
-				return nil, err
-			}
+	// 			return nil, err
+	// 		}
 
-			list = append(list, f)
-		}
+	// 		list = append(list, f)
+	// 	}
 
-		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Customer: list}, nil
-	}
+	return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Customer: &customer}, nil
 }
 
 /**************************************************Getall_messageByUserId***************************************************/
@@ -272,6 +284,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	if db.Error != nil {
 		fmt.Println(db.Error)
 	}
+
 	fmt.Println(cou, len(cou))
 	var min int64 = 0
 	var max int64 = 0
@@ -471,8 +484,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			}
 		}
 	}
+	cou_cus := models.Count_customer{}
+	cou_cust := r.DBConn.Table("customer_agents").Select("count(customer_id)").Where("agent_uuid = ?", agent.Agent_uuid).Find(&cou_cus)
+	if cou_cust.Error != nil {
+		fmt.Println(cou_cust.Error)
+	}
+	g := 5 * (cou_cus.Count / 1)
 	errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
-	fmt.Println(errs.Error)
+	fmt.Println(errs.Error, g)
 	if f.Messages[0].Role == "appUser" {
 		count := r.DBConn.Table("receive_user_details").Where("conversation_id = ? AND app_user_id = ?", f.Conversation.ID, f.AppUser.ID).Update("unread_count", u.UnreadCount+1)
 		if count.Error != nil {
@@ -4456,7 +4475,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 	fmt.Println(Type, "type")
 	if Type == "image" {
 		fmt.Println("image")
-		IMAGE_DIR := "/home/startel/Downloads/temp_images/"
+		IMAGE_DIR := "/home/" + getServerOs() + "/Downloads/temp_images/"
 		dir_location := IMAGE_DIR
 		getFileName := handler.Filename
 
@@ -4472,7 +4491,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		defer f.Close()
 		io.Copy(f, file)
 
-		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url=http://"+HTTPSERVERHOST+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/photos?url=http://"+getserverhost()+fb_image_path+"&message="+message+"&access_token="+access_token, nil)
 		res.Header.Set("Content-Type", "application/json")
 		client := &http.Client{}
 		response, err := client.Do(res)
@@ -4490,7 +4509,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		return nil, err
 	} else if Type == "video" {
 		fmt.Println("video")
-		VIDEO_DIR := "/home/startel/Downloads/temp_images/"
+		VIDEO_DIR := "/home/" + getServerOs() + "/Downloads/temp_images/"
 		dir_location := VIDEO_DIR
 		getFileName := handler.Filename
 
@@ -4507,7 +4526,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		defer f.Close()
 		io.Copy(f, file)
 
-		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url=http://"+HTTPSERVERHOST+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
+		res, err := http.NewRequest("POST", "https://graph.facebook.com/"+pageId+"/videos?file_url=http://"+getserverhost()+fb_video_path+"&message="+message+"&access_token="+access_token, nil)
 		//res.Header.Set("Content-Type", "application/json")
 		res.Header.Add("Content-Type", "multipart/form-data")
 
@@ -4537,7 +4556,7 @@ func (r *crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context
 	oauthConf := &oauth2.Config{
 		ClientID:     client_id,
 		ClientSecret: client_secret,
-		RedirectURL:  HTTPSECURE + HTTPSERVERHOST + ":" + PORT + "/uvoice-facebook-login-callback",
+		RedirectURL:  HTTPSECURE + getserverhost() + ":" + PORT + "/uvoice-facebook-login-callback",
 		Scopes:       []string{"public_profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
@@ -4585,7 +4604,7 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 	oauthConf := &oauth2.Config{
 		ClientID:     t.AppId,
 		ClientSecret: t.AppSecret,
-		RedirectURL:  HTTPSECURE + HTTPSERVERHOST + ":" + PORT + "/uvoice-facebook-login-callback",
+		RedirectURL:  HTTPSECURE + getserverhost() + ":" + PORT + "/uvoice-facebook-login-callback",
 		Scopes:       []string{"public_profile"},
 		Endpoint: oauth2.Endpoint{
 			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
@@ -4600,7 +4619,7 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 	fmt.Printf("%v \n", token)
 	c.Response().Header().Set("access_token", token.AccessToken)
 	c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
-	c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+HTTPSERVERHOST+":"+PORT+"/uvoice-facebook-login-status")
+	c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+getserverhost()+":"+PORT+"/uvoice-facebook-login-status")
 	// return &models.Response{Status: "OK", Msg: "Success1", ResponseCode: http.StatusOK, FacebookGetAuthInfo: &info}, nil
 	return nil, nil
 }
@@ -5309,6 +5328,7 @@ func (r *crudRepository) Get_Quoted_Retweet_List(ctx context.Context, api_key st
 	if db.Error != nil {
 		fmt.Println("error")
 	}
+
 	val := models.QuotedTweet{}
 	datas := []models.QuotedTweet{}
 	vak := make([]models.Result, 0)
@@ -5335,7 +5355,7 @@ func (r *crudRepository) Get_Quoted_Retweet_List(ctx context.Context, api_key st
 		data, _ := ioutil.ReadAll(res.Body)
 		json := json.Unmarshal(data, &val)
 		datas = append(datas, val)
-		fmt.Println(json, len(val.Data), len(val.Includes.Users))
+		fmt.Println(json, getServerOs())
 		j := 0
 		for i := 0; i < len(val.Data) && j < len(val.Includes.Users); i++ {
 

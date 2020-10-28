@@ -179,12 +179,12 @@ func (r *CRUDController) Get_allId(c echo.Context) error {
 
 /********************************************Get Customer Details by appUserId****************************/
 func (r *CRUDController) Get_Customer_by_agent_uuid(c echo.Context) error {
-	agent_uuid := c.Param("agent_uuid")
+	customer_id := c.Param("customer_id")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Get_Customer_by_agent_uuid(ctx, agent_uuid)
+	authResponse, _ := r.usecase.Get_Customer_by_agent_uuid(ctx, customer_id)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -2135,7 +2135,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.DELETE("delete_message/:appId/:appUserId/:messageId", handler.DeleteMessage)
 	e.POST("/messages", handler.App_user)
 	e.GET("/getall_appUserId/:domain_uuid", handler.Get_allId)
-	e.GET("getcustomerbyagent_uuid/:agent_uuid", handler.Get_Customer_by_agent_uuid)
+	e.GET("getcustomerbyagent_uuid/:customer_id", handler.Get_Customer_by_agent_uuid)
 	e.GET("/get_appUser_details/:appId/:appUserId", handler.GetAppUserDetails)
 	e.POST("/create_text_template/:appId", handler.Create_Text_Template)
 
