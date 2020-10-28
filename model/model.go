@@ -144,7 +144,7 @@ type Response struct {
 	Appuser                                *Data                                     `json:",omitempty"`
 	Data                                   []byte                                    `json:",omitempty"`
 	AppUserList                            []ReceiveUserDetails                      `json:",omitempty"`
-	Customer                               []Customer_Agents                         `json:",omitempty"`
+	Customer                               *Customer_Agents                          `json:",omitempty"`
 	Message                                *Payload                                  `json:",omitempty"`
 	Received                               *Received                                 `json:",omitempty"`
 	Tenant_details                         *Tenant_details                           `json:",omitempty"`
@@ -501,6 +501,9 @@ type Count_Agent_customer struct {
 	Agent_uuid         string `json:"agent_uuid,omitempty"`
 	Count              int64  `json:"count,omitempty"`
 	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty"`
+}
+type Count_customer struct {
+	Count int64 `json:"count,omitempty"`
 }
 type FacebookGetCode struct {
 	Code string
