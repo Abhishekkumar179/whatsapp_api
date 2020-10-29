@@ -164,31 +164,32 @@ func (r *crudRepository) Get_allId(ctx context.Context, domain_uuid string) (*mo
 }
 
 /**********************************************Get customer by appUserId*********************************************/
-func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, customer_id string) (*models.Response, error) {
+func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string) (*models.Response, error) {
 	customer := models.Customer_Agents{
-		AppUserId: customer_id,
+		Agent_uuid: agent_uuid,
 	}
-	//list := make([]models.Customer_Agents, 0)
-	if db := r.DBConn.Where("app_user_id = ?", customer_id).Find(&customer).Error; db != nil {
+	list := make([]models.Customer_Agents, 0)
+	if db := r.DBConn.Where("agent_uuid = ?", agent_uuid).Find(&customer).Error; db != nil {
 
 		return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
 	}
-	// if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid,app_user_id, surname, given_name,type,text,role,name,author_id,conversation_id,received,message_id,integration_id,source_type, signed_up_at, unread_count from customer_agents where app_user_id = ?", customer_id).Rows(); err != nil {
+	if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid,app_user_id, surname, given_name,type,text,role,name,author_id,conversation_id,received,message_id,integration_id,source_type, signed_up_at, unread_count from customer_agents where agent_uuid = ?", agent_uuid).Rows(); err != nil {
 
-	// 	return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
-	// } else {
-	// 	defer rows.Close()
-	// 	for rows.Next() {
-	// 		f := models.Customer_Agents{}
-	// 		if err := rows.Scan(&f.Domain_uuid, &f.Agent_uuid, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Conversation_id, &f.Received, &f.Message_id, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.UnreadCount); err != nil {
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	} else {
+		defer rows.Close()
+		for rows.Next() {
+			f := models.Customer_Agents{}
+			if err := rows.Scan(&f.Domain_uuid, &f.Agent_uuid, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Conversation_id, &f.Received, &f.Message_id, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.UnreadCount); err != nil {
 
-	// 			return nil, err
-	// 		}
+				return nil, err
+			}
 
-	// 		list = append(list, f)
-	// 	}
+			list = append(list, f)
+		}
 
-	return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Customer: &customer}, nil
+		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Customer: list}, nil
+	}
 }
 
 /**************************************************Getall_messageByUserId***************************************************/
