@@ -164,32 +164,31 @@ func (r *crudRepository) Get_allId(ctx context.Context, domain_uuid string) (*mo
 }
 
 /**********************************************Get customer by appUserId*********************************************/
-func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string) (*models.Response, error) {
-	customer := models.Customer_Agents{
-		Agent_uuid: agent_uuid,
+func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, customer_id string) (*models.Response, error) {
+	customer := models.ReceiveUserDetails{
+		AppUserId: customer_id,
 	}
-	list := make([]models.Customer_Agents, 0)
-	if db := r.DBConn.Where("agent_uuid = ?", agent_uuid).Find(&customer).Error; db != nil {
+	//list := make([]models.Customer_Agents, 0)
+	if db := r.DBConn.Where("app_user_id = ?", customer_id).Find(&customer).Error; db != nil {
 
 		return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
 	}
-	if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid,app_user_id, surname, given_name,type,text,role,name,author_id,conversation_id,received,message_id,integration_id,source_type, signed_up_at, unread_count from customer_agents where agent_uuid = ?", agent_uuid).Rows(); err != nil {
+	// if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid,app_user_id, surname, given_name,type,text,role,name,author_id,conversation_id,received,message_id,integration_id,source_type, signed_up_at, unread_count from customer_agents where app_user_id = ?", customer_id).Rows(); err != nil {
 
-		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
-	} else {
-		defer rows.Close()
-		for rows.Next() {
-			f := models.Customer_Agents{}
-			if err := rows.Scan(&f.Domain_uuid, &f.Agent_uuid, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Conversation_id, &f.Received, &f.Message_id, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.UnreadCount); err != nil {
+	// 	return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
+	// } else {
+	// 	defer rows.Close()
+	// 	for rows.Next() {
+	// 		f := models.Customer_Agents{}
+	// 		if err := rows.Scan(&f.Domain_uuid, &f.Agent_uuid, &f.AppUserId, &f.Surname, &f.GivenName, &f.Type, &f.Text, &f.Role, &f.Name, &f.AuthorID, &f.Conversation_id, &f.Received, &f.Message_id, &f.IntegrationID, &f.Source_Type, &f.SignedUpAt, &f.UnreadCount); err != nil {
 
-				return nil, err
-			}
+	// 			return nil, err
+	// 		}
 
-			list = append(list, f)
-		}
+	// 		list = append(list, f)
+	// 	}
 
-		return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Customer: list}, nil
-	}
+	return &models.Response{Status: "OK", Msg: "Record Found", ResponseCode: 200, Customer: &customer}, nil
 }
 
 /**************************************************Getall_messageByUserId***************************************************/
@@ -250,6 +249,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	s := int64(f.Messages[0].Received)
 	myDate := time.Unix(s, 0)
 	_, _, date := myDate.Date()
+	var dom_uuid string
 	u := models.ReceiveUserDetails{
 		Trigger:                  f.Trigger,
 		Version:                  f.Version,
@@ -276,7 +276,9 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		Day:                      myDate.Weekday().String(),
 		Date:                     date,
 		AfterOfficeTime:          false,
+		Domain_uuid:              dom_uuid,
 	}
+
 	fmt.Println(f.Messages[0].Source.Type, f.Messages[0].Source.IntegrationID, "values.......")
 	//queue := models.Queue{}
 	cou := []models.Count_Agent_customer{}
@@ -4252,26 +4254,45 @@ func (r *crudRepository) Get_Available_Agents_Queue_List(ctx context.Context, ag
 }
 
 /************************************************Transfer customer**********************************************/
-func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid string, appUserId string) (*models.Response, error) {
+func (r *crudRepository) Transfer_customer(ctx context.Context, agent_name string, conversation_id string, agent_uuid string, appUserId string) (*models.Response, error) {
 	v_call_agents := models.V_call_center_agents{}
-	app := models.Customer_Agents{
-		AppUserId: appUserId,
-	}
+	//app := models.Customer_Agents{
+	//	AppUserId: appUserId,
+	//}
+	td := models.Tenant_details{}
 	agent_uuid1, _ := uuid.Parse(agent_uuid)
+
 	agent := r.DBConn.Table("v_call_center_agents").Where("call_center_agent_uuid = ?", agent_uuid1).Find(&v_call_agents)
 	if agent.Error != nil {
 		return &models.Response{Status: "0", Msg: "Agent not Found.", ResponseCode: 404}, nil
 	}
+	smooch := r.DBConn.Table("tenant_details").Where("domain_uuid = ?", v_call_agents.Domain_uuid).Find(&td)
+	if smooch.Error != nil {
+		return &models.Response{Status: "0", Msg: "Domain not Found.", ResponseCode: 404}, nil
+	}
+	fmt.Println(td.AppId, "app_id", conversation_id)
 	if v_call_agents.AgentStatus == "Available" {
 
-		err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&app)
-		if err.Error != nil {
-			return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
-		}
+		// err := r.DBConn.Where("app_user_id = ?", appUserId).Find(&app)
+		// if err.Error != nil {
+		// 	return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
+		// }
 		db := r.DBConn.Table("customer_agents").Where("app_user_id = ?", appUserId).Update("agent_uuid", agent_uuid)
 		if db.Error != nil {
 			return &models.Response{Status: "0", Msg: "Customer not assigned to agent.", ResponseCode: 404}, nil
 		}
+		p := models.User{
+			Author: models.Author{
+				Type:        "business",
+				DisplayName: "system",
+				AvatarURL:   "https://www.gravatar.com/image.jpg",
+			},
+			Content: models.Content{
+				Type: "text",
+				Text: agent_name + " is transferring your chat to " + v_call_agents.AgentName,
+			},
+		}
+		r.PostMessage(ctx, td.AppId, conversation_id, p)
 		msg := map[string]interface{}{"message_id": "5", "customer_id": appUserId, "user_id": agent_uuid, "user_type": "agent"}
 
 		for _, oldu := range r.SList.Users {
@@ -4284,6 +4305,7 @@ func (r *crudRepository) Transfer_customer(ctx context.Context, agent_uuid strin
 
 			}
 		}
+
 		return &models.Response{Status: "1", Msg: "Customer assigned to agent successfully.", ResponseCode: 200}, nil
 	} else {
 		return &models.Response{Status: "0", Msg: "Agent is not Available.", ResponseCode: 409}, nil

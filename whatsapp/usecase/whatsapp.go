@@ -56,9 +56,9 @@ func (r *crudUsecase) Get_allId(ctx context.Context, domain_uuid string) (*model
 }
 
 /**************************************Get customer by appUserId ************************************************/
-func (r *crudUsecase) Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string) (*models.Response, error) {
+func (r *crudUsecase) Get_Customer_by_agent_uuid(ctx context.Context, customer_id string) (*models.Response, error) {
 
-	return r.repository.Get_Customer_by_agent_uuid(ctx, agent_uuid)
+	return r.repository.Get_Customer_by_agent_uuid(ctx, customer_id)
 }
 
 /**************************************************Delete User***************************************************/
@@ -424,10 +424,12 @@ func (r *crudUsecase) Available_Agents(ctx context.Context, domain_uuid string, 
 
 /**********************************************Transfer customer*********************************************/
 func (r *crudUsecase) Transfer_customer(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	agent_name := fmt.Sprintf("%v", flow["agent_name"])
+	conversation_id := fmt.Sprintf("%v", flow["conversation_id"])
 	agent_uuid := fmt.Sprintf("%v", flow["agent_uuid"])
 	appUserId := fmt.Sprintf("%v", flow["appUserId"])
 
-	return r.repository.Transfer_customer(ctx, agent_uuid, appUserId)
+	return r.repository.Transfer_customer(ctx, agent_name, conversation_id, agent_uuid, appUserId)
 }
 
 /************************************************Post on FB page**********************************************/

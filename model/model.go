@@ -144,7 +144,7 @@ type Response struct {
 	Appuser                                *Data                                     `json:",omitempty"`
 	Data                                   []byte                                    `json:",omitempty"`
 	AppUserList                            []ReceiveUserDetails                      `json:",omitempty"`
-	Customer                               []Customer_Agents                         `json:",omitempty"`
+	Customer                               *ReceiveUserDetails                       `json:",omitempty"`
 	Message                                *Payload                                  `json:",omitempty"`
 	Received                               *Received                                 `json:",omitempty"`
 	Tenant_details                         *Tenant_details                           `json:",omitempty"`
@@ -268,6 +268,7 @@ type ReceiveUserDetails struct {
 	Day                      string    `json:"day,omitempty"`
 	Date                     int       `json:"date,omitempty"`
 	AfterOfficeTime          bool      `json:"after_office_time,omitempty"`
+	Domain_uuid              string    `json:"domain_uuid,omitempty"`
 }
 type SocialMediaTickets struct {
 	Ticket_uuid     string    `json:"ticket_uuid,omitempty" gorm:"type:uuid"`
@@ -477,25 +478,29 @@ type V_call_center_agents struct {
 	CallCenterAgentUUID uuid.UUID `json:"call_center_agent_uuid,omitempty" gorm:"type:uuid"`
 	AgentName           string    `json:"agent_name,omitempty"`
 	AgentStatus         string    `json:"agent_status,omitempty"`
+	Domain_uuid         string    `json:"domain_uuid,omitempty" gorm:"type:uuid"`
 }
 type Customer_Agents struct {
-	Domain_uuid     string    `json:"domain_uuid,omitempty" gorm:"type:uuid"`
-	AppUserId       string    `json:"appUserId,omitempty"`
-	Agent_uuid      string    `json:"agent_uuid,omitempty"`
-	Surname         string    `json:"surname,omitempty"`
-	GivenName       string    `json:"givenName,omitempty"`
-	SignedUpAt      time.Time `json:"signedUpAt,omitempty"`
-	Conversation_id string    `json:"conversation_id,omitempty"`
-	Type            string    `json:"type,omitempty"`
-	Text            string    `json:"text,omitempty"`
-	Role            string    `json:"role,omitempty"`
-	Received        float64   `json:"received,omitempty"`
-	Name            string    `json:"name,omitempty"`
-	AuthorID        string    `json:"authorId,omitempty"`
-	Message_id      string    `json:"Message_id,omitempty"`
-	Source_Type     string    `json:"source_type,omitempty"`
-	IntegrationID   string    `json:"integrationId,omitempty"`
-	UnreadCount     int64     `json:"unread_count,omitempty"`
+	Domain_uuid        string    `json:"domain_uuid,omitempty" gorm:"type:uuid"`
+	AppUserId          string    `json:"appUserId,omitempty"`
+	Agent_uuid         string    `json:"agent_uuid,omitempty"`
+	Surname            string    `json:"surname,omitempty"`
+	GivenName          string    `json:"givenName,omitempty"`
+	SignedUpAt         time.Time `json:"signedUpAt,omitempty"`
+	Conversation_id    string    `json:"conversation_id,omitempty"`
+	Type               string    `json:"type,omitempty"`
+	Text               string    `json:"text,omitempty"`
+	Role               string    `json:"role,omitempty"`
+	Received           float64   `json:"received,omitempty"`
+	Name               string    `json:"name,omitempty"`
+	AuthorID           string    `json:"authorId,omitempty"`
+	Message_id         string    `json:"Message_id,omitempty"`
+	Source_Type        string    `json:"source_type,omitempty"`
+	IntegrationID      string    `json:"integrationId,omitempty"`
+	UnreadCount        int64     `json:"unread_count,omitempty"`
+	CustomerChatStatus string    `json:"customer_chat_status,omitempty"`
+	ChatStartTime      string    `json:"chat_start_time,omitempty"`
+	ChatStopTime       string    `json:"chat_stop_time,omitempty"`
 }
 type Count_Agent_customer struct {
 	Agent_uuid         string `json:"agent_uuid,omitempty"`
