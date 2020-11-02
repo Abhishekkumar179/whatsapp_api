@@ -2121,6 +2121,25 @@ func (r *CRUDController) RemoveTwitterAssignAgent(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/***********************************************Assign customer to Agent************************************/
+func (r *CRUDController) AssigncustomerToAgent(c echo.Context) error {
+	var auth map[string]interface{}
+	err1 := json.NewDecoder(c.Request().Body).Decode(&auth)
+	if err1 != nil {
+		fmt.Println("err= ", err1)
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	authResponse, _ := r.usecase.AssigncustomerToAgent(ctx, auth)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -2238,4 +2257,5 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("twitter_assign_agents", handler.AssignAgentToTwitter)
 	e.GET("twitter_assigned_agents_list/:domain_uuid/:twitter_uuid", handler.TwitterAssignAgentList)
 	e.DELETE("remove_twitter_assigned_agents/:agent_uuid/:twitter_uuid", handler.RemoveTwitterAssignAgent)
+	e.POST("assign_agent_to_customer", handler.AssigncustomerToAgent)
 }

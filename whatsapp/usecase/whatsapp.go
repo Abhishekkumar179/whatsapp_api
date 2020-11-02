@@ -683,3 +683,11 @@ func (r *crudUsecase) Get_Quoted_Retweet_List(ctx context.Context, api_key strin
 
 	return r.repository.Get_Quoted_Retweet_List(ctx, api_key, tweet_id)
 }
+
+/*******************************************Assign Agent To customer**************************************/
+func (r *crudUsecase) AssigncustomerToAgent(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+	domain_uuid := fmt.Sprintf("%v", flow["domain_uuid"])
+	agent_uuid := fmt.Sprintf("%v", flow["agent_uuid"])
+	app_user_id := fmt.Sprintf("%v", flow["app_user_id"])
+	return r.repository.AssigncustomerToAgent(ctx, domain_uuid, agent_uuid, app_user_id)
+}

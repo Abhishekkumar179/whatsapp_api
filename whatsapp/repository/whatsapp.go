@@ -5248,3 +5248,22 @@ func (r *crudRepository) Get_Quoted_Retweet_List(ctx context.Context, api_key st
 	}
 
 }
+
+/****************************************************Assign Agent to Customer************************************/
+func (r *crudRepository) AssigncustomerToAgent(ctx context.Context, domain_uuid string, agent_uuid string, app_user_id string) (*models.Response, error) {
+	cou_agent := models.Customer_Agents{
+		Domain_uuid: domain_uuid,
+		Agent_uuid:  agent_uuid,
+		AppUserId:   app_user_id,
+	}
+
+	if db := r.DBConn.Where("app_user_id = ?", app_user_id).Find(&cou_agent).Error; db != nil {
+		err := r.DBConn.Create(&cou_agent)
+		if err.Error != nil {
+			return &models.Response{Status: "0", Msg: "Customer is not assigned.", ResponseCode: 404}, nil
+		}
+		return &models.Response{Status: "1", Msg: "Customer assigned successfully.", ResponseCode: 200}, nil
+
+	}
+	return &models.Response{Status: "0", Msg: "Customer is already assigned.", ResponseCode: 404}, nil
+}
