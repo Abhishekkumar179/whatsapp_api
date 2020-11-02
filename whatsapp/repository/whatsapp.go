@@ -15,11 +15,12 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
 	config "whatsapp_api/config"
 	models "whatsapp_api/model"
 	crud "whatsapp_api/whatsapp"
 	controller "whatsapp_api/whatsapp/controller"
+
+	"github.com/carlescere/scheduler"
 
 	oauth1 "github.com/klaidas/go-oauth1"
 
@@ -47,9 +48,58 @@ type crudRepository struct {
 func NewcrudRepository(conn *gorm.DB, slist *controller.ServerUserList, conf *config.Config) crud.Repository {
 	UserOs = conf.Server.OsUser
 	HTTPSERVERHOST = conf.HttpConfig.HTTPSERVERHOST
-	return &crudRepository{
+	wh := &crudRepository{
 		DBConn: conn,
 		SList:  slist,
+	}
+	chatFunc := func() {
+		wh.chatScheduler()
+	}
+	if _, err := scheduler.Every(5).Seconds().Run(chatFunc); err != nil {
+		fmt.Println("scheduler start error")
+	}
+	return wh
+}
+func (r *crudRepository) chatScheduler() {
+	fmt.Println("chatScheduler")
+	u := []models.ReceiveUserDetails{}
+	if db := r.DBConn.Table("receive_user_details").Select("given_name,surname,app_user_id,source_type,integration_id,domain_uuid").Where("agent_request_time < extract(epoch from now())-30").Order("domain_uuid").Find(&u); db.Error != nil {
+		fmt.Println(db.Error)
+	}
+	fmt.Println("customer list", len(u))
+
+	agent := []models.V_call_center_agents{}
+	for _, v := range u {
+		if db := r.DBConn.Table("v_call_center_agents").Select("agent_name,agent_status,call_center_agent_uuid").Where("domain_uuid=? and call_center_agent_uuid::text not in (select agent_uuid from customer_agents where domain_uuid=? ) and agent_status='Available' and call_center_agent_uuid::text not in (select agent_request_uuid from receive_user_details where domain_uuid=? and agent_request_time > extract(epoch from now())-30 ) and call_center_agent_uuid in (select agent_uuid from agent_queues where queue_uuid in (select queue_uuid from queues where integration_id=? ))", v.Domain_uuid, v.Domain_uuid, v.Domain_uuid, v.IntegrationID).Find(&agent); db.Error != nil {
+			fmt.Println(db.Error)
+		}
+		requestSent := false
+		for _, v1 := range agent {
+			agentID := fmt.Sprintf("%v", v1.CallCenterAgentUUID)
+			for _, oldu := range r.SList.Users {
+				if oldu.UName == agentID {
+					msg := map[string]interface{}{"message_id": "5", "customer_id": v.AppUserId, "surname": v.Surname, "given_name": v.GivenName}
+					if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
+						log.Println("Can't send", err)
+					} else {
+						if db := r.DBConn.Table("receive_user_details").Where("app_user_id=?", v.AppUserId).Updates(map[string]interface{}{"agent_request_time": time.Now().Unix(), "agent_request_uuid": agentID}); db.Error != nil {
+							log.Println("request send but not written", err)
+						}
+						fmt.Println("sending request to", v1, v.AppUserId)
+						requestSent = true
+
+						break
+					}
+				}
+
+			}
+			if requestSent {
+				fmt.Println("request is sent breaking agent list")
+				fmt.Println("continue to next customer")
+
+				break
+			}
+		}
 	}
 }
 func getServerOs() string {
@@ -239,7 +289,7 @@ func (r *crudRepository) GetAppUserDetails(ctx context.Context, appUserId string
 /**************************************************App User***************************************************/
 
 func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Response, error) {
-	T := models.Account_details{}
+	//T := models.Account_details{}
 	f := models.Received{}
 	w := models.WhatsappConfiguration{}
 	tw := models.TwitterConfiguration{}
@@ -279,222 +329,20 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		Domain_uuid:              dom_uuid,
 	}
 
+	//rec_user_det := r.DBConn.Table("receive_user_details").Where("")
+	// cou := []models.Count_Agent_queue{}
+	// //agent := models.AgentQueue{}
+	// db := r.DBConn.Table("agent_queues ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues inner join v_call_center_agents on agent_queues.agent_uuid=v_call_center_agents.call_center_agent_uuid where agent_status='Available' and queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
+	// if db.Error != nil {
+	// 	fmt.Println(db.Error)
+	// }
+	// if rows, err := r.DBConn.Raw("select count(app_user_id), domain_uuid from receive_user_details where domain_uuid = ? EXCEPT select customer_agents.app_user_id from customer_agents where domain_uuid = ?", domain_uuid, queue_uuid).Rows(); err != nil {
+
+	// 	return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
+	// }
 	fmt.Println(f.Messages[0].Source.Type, f.Messages[0].Source.IntegrationID, "values.......")
-	//queue := models.Queue{}
-	cou := []models.Count_Agent_customer{}
-	agent := models.AgentQueue{}
-	db := r.DBConn.Table("customer_agents ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues inner join v_call_center_agents on agent_queues.agent_uuid=v_call_center_agents.call_center_agent_uuid where agent_status='Available' and queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
-	if db.Error != nil {
-		fmt.Println(db.Error)
-	}
-
-	fmt.Println(cou, len(cou))
-	var min int64 = 0
-	var max int64 = 0
-	lengtharray := len(cou)
-	if lengtharray == 0 {
-		if f.Messages[0].Source.Type == "messenger" {
-			db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
-			if db.Error != nil {
-				fmt.Println("error")
-			}
-			fmt.Println("enterrrrrrr.....")
-			tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", fb.Domain_uuid).Find(&T)
-			if tenant.Error != nil {
-				fmt.Println("error")
-			}
-
-			uuid1, _ := myNewUUID.NewUUID()
-			uuid := uuid1.String()
-			tic := models.SocialMediaTickets{
-				Ticket_uuid:     uuid,
-				Domain_uuid:     T.Domain_uuid,
-				Ticket_name:     f.Messages[0].Source.Type,
-				CustomerId:      f.AppUser.ID,
-				CustomerName:    f.Messages[0].Name,
-				Message:         f.Messages[0].Text,
-				MessageType:     f.Messages[0].Type,
-				IntegrationID:   f.Messages[0].Source.IntegrationID,
-				Source_type:     f.Messages[0].Source.Type,
-				Conversation_id: f.Conversation.ID,
-				Timestamp:       time.Now(),
-			}
-			if db := r.DBConn.Table("social_media_tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
-				fmt.Println("enterrrrrrr.....1111111")
-				row := r.DBConn.Create(&tic)
-				if row.Error != nil {
-					fmt.Println("Ticket not created.")
-				}
-				p := models.User{
-					Author: models.Author{
-						Type:        "business",
-						DisplayName: T.Tenant_name,
-						AvatarURL:   "https://www.gravatar.com/image.jpg",
-					},
-					Content: models.Content{
-						Type: "text",
-						Text: "Sorry " + f.Messages[0].Name + "! for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
-					},
-				}
-				r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-			}
-		} else if f.Messages[0].Source.Type == "whatsapp" {
-			db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
-			if db.Error != nil {
-				fmt.Println("error")
-			}
-			tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
-			if tenant.Error != nil {
-				fmt.Println("error")
-			}
-			uuid1, _ := myNewUUID.NewUUID()
-			uuid := uuid1.String()
-			tic := models.SocialMediaTickets{
-				Ticket_uuid:     uuid,
-				Domain_uuid:     T.Domain_uuid,
-				Ticket_name:     f.Messages[0].Source.Type,
-				CustomerId:      f.AppUser.ID,
-				CustomerName:    f.Messages[0].Name,
-				Message:         f.Messages[0].Text,
-				MessageType:     f.Messages[0].Type,
-				IntegrationID:   f.Messages[0].Source.IntegrationID,
-				Source_type:     f.Messages[0].Source.Type,
-				Conversation_id: f.Conversation.ID,
-				Timestamp:       time.Now(),
-			}
-			if db := r.DBConn.Table("social_media_tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
-				row := r.DBConn.Create(&tic)
-				if row.Error != nil {
-					fmt.Println("Ticket not created.")
-				}
-				p := models.User{
-					Author: models.Author{
-						Type:        "business",
-						DisplayName: T.Tenant_name,
-						AvatarURL:   "https://www.gravatar.com/image.jpg",
-					},
-					Content: models.Content{
-						Type: "text",
-						Text: "Sorry " + f.Messages[0].Name + "! for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
-					},
-				}
-				r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-
-			}
-
-		} else if f.Messages[0].Source.Type == "twitter" {
-			db := r.DBConn.Where("twitter_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&tw)
-			if db.Error != nil {
-				fmt.Println("error")
-			}
-			tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", tw.Domain_uuid).Find(&T)
-			if tenant.Error != nil {
-				fmt.Println("error")
-			}
-			uuid1, _ := myNewUUID.NewUUID()
-			uuid := uuid1.String()
-			tic := models.SocialMediaTickets{
-				Ticket_uuid:     uuid,
-				Domain_uuid:     T.Domain_uuid,
-				Ticket_name:     f.Messages[0].Source.Type,
-				CustomerId:      f.AppUser.ID,
-				CustomerName:    f.Messages[0].Name,
-				Message:         f.Messages[0].Text,
-				MessageType:     f.Messages[0].Type,
-				IntegrationID:   f.Messages[0].Source.IntegrationID,
-				Source_type:     f.Messages[0].Source.Type,
-				Conversation_id: f.Conversation.ID,
-				Timestamp:       time.Now(),
-			}
-			if db := r.DBConn.Table("social_media_tickets").Where("customer_id = ?", f.AppUser.ID).Find(&tic).Error; db != nil {
-				row := r.DBConn.Create(&tic)
-				if row.Error != nil {
-					fmt.Println("Ticket not created.")
-				}
-				p := models.User{
-					Author: models.Author{
-						Type:        "business",
-						DisplayName: T.Tenant_name,
-						AvatarURL:   "https://www.gravatar.com/image.jpg",
-					},
-					Content: models.Content{
-						Type: "text",
-						Text: "Sorry " + f.Messages[0].Name + "! for the inconvenience our agents are not available at this time we will reach out to you when our agents are available. Thanks for contacting us.",
-					},
-				}
-				r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-
-			}
-		}
-	}
-	//max_uuid := cou[0].Agent_uuid
-	min_uuid := cou[0].Agent_uuid
-	for k, v := range cou {
-		fmt.Println(k, v)
-
-		if v.Count >= max {
-			max = v.Count
-			//max_uuid = v.Agent_uuid
-		} else {
-			min = v.Count
-			min_uuid = v.Agent_uuid
-		}
-		//fmt.Println(" min= ", min, " max= ", max, " min_uuid= ", min_uuid)
-	}
-	if min == max && min == 0 {
-
-		agent.Agent_uuid = min_uuid
-		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
-	} else {
-
-		agent.Agent_uuid = min_uuid
-		agent.Tenant_domain_uuid = cou[0].Tenant_domain_uuid
-	}
-	//fmt.Println("2 min= ", min, " max= ", max, " min_uuid= ", min_uuid)
-	customer := models.Customer_Agents{
-		Domain_uuid:     agent.Tenant_domain_uuid,
-		AppUserId:       f.AppUser.ID,
-		Agent_uuid:      agent.Agent_uuid,
-		Surname:         f.AppUser.Surname,
-		GivenName:       f.AppUser.GivenName,
-		SignedUpAt:      f.AppUser.SignedUpAt,
-		Conversation_id: f.Conversation.ID,
-		Type:            f.Messages[0].Type,
-		Text:            f.Messages[0].Text,
-		Role:            f.Messages[0].Role,
-		Received:        f.Messages[0].Received,
-		Name:            f.Messages[0].Name,
-		AuthorID:        f.Messages[0].AuthorID,
-		Message_id:      f.Messages[0].ID,
-		Source_Type:     f.Messages[0].Source.Type,
-		IntegrationID:   f.Messages[0].Source.IntegrationID,
-		UnreadCount:     0,
-	}
-	//fmt.Println(agent, "cus ", customer)
-
-	if cust := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&customer).Error; cust != nil {
-		db := r.DBConn.Create(&customer)
-		if db.Error != nil {
-			fmt.Println(db.Error)
-		}
-
-		for _, oldu := range r.SList.Users {
-			if oldu.UName == customer.Agent_uuid {
-				msg := map[string]interface{}{"message_id": "5", "customer_id": customer.AppUserId, "surname": f.AppUser.Surname, "given_name": f.AppUser.GivenName, "signed_up_at": f.AppUser.SignedUpAt, "conversation_id": f.Conversation.ID, "type": f.Messages[0].Type, "text": f.Messages[0].Text, "role": f.Messages[0].Role, "received": f.Messages[0].Received, "name": f.Messages[0].Name, "author_id": f.Messages[0].AuthorID, "messageId": f.Messages[0].ID, "source_type": f.Messages[0].Source.Type, "integration_id": f.Messages[0].Source.IntegrationID, "unread_count": u.UnreadCount, "user_id": customer.Agent_uuid}
-				if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
-					log.Println("Can't send", err)
-				}
-			}
-		}
-	}
-	cou_cus := models.Count_customer{}
-	cou_cust := r.DBConn.Table("customer_agents").Select("count(customer_id)").Where("agent_uuid = ?", agent.Agent_uuid).Find(&cou_cus)
-	if cou_cust.Error != nil {
-		fmt.Println(cou_cust.Error)
-	}
-	g := 5 * (cou_cus.Count / 1)
 	errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
-	fmt.Println(errs.Error, g)
+	fmt.Println(errs.Error)
 	if f.Messages[0].Role == "appUser" {
 		count := r.DBConn.Table("receive_user_details").Where("conversation_id = ? AND app_user_id = ?", f.Conversation.ID, f.AppUser.ID).Update("unread_count", u.UnreadCount+1)
 		if count.Error != nil {
@@ -513,10 +361,11 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		if db.Error != nil {
 			fmt.Println("error")
 		}
-		tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", fb.Domain_uuid).Find(&T)
-		if tenant.Error != nil {
-			fmt.Println("error")
-		}
+		// fb_uuid := fb.Domain_uuid.uuid()
+		// tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", fb.Domain_uuid).Find(&T)
+		// if tenant.Error != nil {
+		// 	fmt.Println("error")
+		// }
 		if myDate.Weekday().String() == fb.Day1 {
 			workstart1 := fb.Workstart1
 			components := strings.Split(workstart1, ":")
@@ -531,7 +380,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -540,7 +389,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": fb.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -553,7 +402,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: fb.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -572,7 +421,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -590,14 +439,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -626,7 +475,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -635,7 +484,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": fb.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -648,7 +497,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: fb.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -667,7 +516,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -686,14 +535,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -723,7 +572,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -732,7 +581,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": fb.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -745,7 +594,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: fb.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -764,7 +613,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -783,14 +632,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -819,7 +668,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -828,7 +677,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": fb.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -841,7 +690,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: fb.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -860,7 +709,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -879,14 +728,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -915,7 +764,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -924,7 +773,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": fb.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -937,7 +786,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: fb.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -956,7 +805,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -974,14 +823,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1010,7 +859,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1019,7 +868,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": fb.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1032,7 +881,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: fb.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1051,7 +900,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1070,14 +919,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1107,7 +956,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1116,7 +965,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": fb.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1129,7 +978,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: fb.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1148,7 +997,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1167,14 +1016,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 			} else {
 
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: fb.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1198,10 +1047,10 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		if db.Error != nil {
 			fmt.Println("error")
 		}
-		tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
-		if tenant.Error != nil {
-			fmt.Println("error")
-		}
+		// tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", w.Domain_uuid).Find(&T)
+		// if tenant.Error != nil {
+		// 	fmt.Println("error")
+		// }
 		if myDate.Weekday().String() == w.Day1 {
 			workstart1 := w.Workstart1
 			components := strings.Split(workstart1, ":")
@@ -1216,7 +1065,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1225,7 +1074,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": w.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1238,7 +1087,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: w.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1257,7 +1106,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1275,7 +1124,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", w.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -1283,7 +1132,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1312,7 +1161,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1321,7 +1170,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": w.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1334,7 +1183,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: w.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1353,7 +1202,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1371,7 +1220,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", w.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -1379,7 +1228,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1408,7 +1257,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1417,7 +1266,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": w.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1430,7 +1279,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: w.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1449,7 +1298,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1467,7 +1316,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", w.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -1475,7 +1324,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1504,7 +1353,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1513,7 +1362,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": w.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1526,7 +1375,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: w.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1545,7 +1394,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1563,7 +1412,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", w.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -1571,7 +1420,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1600,7 +1449,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1609,7 +1458,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": w.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1622,7 +1471,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: w.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1641,7 +1490,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1659,7 +1508,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", w.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -1667,7 +1516,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1696,7 +1545,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1705,7 +1554,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": w.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1718,7 +1567,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: w.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1737,7 +1586,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1755,7 +1604,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", w.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -1763,7 +1612,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1792,7 +1641,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1801,7 +1650,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": w.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1814,7 +1663,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: w.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1833,7 +1682,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1851,14 +1700,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", w.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: w.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1882,10 +1731,10 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		if db.Error != nil {
 			fmt.Println("error")
 		}
-		tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", tw.Domain_uuid).Find(&T)
-		if tenant.Error != nil {
-			fmt.Println("error")
-		}
+		// tenant := r.DBConn.Table("account_details").Where("domain_uuid = ?", tw.Domain_uuid).Find(&T)
+		// if tenant.Error != nil {
+		// 	fmt.Println("error")
+		// }
 		if myDate.Weekday().String() == tw.Day1 {
 			workstart1 := tw.Workstart1
 			components := strings.Split(workstart1, ":")
@@ -1900,7 +1749,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1909,7 +1758,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": tw.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -1922,7 +1771,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: tw.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -1941,7 +1790,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1959,7 +1808,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", tw.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -1967,7 +1816,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -1996,7 +1845,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2005,7 +1854,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": tw.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -2018,7 +1867,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: tw.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -2037,7 +1886,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2055,7 +1904,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", tw.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -2063,7 +1912,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2092,7 +1941,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2101,7 +1950,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": tw.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -2114,7 +1963,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: tw.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -2133,7 +1982,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2151,7 +2000,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", tw.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -2159,7 +2008,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2188,7 +2037,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2197,7 +2046,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": tw.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -2210,7 +2059,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: tw.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -2229,7 +2078,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2247,7 +2096,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", tw.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -2255,7 +2104,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2284,7 +2133,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2293,7 +2142,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": tw.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -2306,7 +2155,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: tw.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -2325,7 +2174,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2343,7 +2192,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", tw.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -2351,7 +2200,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2380,7 +2229,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2389,7 +2238,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": tw.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -2402,7 +2251,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: tw.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -2421,7 +2270,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2439,7 +2288,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", tw.Domain_uuid)
 					if db.Error != nil {
 
 					}
@@ -2447,7 +2296,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2476,7 +2325,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2485,7 +2334,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("after_office_time", true)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": tw.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
 					}
@@ -2498,7 +2347,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
-								DisplayName: T.Tenant_name,
+								DisplayName: tw.ConfigurationName,
 								AvatarURL:   "https://www.gravatar.com/image.jpg",
 							},
 							Content: models.Content{
@@ -2517,7 +2366,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{
@@ -2535,14 +2384,14 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 			} else {
 				if err := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Find(&u).Error; err != nil {
-					db := r.DBConn.Create(&u)
+					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", tw.Domain_uuid)
 					if db.Error != nil {
 
 					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
-							DisplayName: T.Tenant_name,
+							DisplayName: tw.ConfigurationName,
 							AvatarURL:   "https://www.gravatar.com/image.jpg",
 						},
 						Content: models.Content{

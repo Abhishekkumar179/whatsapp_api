@@ -269,6 +269,8 @@ type ReceiveUserDetails struct {
 	Date                     int       `json:"date,omitempty"`
 	AfterOfficeTime          bool      `json:"after_office_time,omitempty"`
 	Domain_uuid              string    `json:"domain_uuid,omitempty"`
+	Agent_Request_uuid       string    `json:"agent_request_uuid,omitempty"`
+	Agent_Request_Time       int64     `json:"agent_request_time,omitempty" gorm:"default:0"`
 }
 type SocialMediaTickets struct {
 	Ticket_uuid     string    `json:"ticket_uuid,omitempty" gorm:"type:uuid"`
@@ -502,7 +504,7 @@ type Customer_Agents struct {
 	ChatStartTime      string    `json:"chat_start_time,omitempty"`
 	ChatStopTime       string    `json:"chat_stop_time,omitempty"`
 }
-type Count_Agent_customer struct {
+type Count_Agent_queue struct {
 	Agent_uuid         string `json:"agent_uuid,omitempty"`
 	Count              int64  `json:"count,omitempty"`
 	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty"`
