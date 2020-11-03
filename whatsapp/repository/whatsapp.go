@@ -61,12 +61,12 @@ func NewcrudRepository(conn *gorm.DB, slist *controller.ServerUserList, conf *co
 	return wh
 }
 func (r *crudRepository) chatScheduler() {
-	fmt.Println("chatScheduler")
+	//fmt.Println("chatScheduler")
 	u := []models.ReceiveUserDetails{}
 	if db := r.DBConn.Table("receive_user_details").Select("given_name,surname,app_user_id,source_type,integration_id,domain_uuid").Where("agent_request_time < extract(epoch from now())-30").Order("domain_uuid").Find(&u); db.Error != nil {
 		fmt.Println(db.Error)
 	}
-	fmt.Println("customer list", len(u))
+	//fmt.Println("customer list", len(u))
 
 	agent := []models.V_call_center_agents{}
 	for _, v := range u {
@@ -330,17 +330,72 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	}
 
 	//rec_user_det := r.DBConn.Table("receive_user_details").Where("")
-	// cou := []models.Count_Agent_queue{}
-	// //agent := models.AgentQueue{}
-	// db := r.DBConn.Table("agent_queues ca").Select("count(ca.agent_uuid),aq.agent_uuid, aq.tenant_domain_uuid").Joins("right join (select agent_uuid,tenant_domain_uuid from agent_queues inner join v_call_center_agents on agent_queues.agent_uuid=v_call_center_agents.call_center_agent_uuid where agent_status='Available' and queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')) aq on aq.agent_uuid::text=ca.agent_uuid group by aq.agent_uuid,aq.tenant_domain_uuid").Find(&cou)
-	// if db.Error != nil {
-	// 	fmt.Println(db.Error)
-	// }
-	// if rows, err := r.DBConn.Raw("select count(app_user_id), domain_uuid from receive_user_details where domain_uuid = ? EXCEPT select customer_agents.app_user_id from customer_agents where domain_uuid = ?", domain_uuid, queue_uuid).Rows(); err != nil {
+	cou := []models.Count_Agent_queue{}
+	cust := []models.Count_customer{}
+	db := r.DBConn.Raw("select count(call_center_agent_uuid) from v_call_center_agents where agent_status='Available' and call_center_agent_uuid in (select agent_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "'))").Find(&cou)
+	if db.Error != nil {
+		fmt.Println(db.Error)
+	}
+	if rows := r.DBConn.Raw("select count(app_user_id) from receive_user_details where domain_uuid=(select domain_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')").Find(&cust).Error; rows != nil {
 
-	// 	return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
-	// }
-	fmt.Println(f.Messages[0].Source.Type, f.Messages[0].Source.IntegrationID, "values.......")
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
+	}
+	if cou[0].Count < cust[0].Count {
+		time := 5 * (cust[0].Count - cou[0].Count)
+		times := strconv.FormatInt(time, 10)
+		if f.Messages[0].Source.Type == "messenger" {
+			db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: fb.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+				},
+			}
+			r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+		} else if f.Messages[0].Source.Type == "whatsapp" {
+			db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: w.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+				},
+			}
+			r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+		} else if f.Messages[0].Source.Type == "twitter" {
+			db := r.DBConn.Where("twitter_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&tw)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: tw.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+				},
+			}
+			r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+		}
+	}
 	errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
 	fmt.Println(errs.Error)
 	if f.Messages[0].Role == "appUser" {
@@ -443,6 +498,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: fb.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -538,6 +609,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
+					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: fb.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
 					p := models.User{
 						Author: models.Author{
@@ -636,6 +723,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: fb.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -732,6 +835,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: fb.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -826,6 +945,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
+					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: fb.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
 					p := models.User{
 						Author: models.Author{
@@ -923,6 +1058,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: fb.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -1019,6 +1170,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", fb.Domain_uuid)
 					if db.Error != nil {
 
+					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: fb.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
 					p := models.User{
 						Author: models.Author{
@@ -1128,7 +1295,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: w.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -1224,7 +1406,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: w.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -1320,7 +1517,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: w.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -1416,7 +1628,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: w.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -1512,7 +1739,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: w.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -1608,7 +1850,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: w.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -1703,6 +1960,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", w.Domain_uuid)
 					if db.Error != nil {
 
+					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: w.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					}
 					p := models.User{
 						Author: models.Author{
@@ -1812,7 +2085,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: tw.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -1908,7 +2196,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: tw.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -2004,7 +2307,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: tw.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -2100,7 +2418,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: tw.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -2196,7 +2529,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: tw.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -2292,7 +2640,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: tw.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					}
 					p := models.User{
 						Author: models.Author{
 							Type:        "business",
@@ -2387,6 +2750,22 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Update("domain_uuid", tw.Domain_uuid)
 					if db.Error != nil {
 
+					}
+					if cou[0].Count < cust[0].Count {
+						time := 5 * (cust[0].Count - cou[0].Count)
+						times := strconv.FormatInt(time, 10)
+						p := models.User{
+							Author: models.Author{
+								Type:        "business",
+								DisplayName: tw.ConfigurationName,
+								AvatarURL:   "https://www.gravatar.com/image.jpg",
+							},
+							Content: models.Content{
+								Type: "text",
+								Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+							},
+						}
+						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					}
 					p := models.User{
 						Author: models.Author{

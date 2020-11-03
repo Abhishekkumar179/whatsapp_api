@@ -465,14 +465,14 @@ type Queue struct {
 	Id            int64  `gorm:"PRIMARY_KEY" json:"id,omitempty"`
 	Name          string `json:"name,omitempty"`
 	IntegrationID string `json:"integration_id,omitempty"`
-	Queue_uuid    string `json:"queue_uuid,omitempty" gorm:"type:uuid"`
+	Queue_uuid    string `json:"queue_uuid,omitempty"`
 	Map_with      string `json:"map_with,omitempty"`
-	Domain_uuid   string `json:"domain_uuid,omitempty" gorm:"type:uuid"`
+	Domain_uuid   string `json:"domain_uuid,omitempty"`
 }
 type AgentQueue struct {
 	QueueName          string `json:"queue_name,omitempty"`
 	AgentName          string `json:"agent_name,omitempty"`
-	Queue_uuid         string `json:"queue_uuid,omitempty" gorm:"type:uuid"`
+	Queue_uuid         string `json:"queue_uuid,omitempty"`
 	Agent_uuid         string `json:"agent_uuid,omitempty" gorm:"type:uuid"`
 	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty" gorm:"type:uuid"`
 }
@@ -488,9 +488,7 @@ type Customer_Agents struct {
 	Agent_uuid  string `json:"agent_uuid,omitempty"`
 }
 type Count_Agent_queue struct {
-	Agent_uuid         string `json:"agent_uuid,omitempty"`
-	Count              int64  `json:"count,omitempty"`
-	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty"`
+	Count int64 `json:"count,omitempty"`
 }
 type Count_customer struct {
 	Count int64 `json:"count,omitempty"`
