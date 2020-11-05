@@ -27,10 +27,11 @@ type logConfig struct {
 }
 
 type httpConfig struct {
-	HostPort       string
-	HostCert       string
-	HostKey        string
-	HTTPSERVERHOST string
+	HostPort          string
+	HostCert          string
+	HostKey           string
+	HTTPSERVERHOST    string
+	HTTPSERVERHOSTURL string
 }
 
 // Config - configuration object
@@ -67,10 +68,11 @@ func GetConfig() *Config {
 	}
 
 	httpConf := httpConfig{
-		HostPort:       v.GetString("http.host"),
-		HostCert:       v.GetString("http.cert"),
-		HostKey:        v.GetString("http.key"),
-		HTTPSERVERHOST: v.GetString("http.httpserverhost"),
+		HostPort:          v.GetString("http.host"),
+		HostCert:          v.GetString("http.cert"),
+		HostKey:           v.GetString("http.key"),
+		HTTPSERVERHOST:    v.GetString("http.httpserverhost"),
+		HTTPSERVERHOSTURL: v.GetString("http.httpserverhosturl"),
 	}
 
 	dbConf := dbConfig{

@@ -36,6 +36,7 @@ import (
 var UserOs string
 
 var HTTPSERVERHOST string
+var HTTPSERVERHOSTURL string
 
 const HTTPSECURE = "https://"
 const PORT = "30707"
@@ -48,6 +49,7 @@ type crudRepository struct {
 func NewcrudRepository(conn *gorm.DB, slist *controller.ServerUserList, conf *config.Config) crud.Repository {
 	UserOs = conf.Server.OsUser
 	HTTPSERVERHOST = conf.HttpConfig.HTTPSERVERHOST
+	HTTPSERVERHOSTURL = conf.HttpConfig.HTTPSERVERHOSTURL
 	wh := &crudRepository{
 		DBConn: conn,
 		SList:  slist,
@@ -107,6 +109,9 @@ func getServerOs() string {
 }
 func getserverhost() string {
 	return HTTPSERVERHOST
+}
+func getserverhosturl() string {
+	return HTTPSERVERHOSTURL
 }
 
 /******************************************Create_text_template**************************************/
@@ -4804,35 +4809,62 @@ func (r *crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context
 	fmt.Println(c.Request)
 	fmt.Println(c.Response)
 	fmt.Println(client_id, client_secret)
-	oauthConf := &oauth2.Config{
-		ClientID:     client_id,
-		ClientSecret: client_secret,
-		RedirectURL:  HTTPSECURE + getserverhost() + ":" + PORT + "/uvoice-facebook-login-callback",
-		Scopes:       []string{"public_profile"},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
-			TokenURL: facebook.Endpoint.TokenURL,
-		},
+	if getServerOs() == "ubuntu" {
+		oauthConf := &oauth2.Config{
+			ClientID:     client_id,
+			ClientSecret: client_secret,
+			RedirectURL:  HTTPSECURE + getserverhosturl() + ":" + PORT + "/uvoice-facebook-login-callback",
+			Scopes:       []string{"public_profile"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
+				TokenURL: facebook.Endpoint.TokenURL,
+			},
+		}
+		oauthStateString := flac_uuid
+		Url, err := url.Parse(oauthConf.Endpoint.AuthURL)
+		if err != nil {
+			log.Fatal("Parse: ", err)
+		}
+		parameters := url.Values{}
+		parameters.Add("client_id", oauthConf.ClientID)
+		parameters.Add("scope", strings.Join(oauthConf.Scopes, " "))
+		parameters.Add("redirect_uri", oauthConf.RedirectURL)
+		parameters.Add("response_type", "code")
+		parameters.Add("state", oauthStateString)
+		Url.RawQuery = parameters.Encode()
+		url := Url.String()
+		fmt.Println(url)
+		c.Redirect(http.StatusMovedPermanently, url)
+		return nil, nil
+	} else if getServerOs() == "startel" {
+		oauthConf := &oauth2.Config{
+			ClientID:     client_id,
+			ClientSecret: client_secret,
+			RedirectURL:  HTTPSECURE + getserverhost() + ":" + PORT + "/uvoice-facebook-login-callback",
+			Scopes:       []string{"public_profile"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
+				TokenURL: facebook.Endpoint.TokenURL,
+			},
+		}
+		oauthStateString := flac_uuid
+		Url, err := url.Parse(oauthConf.Endpoint.AuthURL)
+		if err != nil {
+			log.Fatal("Parse: ", err)
+		}
+		parameters := url.Values{}
+		parameters.Add("client_id", oauthConf.ClientID)
+		parameters.Add("scope", strings.Join(oauthConf.Scopes, " "))
+		parameters.Add("redirect_uri", oauthConf.RedirectURL)
+		parameters.Add("response_type", "code")
+		parameters.Add("state", oauthStateString)
+		Url.RawQuery = parameters.Encode()
+		url := Url.String()
+		fmt.Println(url)
+		c.Redirect(http.StatusMovedPermanently, url)
+		return nil, nil
 	}
-	oauthStateString := flac_uuid
-	Url, err := url.Parse(oauthConf.Endpoint.AuthURL)
-	if err != nil {
-		log.Fatal("Parse: ", err)
-	}
-	parameters := url.Values{}
-	parameters.Add("client_id", oauthConf.ClientID)
-	parameters.Add("scope", strings.Join(oauthConf.Scopes, " "))
-	parameters.Add("redirect_uri", oauthConf.RedirectURL)
-	parameters.Add("response_type", "code")
-	parameters.Add("state", oauthStateString)
-	Url.RawQuery = parameters.Encode()
-	url := Url.String()
-	fmt.Println(url)
-	// b := fmt.Sprintf("%#v", oauthConf)
-	// newrq := c.Request()
-	// newrq.Body = ioutil.NopCloser(bytes.NewBufferString(b))
-	// c.SetRequest(newrq)
-	c.Redirect(http.StatusMovedPermanently, url)
+
 	return nil, nil
 }
 
@@ -4852,25 +4884,49 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 	if code == "" {
 		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 	}
-	oauthConf := &oauth2.Config{
-		ClientID:     t.AppId,
-		ClientSecret: t.AppSecret,
-		RedirectURL:  HTTPSECURE + getserverhost() + ":" + PORT + "/uvoice-facebook-login-callback",
-		Scopes:       []string{"public_profile"},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
-			TokenURL: facebook.Endpoint.TokenURL,
-		},
+	if getServerOs() == "ubuntu" {
+		oauthConf := &oauth2.Config{
+			ClientID:     t.AppId,
+			ClientSecret: t.AppSecret,
+			RedirectURL:  HTTPSECURE + getserverhosturl() + ":" + PORT + "/uvoice-facebook-login-callback",
+			Scopes:       []string{"public_profile"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
+				TokenURL: facebook.Endpoint.TokenURL,
+			},
+		}
+		token, err := oauthConf.Exchange(ctx, code)
+		if err != nil {
+			fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
+			return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+		}
+		fmt.Printf("%v \n", token)
+		c.Response().Header().Set("access_token", token.AccessToken)
+		c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
+		c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+getserverhosturl()+":"+PORT+"/uvoice-facebook-login-status")
+		return nil, nil
+	} else if getServerOs() == "startel" {
+		oauthConf := &oauth2.Config{
+			ClientID:     t.AppId,
+			ClientSecret: t.AppSecret,
+			RedirectURL:  HTTPSECURE + getserverhost() + ":" + PORT + "/uvoice-facebook-login-callback",
+			Scopes:       []string{"public_profile"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "https://www.facebook.com/v8.0/dialog/oauth",
+				TokenURL: facebook.Endpoint.TokenURL,
+			},
+		}
+		token, err := oauthConf.Exchange(ctx, code)
+		if err != nil {
+			fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
+			return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
+		}
+		fmt.Printf("%v \n", token)
+		c.Response().Header().Set("access_token", token.AccessToken)
+		c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
+		c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+getserverhost()+":"+PORT+"/uvoice-facebook-login-status")
+		return nil, nil
 	}
-	token, err := oauthConf.Exchange(ctx, code)
-	if err != nil {
-		fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
-		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
-	}
-	fmt.Printf("%v \n", token)
-	c.Response().Header().Set("access_token", token.AccessToken)
-	c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
-	c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+getserverhost()+":"+PORT+"/uvoice-facebook-login-status")
 	// return &models.Response{Status: "OK", Msg: "Success1", ResponseCode: http.StatusOK, FacebookGetAuthInfo: &info}, nil
 	return nil, nil
 }
