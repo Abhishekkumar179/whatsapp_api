@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"sync"
+	adapterdatabase "whatsapp_api/adapter"
 	config "whatsapp_api/config"
 
 	// logging "whatsapp_api/logger"
@@ -30,7 +31,7 @@ func main() {
 			AllowOrigins: []string{"*"},
 			AllowMethods: []string{echo.GET, echo.PUT, echo.POST, echo.DELETE},
 		}))
-
+		db := adapterdatabase.DB(config)
 		newWsServer := crudController.NewWsServer(db)
 		crudRepo := crudRepo.NewcrudRepository(db, newWsServer, config)
 		crudUc := crudUsecase.NewcrudUsecase(crudRepo)
