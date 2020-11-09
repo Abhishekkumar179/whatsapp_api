@@ -5766,7 +5766,7 @@ func (r *crudRepository) AssigncustomerToAgent(ctx context.Context, domain_uuid 
 }
 
 /**********************************************Real time like and comments***********************************/
-func (r *crudRepository) Webhook_verify(ctx context.Context, mode string, token string, challenge string) (string, error) {
+func (r *crudRepository) Webhook_verify(ctx context.Context, mode string, token string, challenge string, body []byte) (string, error) {
 	mode = "subscribe"
 	token = "Authtoken"
 	if mode == "subscribe" && token == "Authtoken" {
@@ -5782,7 +5782,7 @@ func (r *crudRepository) FacebookLikeAndComments(ctx context.Context, body []byt
 	jsondata := json.Unmarshal(body, &f)
 	fmt.Println(jsondata)
 	if f.Object == "page" {
-		fmt.Println(jsondata, &f, f)
+		fmt.Println(jsondata, f)
 		return &models.Response{Status: "1", Msg: "likes and comments list", ResponseCode: 200, FacebookLikesAndComments: &f}, nil
 	}
 	return &models.Response{Status: "0", Msg: "Not Found", ResponseCode: 401}, nil

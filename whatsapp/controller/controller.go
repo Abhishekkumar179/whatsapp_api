@@ -2143,24 +2143,32 @@ func (r *CRUDController) AssigncustomerToAgent(c echo.Context) error {
 
 /****************************************************Facebook Real Time Like/comment****************************/
 func (r *CRUDController) Webhook_verify(c echo.Context) error {
-	mode := c.QueryParam("mode")
-	token := c.QueryParam("verify_token")
-	challenge := c.QueryParam("challenge")
+	body, error := ioutil.ReadAll(c.Request().Body)
+	if error != nil {
+		return error
+	}
+	mode := c.QueryParam("hub.mode")
+	token := c.QueryParam("hub.verify_token")
+	challenge := c.QueryParam("hub.challenge")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
-	authResponse, _ := r.usecase.Webhook_verify(ctx, mode, token, challenge)
-
-	if authResponse == "" {
-		return c.String(http.StatusUnauthorized, authResponse)
+	mode = "subscribe"
+	token = "qwerty"
+	if mode == "subscribe" && token == "qwerty" {
+		fmt.Println("webhook verified")
+		return c.String(200, challenge)
 	}
-	return c.JSON(http.StatusOK, authResponse)
+	fmt.Println("enterrrrr", string(body))
+	f := models.FacebookLikesAndComments{}
+	jsondata := json.Unmarshal(body, &f)
+	fmt.Println(jsondata)
+	return c.JSON(http.StatusOK, f)
 
 }
 
-/**************************************Real Time like and comments facebook *************************************************/
+/*************************************Real Time facbook likes and comments******************************/
 func (r *CRUDController) FacebookLikeAndComments(c echo.Context) error {
 	body, error := ioutil.ReadAll(c.Request().Body)
 	if error != nil {
@@ -2170,7 +2178,6 @@ func (r *CRUDController) FacebookLikeAndComments(c echo.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-
 	authResponse, _ := r.usecase.FacebookLikeAndComments(ctx, body)
 
 	if authResponse == nil {

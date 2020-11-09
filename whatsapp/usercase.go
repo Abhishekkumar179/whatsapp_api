@@ -104,6 +104,6 @@ type Usecase interface {
 	RemoveTwitterAssignAgent(ctx context.Context, agent_uuid string, twitter_uuid string) (*models.Response, error)
 	Get_Quoted_Retweet_List(ctx context.Context, api_key string, tweet_id string) (*models.Response, error)
 	AssigncustomerToAgent(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
-	Webhook_verify(ctx context.Context, mode string, token string, challenge string) (string, error)
+	Webhook_verify(ctx context.Context, mode string, token string, challenge string, body []byte) (string, error)
 	FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error)
 }
