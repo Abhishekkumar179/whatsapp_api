@@ -56,9 +56,9 @@ func (r *crudUsecase) Get_allId(ctx context.Context, domain_uuid string) (*model
 }
 
 /**************************************Get customer by appUserId ************************************************/
-func (r *crudUsecase) Get_Customer_by_agent_uuid(ctx context.Context, customer_id string) (*models.Response, error) {
+func (r *crudUsecase) Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string, customer_id string) (*models.Response, error) {
 
-	return r.repository.Get_Customer_by_agent_uuid(ctx, customer_id)
+	return r.repository.Get_Customer_by_agent_uuid(ctx, agent_uuid, customer_id)
 }
 
 /**************************************************Delete User***************************************************/
@@ -690,4 +690,14 @@ func (r *crudUsecase) AssigncustomerToAgent(ctx context.Context, flow map[string
 	agent_uuid := fmt.Sprintf("%v", flow["agent_uuid"])
 	app_user_id := fmt.Sprintf("%v", flow["app_user_id"])
 	return r.repository.AssigncustomerToAgent(ctx, domain_uuid, agent_uuid, app_user_id)
+}
+
+/********************************************Real Time Like And Comments************************************/
+func (r *crudUsecase) Webhook_verify(ctx context.Context, mode string, token string, challenge string) (string, error) {
+
+	return r.repository.Webhook_verify(ctx, mode, token, challenge)
+}
+func (r *crudUsecase) FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error) {
+
+	return r.repository.FacebookLikeAndComments(ctx, body)
 }

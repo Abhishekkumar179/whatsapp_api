@@ -14,7 +14,7 @@ type Usecase interface {
 	GetAllMessageByAppUserId(ctx context.Context, appUserId string, appId string) ([]byte, error)
 	GetAppUserDetails(ctx context.Context, appUserId string, appId string) ([]byte, error)
 	Get_allId(ctx context.Context, domain_uuid string) (*models.Response, error)
-	Get_Customer_by_agent_uuid(ctx context.Context, customer_id string) (*models.Response, error)
+	Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string, customer_id string) (*models.Response, error)
 	App_user(ctx context.Context, body []byte) (*models.Response, error)
 	Pre_createUser(ctx context.Context, appId string, flow map[string]interface{}) (*models.Response, error)
 	Update_AppUser(ctx context.Context, appUserId string, appId string, flow map[string]interface{}) (*models.Response, error)
@@ -104,4 +104,6 @@ type Usecase interface {
 	RemoveTwitterAssignAgent(ctx context.Context, agent_uuid string, twitter_uuid string) (*models.Response, error)
 	Get_Quoted_Retweet_List(ctx context.Context, api_key string, tweet_id string) (*models.Response, error)
 	AssigncustomerToAgent(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
+	Webhook_verify(ctx context.Context, mode string, token string, challenge string) (string, error)
+	FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error)
 }

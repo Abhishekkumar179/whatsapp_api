@@ -14,7 +14,7 @@ type Repository interface {
 	GetAllMessageByAppUserId(ctx context.Context, appUserId string, appId string) ([]byte, error)
 	GetAppUserDetails(ctx context.Context, appUserId string, appId string) ([]byte, error)
 	Get_allId(ctx context.Context, domain_uuid string) (*models.Response, error)
-	Get_Customer_by_agent_uuid(ctx context.Context, customer_id string) (*models.Response, error)
+	Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string, customer_id string) (*models.Response, error)
 	App_user(ctx context.Context, body []byte) (*models.Response, error)
 	Pre_createUser(ctx context.Context, appId string, id int64, userId string, surname string, givenName string) (*models.Response, error)
 	Update_AppUser(tx context.Context, appUserId string, appId string, surname string, givenName string) (*models.Response, error)
@@ -104,4 +104,6 @@ type Repository interface {
 	RemoveTwitterAssignAgent(ctx context.Context, agent_uuid string, twitter_uuid string) (*models.Response, error)
 	Get_Quoted_Retweet_List(ctx context.Context, api_key string, tweet_id string) (*models.Response, error)
 	AssigncustomerToAgent(ctx context.Context, domain_uuid string, agent_uuid string, app_user_id string) (*models.Response, error)
+	Webhook_verify(ctx context.Context, mode string, token string, challenge string) (string, error)
+	FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error)
 }

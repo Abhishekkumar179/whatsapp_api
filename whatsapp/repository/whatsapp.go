@@ -43,16 +43,16 @@ const PORT = "30707"
 
 type crudRepository struct {
 	DBConn *gorm.DB
-	SList  *controller.ServerUserList
+	WsConn *controller.ServerWsConnection
 }
 
-func NewcrudRepository(conn *gorm.DB, slist *controller.ServerUserList, conf *config.Config) crud.Repository {
+func NewcrudRepository(conn *gorm.DB, wsConn *controller.ServerWsConnection, conf *config.Config) crud.Repository {
 	UserOs = conf.Server.OsUser
 	HTTPSERVERHOST = conf.HttpConfig.HTTPSERVERHOST
 	HTTPSERVERHOSTURL = conf.HttpConfig.HTTPSERVERHOSTURL
 	wh := &crudRepository{
 		DBConn: conn,
-		SList:  slist,
+		WsConn: wsConn,
 	}
 	chatFunc := func() {
 		wh.chatScheduler()
@@ -78,9 +78,11 @@ func (r *crudRepository) chatScheduler() {
 		requestSent := false
 		for _, v1 := range agent {
 			agentID := fmt.Sprintf("%v", v1.CallCenterAgentUUID)
-			for _, oldu := range r.SList.Users {
-				if oldu.UName == agentID {
-					msg := map[string]interface{}{"message_id": "5", "customer_id": v.AppUserId, "surname": v.Surname, "given_name": v.GivenName}
+			for _, oldu := range r.WsConn.Clients {
+				if oldu.Id == agentID {
+					new_customer := models.ReceiveUserDetails{AppUserId: v.AppUserId, Surname: v.Surname, GivenName: v.GivenName, Conversation_id: v.Conversation_id}
+					msg := models.WsResponse{MessageId: "5", ResponseMessage: "new customer recieved", ResponseCode: http.StatusOK, Customer: &new_customer}
+					//msg := map[string]interface{}{"message_id": "5", "customer_id": v.AppUserId, "surname": v.Surname, "given_name": v.GivenName}
 					if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
 						log.Println("Can't send", err)
 					} else {
@@ -219,15 +221,45 @@ func (r *crudRepository) Get_allId(ctx context.Context, domain_uuid string) (*mo
 }
 
 /**********************************************Get customer by appUserId*********************************************/
-func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, customer_id string) (*models.Response, error) {
+func (r *crudRepository) Get_Customer_by_agent_uuid(ctx context.Context, agent_uuid string, customer_id string) (*models.Response, error) {
 	customer := models.ReceiveUserDetails{
 		AppUserId: customer_id,
 	}
-	//list := make([]models.Customer_Agents, 0)
 	if db := r.DBConn.Where("app_user_id = ?", customer_id).Find(&customer).Error; db != nil {
 
 		return &models.Response{Status: "0", Msg: "Contact list is not available", ResponseCode: 404}, nil
 	}
+	cus_agent := models.Customer_Agents{
+		Domain_uuid: customer.Domain_uuid,
+		Agent_uuid:  agent_uuid,
+		AppUserId:   customer_id,
+	}
+
+	if db := r.DBConn.Where("app_user_id = ?", customer_id).Find(&cus_agent).Error; db != nil {
+		err := r.DBConn.Create(&cus_agent)
+		if err.Error != nil {
+			//return &models.Response{Status: "0", Msg: "Customer is not assigned.", ResponseCode: 404}, nil
+		}
+		// &models.Response{Status: "1", Msg: "Customer assigned successfully.", ResponseCode: 200}, nil
+
+	}
+	// if db.Error != nil {
+	// 	fmt.Println(db.Error)
+	// }
+	// cou := []models.Count_Agent_queue{}
+	// cust := []models.Count_customer{}
+	// db := r.DBConn.Raw("select count(call_center_agent_uuid) from v_call_center_agents where agent_status='Available' and call_center_agent_uuid in (select agent_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "'))").Find(&cou)
+	// if db.Error != nil {
+	// 	fmt.Println(db.Error)
+	// }
+	// if rows := r.DBConn.Raw("select count(app_user_id) from receive_user_details where domain_uuid=(select domain_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')").Find(&cust).Error; rows != nil {
+
+	// 	return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
+	// }
+	// time := 5 * (cust[0].Count - cou[0].Count)
+	// times := strconv.FormatInt(time, 10)
+	//list := make([]models.Customer_Agents, 0)
+
 	// if rows, err := r.DBConn.Raw("select domain_uuid, agent_uuid,app_user_id, surname, given_name,type,text,role,name,author_id,conversation_id,received,message_id,integration_id,source_type, signed_up_at, unread_count from customer_agents where app_user_id = ?", customer_id).Rows(); err != nil {
 
 	// 	return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 204}, nil
@@ -345,62 +377,84 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 
 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
 	}
-	if cou[0].Count < cust[0].Count {
-		time := 5 * (cust[0].Count - cou[0].Count)
-		times := strconv.FormatInt(time, 10)
-		if f.Messages[0].Source.Type == "messenger" {
-			db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
-			if db.Error != nil {
-				fmt.Println("error")
-			}
-			p := models.User{
-				Author: models.Author{
-					Type:        "business",
-					DisplayName: fb.ConfigurationName,
-					AvatarURL:   "https://www.gravatar.com/image.jpg",
-				},
-				Content: models.Content{
-					Type: "text",
-					Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
-				},
-			}
-			r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-		} else if f.Messages[0].Source.Type == "whatsapp" {
-			db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
-			if db.Error != nil {
-				fmt.Println("error")
-			}
-			p := models.User{
-				Author: models.Author{
-					Type:        "business",
-					DisplayName: w.ConfigurationName,
-					AvatarURL:   "https://www.gravatar.com/image.jpg",
-				},
-				Content: models.Content{
-					Type: "text",
-					Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
-				},
-			}
-			r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-		} else if f.Messages[0].Source.Type == "twitter" {
-			db := r.DBConn.Where("twitter_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&tw)
-			if db.Error != nil {
-				fmt.Println("error")
-			}
-			p := models.User{
-				Author: models.Author{
-					Type:        "business",
-					DisplayName: tw.ConfigurationName,
-					AvatarURL:   "https://www.gravatar.com/image.jpg",
-				},
-				Content: models.Content{
-					Type: "text",
-					Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
-				},
-			}
-			r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-		}
-	}
+	// if len(cou) == 0 {
+	// 	uuid1, _ := myNewUUID.NewUUID()
+	// 	uuid := uuid1.String()
+	// 	social := models.SocialMediaTickets{
+	// 		Ticket_uuid:     uuid,
+	// 		Domain_uuid:     dom_uuid,
+	// 		Ticket_name:     f.Messages[0].Source.Type,
+	// 		CustomerId:      f.AppUser.ID,
+	// 		CustomerName:    f.Messages[0].Name,
+	// 		Message:         f.Messages[0].Text,
+	// 		MessageType:     f.Messages[0].Type,
+	// 		IntegrationID:   f.Messages[0].Source.IntegrationID,
+	// 		Source_type:     f.Messages[0].Source.Type,
+	// 		Conversation_id: f.Conversation.ID,
+	// 		Timestamp:       f.Messages[0].Received,
+	// 	}
+	// 	db := r.DBConn.Create(&social)
+	// 	if db.Error != nil {
+
+	// 	}
+
+	// }
+	// if cou[0].Count < cust[0].Count {
+	// 	time := 5 * (cust[0].Count - cou[0].Count)
+	// 	times := strconv.FormatInt(time, 10)
+	// 	if f.Messages[0].Source.Type == "messenger" {
+	// 		db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
+	// 		if db.Error != nil {
+	// 			fmt.Println("error")
+	// 		}
+	// 		p := models.User{
+	// 			Author: models.Author{
+	// 				Type:        "business",
+	// 				DisplayName: fb.ConfigurationName,
+	// 				AvatarURL:   "https://www.gravatar.com/image.jpg",
+	// 			},
+	// 			Content: models.Content{
+	// 				Type: "text",
+	// 				Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+	// 			},
+	// 		}
+	// 		r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+	// 	} else if f.Messages[0].Source.Type == "whatsapp" {
+	// 		db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
+	// 		if db.Error != nil {
+	// 			fmt.Println("error")
+	// 		}
+	// 		p := models.User{
+	// 			Author: models.Author{
+	// 				Type:        "business",
+	// 				DisplayName: w.ConfigurationName,
+	// 				AvatarURL:   "https://www.gravatar.com/image.jpg",
+	// 			},
+	// 			Content: models.Content{
+	// 				Type: "text",
+	// 				Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+	// 			},
+	// 		}
+	// 		r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+	// 	} else if f.Messages[0].Source.Type == "twitter" {
+	// 		db := r.DBConn.Where("twitter_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&tw)
+	// 		if db.Error != nil {
+	// 			fmt.Println("error")
+	// 		}
+	// 		p := models.User{
+	// 			Author: models.Author{
+	// 				Type:        "business",
+	// 				DisplayName: tw.ConfigurationName,
+	// 				AvatarURL:   "https://www.gravatar.com/image.jpg",
+	// 			},
+	// 			Content: models.Content{
+	// 				Type: "text",
+	// 				Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
+	// 			},
+	// 		}
+	// 		r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+	// 	}
+	// }
 	errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
 	fmt.Println(errs.Error)
 	if f.Messages[0].Role == "appUser" {
@@ -2258,6 +2312,7 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						},
 					}
 					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+
 					db := r.DBConn.Create(&u).Where("app_user_id = ?", f.AppUser.ID).Updates(map[string]interface{}{"after_office_time": true, "domain_uuid": tw.Domain_uuid})
 					if db.Error != nil {
 						fmt.Println(db.Error)
@@ -4528,8 +4583,8 @@ func (r *crudRepository) Transfer_customer(ctx context.Context, agent_name strin
 		r.PostMessage(ctx, td.AppId, conversation_id, p)
 		msg := map[string]interface{}{"message_id": "5", "customer_id": appUserId, "user_id": agent_uuid, "user_type": "agent"}
 
-		for _, oldu := range r.SList.Users {
-			if oldu.UName == agent_uuid {
+		for _, oldu := range r.WsConn.Clients {
+			if oldu.Id == agent_uuid {
 				log.Println("found user: ", oldu)
 				if err := websocket.JSON.Send(oldu.Ws, msg); err != nil {
 					log.Println("Can't send", err)
@@ -4865,6 +4920,11 @@ func (r *crudRepository) UVoiceFacebookLogin(ctx context.Context, c echo.Context
 		return nil, nil
 	}
 
+	// b := fmt.Sprintf("%#v", oauthConf)
+	// newrq := c.Request()
+	// newrq.Body = ioutil.NopCloser(bytes.NewBufferString(b))
+	// c.SetRequest(newrq)
+
 	return nil, nil
 }
 
@@ -4873,6 +4933,7 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 	code := c.FormValue("code")
 	state := c.FormValue("state")
 	var t models.FacebookLoginAppConfiguration
+
 	if err := r.DBConn.Where("flac_uuid=?", state).Find(&t).Error; err != nil {
 		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 	}
@@ -5242,6 +5303,7 @@ func (r *crudRepository) UpdateTwitterAuth(ctx context.Context, id int64, domain
 func (r *crudRepository) GetTwitterAuth(ctx context.Context, domain_uuid string) (*models.Response, error) {
 	td := models.SaveTwitterAuth{}
 	list := make([]models.SaveTwitterAuth, 0)
+
 	if db := r.DBConn.Where("domain_uuid = ?", domain_uuid).Find(&td).Error; db != nil {
 
 		return &models.Response{Status: "0", Msg: "Twitter Auth list is not available", ResponseCode: 404}, nil
@@ -5701,4 +5763,27 @@ func (r *crudRepository) AssigncustomerToAgent(ctx context.Context, domain_uuid 
 
 	}
 	return &models.Response{Status: "0", Msg: "Customer is already assigned.", ResponseCode: 404}, nil
+}
+
+/**********************************************Real time like and comments***********************************/
+func (r *crudRepository) Webhook_verify(ctx context.Context, mode string, token string, challenge string) (string, error) {
+	mode = "subscribe"
+	token = "Authtoken"
+	if mode == "subscribe" && token == "Authtoken" {
+		fmt.Println("webhook verified")
+		return challenge, nil
+	}
+	return "", nil
+}
+
+/**************************************Real Time Like And Comments****************************************/
+func (r *crudRepository) FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error) {
+	f := models.FacebookLikesAndComments{}
+	jsondata := json.Unmarshal(body, &f)
+	fmt.Println(jsondata)
+	if f.Object == "page" {
+		fmt.Println(jsondata, &f, f)
+		return &models.Response{Status: "1", Msg: "likes and comments list", ResponseCode: 200, FacebookLikesAndComments: &f}, nil
+	}
+	return &models.Response{Status: "0", Msg: "Not Found", ResponseCode: 401}, nil
 }

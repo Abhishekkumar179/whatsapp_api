@@ -180,11 +180,12 @@ func (r *CRUDController) Get_allId(c echo.Context) error {
 /********************************************Get Customer Details by appUserId****************************/
 func (r *CRUDController) Get_Customer_by_agent_uuid(c echo.Context) error {
 	customer_id := c.Param("customer_id")
+	agent_uuid := c.Param("agent_uuid")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Get_Customer_by_agent_uuid(ctx, customer_id)
+	authResponse, _ := r.usecase.Get_Customer_by_agent_uuid(ctx, agent_uuid, customer_id)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -2140,6 +2141,45 @@ func (r *CRUDController) AssigncustomerToAgent(c echo.Context) error {
 	return c.JSON(http.StatusOK, authResponse)
 }
 
+/****************************************************Facebook Real Time Like/comment****************************/
+func (r *CRUDController) Webhook_verify(c echo.Context) error {
+	mode := c.QueryParam("mode")
+	token := c.QueryParam("verify_token")
+	challenge := c.QueryParam("challenge")
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	authResponse, _ := r.usecase.Webhook_verify(ctx, mode, token, challenge)
+
+	if authResponse == "" {
+		return c.String(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
+/**************************************Real Time like and comments facebook *************************************************/
+func (r *CRUDController) FacebookLikeAndComments(c echo.Context) error {
+	body, error := ioutil.ReadAll(c.Request().Body)
+	if error != nil {
+		return error
+	}
+	ctx := c.Request().Context()
+	if ctx == nil {
+		ctx = context.Background()
+	}
+
+	authResponse, _ := r.usecase.FacebookLikeAndComments(ctx, body)
+
+	if authResponse == nil {
+		return c.JSON(http.StatusUnauthorized, authResponse)
+	}
+	return c.JSON(http.StatusOK, authResponse)
+
+}
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -2154,7 +2194,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.DELETE("delete_message/:appId/:appUserId/:messageId", handler.DeleteMessage)
 	e.POST("/messages", handler.App_user)
 	e.GET("/getall_appUserId/:domain_uuid", handler.Get_allId)
-	e.GET("getcustomerbyagent_uuid/:customer_id", handler.Get_Customer_by_agent_uuid)
+	e.GET("getcustomerbyagent_uuid/:agent_uuid/:customer_id", handler.Get_Customer_by_agent_uuid)
 	e.GET("/get_appUser_details/:appId/:appUserId", handler.GetAppUserDetails)
 	e.POST("/create_text_template/:appId", handler.Create_Text_Template)
 
@@ -2258,4 +2298,6 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("twitter_assigned_agents_list/:domain_uuid/:twitter_uuid", handler.TwitterAssignAgentList)
 	e.DELETE("remove_twitter_assigned_agents/:agent_uuid/:twitter_uuid", handler.RemoveTwitterAssignAgent)
 	e.POST("assign_agent_to_customer", handler.AssigncustomerToAgent)
+	e.GET("real_time_like_comments", handler.Webhook_verify)
+	e.POST("real_time_like_comments", handler.FacebookLikeAndComments)
 }
