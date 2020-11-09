@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"sync"
-	adapterdatabase "whatsapp_api/adapter"
 	config "whatsapp_api/config"
 
 	// logging "whatsapp_api/logger"
@@ -32,13 +31,12 @@ func main() {
 			AllowMethods: []string{echo.GET, echo.PUT, echo.POST, echo.DELETE},
 		}))
 
-		db := adapterdatabase.DB(config)
-		newServerUser := crudController.NewServerUser(db)
-		crudRepo := crudRepo.NewcrudRepository(db, newServerUser, config)
+		newWsServer := crudController.NewWsServer(db)
+		crudRepo := crudRepo.NewcrudRepository(db, newWsServer, config)
 		crudUc := crudUsecase.NewcrudUsecase(crudRepo)
 		crudController.NewCRUDController(e, crudUc)
 
-		go newServerUser.Controller(e)
+		go newWsServer.Controller(e)
 
 		if err := e.StartTLS(config.HttpConfig.HostPort, config.HttpConfig.HostCert, config.HttpConfig.HostKey); err != nil {
 			fmt.Println("not connected")
