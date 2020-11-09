@@ -2298,6 +2298,6 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.GET("twitter_assigned_agents_list/:domain_uuid/:twitter_uuid", handler.TwitterAssignAgentList)
 	e.DELETE("remove_twitter_assigned_agents/:agent_uuid/:twitter_uuid", handler.RemoveTwitterAssignAgent)
 	e.POST("assign_agent_to_customer", handler.AssigncustomerToAgent)
-	e.GET("real_time_like_comments", handler.Webhook_verify)
-	e.POST("real_time_like_comments", handler.FacebookLikeAndComments)
+	e.GET("facebook_real_time_like_comments", handler.Webhook_verify)
+	e.POST("facebook_real_time_like_comments", handler.FacebookLikeAndComments)
 }
