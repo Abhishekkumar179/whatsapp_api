@@ -1264,12 +1264,13 @@ func (r *CRUDController) TypingActivity(c echo.Context) error {
 /**********************************************Disable AppUser**********************************************/
 func (r *CRUDController) Disable_AppUser(c echo.Context) error {
 
-	appUserId := c.Param("appUserId")
+	appUserId := c.Param("app_user_id")
+	domain_uuid := c.Param("domain_uuid")
 	ctx := c.Request().Context()
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	authResponse, _ := r.usecase.Disable_AppUser(ctx, appUserId)
+	authResponse, _ := r.usecase.Disable_AppUser(ctx, appUserId, domain_uuid)
 
 	if authResponse == nil {
 		return c.JSON(http.StatusUnauthorized, authResponse)
@@ -2187,6 +2188,26 @@ func (r *CRUDController) FacebookLikeAndComments(c echo.Context) error {
 
 }
 
+/***********************************************Send waiting Time to customer******************************/
+// func (r *CRUDController) SendWaitingTimeToCustomers(c echo.Context) error {
+// 	var auth map[string]interface{}
+// 	err1 := json.NewDecoder(c.Request().Body).Decode(&auth)
+// 	if err1 != nil {
+// 		fmt.Println("err= ", err1)
+// 	}
+// 	ctx := c.Request().Context()
+// 	if ctx == nil {
+// 		ctx = context.Background()
+// 	}
+// 	authResponse, _ := r.usecase.SendWaitingTimeToCustomers(ctx, body)
+
+// 	if authResponse == nil {
+// 		return c.JSON(http.StatusUnauthorized, authResponse)
+// 	}
+// 	return c.JSON(http.StatusOK, authResponse)
+
+// }
+
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
@@ -2221,7 +2242,7 @@ func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
 	e.POST("send_messages/:appId/:appUserId", handler.Message_Action_Types)
 	e.POST("quickreply_message/:appId/:appUserId", handler.Quickreply_Message)
 	e.POST("send_carousel_message/:appId/:appUserId", handler.Send_Carousel_Message)
-	e.GET("disable_appUser/:appUserId", handler.Disable_AppUser)
+	e.GET("disable_appUser/:domain_uuid/:app_user_id", handler.Disable_AppUser)
 	e.GET("reset_unread_count/:appId/:appUserId", handler.Reset_Unread_Count)
 
 	e.POST("add_smoochConfiguration", handler.Add_Smooch_configuration)

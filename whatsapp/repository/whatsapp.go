@@ -364,9 +364,8 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 		Date:                     date,
 		AfterOfficeTime:          false,
 		Domain_uuid:              dom_uuid,
+		Waiting_time:             0,
 	}
-
-	//rec_user_det := r.DBConn.Table("receive_user_details").Where("")
 	cou := []models.Count_Agent_queue{}
 	cust := []models.Count_customer{}
 	db := r.DBConn.Raw("select count(call_center_agent_uuid) from v_call_center_agents where agent_status='Available' and call_center_agent_uuid in (select agent_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "'))").Find(&cou)
@@ -399,62 +398,60 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 	// 	}
 
 	// }
-	// if cou[0].Count < cust[0].Count {
-	// 	time := 5 * (cust[0].Count - cou[0].Count)
-	// 	times := strconv.FormatInt(time, 10)
-	// 	if f.Messages[0].Source.Type == "messenger" {
-	// 		db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
-	// 		if db.Error != nil {
-	// 			fmt.Println("error")
-	// 		}
-	// 		p := models.User{
-	// 			Author: models.Author{
-	// 				Type:        "business",
-	// 				DisplayName: fb.ConfigurationName,
-	// 				AvatarURL:   "https://www.gravatar.com/image.jpg",
-	// 			},
-	// 			Content: models.Content{
-	// 				Type: "text",
-	// 				Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
-	// 			},
-	// 		}
-	// 		r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
-	// 	} else if f.Messages[0].Source.Type == "whatsapp" {
-	// 		db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
-	// 		if db.Error != nil {
-	// 			fmt.Println("error")
-	// 		}
-	// 		p := models.User{
-	// 			Author: models.Author{
-	// 				Type:        "business",
-	// 				DisplayName: w.ConfigurationName,
-	// 				AvatarURL:   "https://www.gravatar.com/image.jpg",
-	// 			},
-	// 			Content: models.Content{
-	// 				Type: "text",
-	// 				Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
-	// 			},
-	// 		}
-	// 		r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
-	// 	} else if f.Messages[0].Source.Type == "twitter" {
-	// 		db := r.DBConn.Where("twitter_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&tw)
-	// 		if db.Error != nil {
-	// 			fmt.Println("error")
-	// 		}
-	// 		p := models.User{
-	// 			Author: models.Author{
-	// 				Type:        "business",
-	// 				DisplayName: tw.ConfigurationName,
-	// 				AvatarURL:   "https://www.gravatar.com/image.jpg",
-	// 			},
-	// 			Content: models.Content{
-	// 				Type: "text",
-	// 				Text: "Hello! " + f.Messages[0].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + times + " minutes.",
-	// 			},
-	// 		}
-	// 		r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
-	// 	}
-	// }
+	if len(cou) == 0 {
+		if f.Messages[0].Source.Type == "messenger" {
+			db := r.DBConn.Where("facebook_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&fb)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: fb.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + f.Messages[0].Name + " our agents are not available at this time. we will reach out to you when our agets will be available.",
+				},
+			}
+			r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+		} else if f.Messages[0].Source.Type == "whatsapp" {
+			db := r.DBConn.Where("whatsapp_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&w)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: w.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + f.Messages[0].Name + " our agents are not available at this time. we will reach out to you when our agets will be available.",
+				},
+			}
+			r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+		} else if f.Messages[0].Source.Type == "twitter" {
+			db := r.DBConn.Where("twitter_integration_id = ?", f.Messages[0].Source.IntegrationID).Find(&tw)
+			if db.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: tw.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + f.Messages[0].Name + " our agents are not available at this time. we will reach out to you when our agets will be available.",
+				},
+			}
+			r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+		}
+	}
 	errs := r.DBConn.Where("app_user_id = ?", f.AppUser.ID).Find(&u)
 	fmt.Println(errs.Error)
 	if f.Messages[0].Role == "appUser" {
@@ -557,9 +554,25 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: fb.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -573,18 +586,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: fb.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: fb.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -669,9 +670,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: fb.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -685,18 +703,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: fb.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: fb.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 
@@ -782,9 +788,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: fb.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -798,18 +821,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: fb.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: fb.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -894,9 +905,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: fb.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -910,18 +938,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: fb.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: fb.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1005,9 +1021,25 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: fb.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1021,18 +1053,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: fb.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: fb.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1117,9 +1137,25 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: fb.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1133,18 +1169,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: fb.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: fb.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1230,9 +1254,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: fb.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: fb.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1246,18 +1287,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: fb.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: fb.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, fb.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1354,9 +1383,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: w.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1370,18 +1416,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: w.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: w.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1465,9 +1499,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: w.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1481,18 +1532,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: w.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: w.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1576,9 +1615,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: w.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1592,18 +1648,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: w.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: w.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1687,9 +1731,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: w.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1703,18 +1764,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: w.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: w.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1798,9 +1847,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: w.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1814,18 +1880,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: w.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: w.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -1909,9 +1963,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: w.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -1925,18 +1996,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: w.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: w.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2020,9 +2079,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: w.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: w.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -2036,18 +2112,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: w.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: w.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, w.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2144,9 +2208,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: tw.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -2160,18 +2241,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: tw.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: tw.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2255,9 +2324,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: tw.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -2271,18 +2357,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: tw.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: tw.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2367,9 +2441,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: tw.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -2383,18 +2474,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: tw.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: tw.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2478,9 +2557,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: tw.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -2494,18 +2590,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: tw.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: tw.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2589,9 +2673,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: tw.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -2605,18 +2706,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: tw.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: tw.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2700,9 +2789,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: tw.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -2716,18 +2822,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: tw.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: tw.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -2811,9 +2905,26 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 					if db.Error != nil {
 
 					}
-					if cou[0].Count < cust[0].Count {
-						time := 5 * (cust[0].Count - cou[0].Count)
+
+					p := models.User{
+						Author: models.Author{
+							Type:        "business",
+							DisplayName: tw.ConfigurationName,
+							AvatarURL:   "https://www.gravatar.com/image.jpg",
+						},
+						Content: models.Content{
+							Type: "text",
+							Text: tw.TriggerMessage,
+						},
+					}
+					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
+					if cou[0].Count <= cust[0].Count {
+						time := 5 * (cust[0].Count)
 						times := strconv.FormatInt(time, 10)
+						db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", f.AppUser.ID).Update("waiting_time", time)
+						if db.Error != nil {
+
+						}
 						p := models.User{
 							Author: models.Author{
 								Type:        "business",
@@ -2827,18 +2938,6 @@ func (r *crudRepository) App_user(ctx context.Context, body []byte) (*models.Res
 						}
 						r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					}
-					p := models.User{
-						Author: models.Author{
-							Type:        "business",
-							DisplayName: tw.ConfigurationName,
-							AvatarURL:   "https://www.gravatar.com/image.jpg",
-						},
-						Content: models.Content{
-							Type: "text",
-							Text: tw.TriggerMessage,
-						},
-					}
-					r.PostMessage(ctx, tw.AppId, f.Conversation.ID, p)
 					return &models.Response{Received: &f}, nil
 				}
 				fmt.Println("appUserId already exist.")
@@ -4273,8 +4372,12 @@ func (r *crudRepository) TypingActivity(ctx context.Context, appId string, appUs
 }
 
 /*************************************************Disable AppUser*************************************************/
-func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error) {
+func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string, domain_uuid string) (*models.Response, error) {
+
 	u := models.ReceiveUserDetails{}
+	fb := models.FacebookConfiguration{}
+	w := models.WhatsappConfiguration{}
+	tw := models.TwitterConfiguration{}
 	customer := models.Customer_Agents{
 		AppUserId: appUserId,
 	}
@@ -4283,14 +4386,92 @@ func (r *crudRepository) Disable_AppUser(ctx context.Context, appUserId string) 
 		return &models.Response{Status: "0", Msg: "AppUserId Not Found.", ResponseCode: 404}, nil
 
 	}
-	db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Delete(&u)
-	if db.Error != nil {
+	db1 := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", appUserId).Delete(&u)
+	if db1.Error != nil {
 		return &models.Response{Status: "0", Msg: "Customer not Disabled.", ResponseCode: 404}, nil
 	}
 	cust := r.DBConn.Where("app_user_id = ?", appUserId).Delete(&customer)
 	if cust.Error != nil {
 		return &models.Response{Status: "0", Msg: "Customer not Removed from queue.", ResponseCode: 404}, nil
 	}
+	cus := models.Count_Agent_queue{}
+	cou := []models.Count_customer{}
+	db := r.DBConn.Raw("select count(app_user_id) from receive_user_details where domain_uuid = ?", domain_uuid).Find(&cus)
+	if db.Error != nil {
+		fmt.Println(db.Error)
+	}
+
+	if rows := r.DBConn.Raw("select app_user_id,waiting_time,conversation_id,name,integration_id,source_type from receive_user_details where domain_uuid = ? and app_user_id not in (select app_user_id from customer_agents where domain_uuid::text = '"+domain_uuid+"')", domain_uuid).Find(&cou).Error; rows != nil {
+
+		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
+	}
+	for i := 0; i <= len(cou)-1; i++ {
+		if cou[i].Source_Type == "messenger" {
+			db1 := r.DBConn.Where("facebook_integration_id = ?", cou[i].IntegrationID).Find(&fb)
+			if db1.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: fb.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + cou[i].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + strconv.FormatInt(cou[i].Waiting_time-1, 10) + " minutes.",
+				},
+			}
+			r.PostMessage(ctx, fb.AppId, cou[i].ConversationId, p)
+			db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", cou[i].AppUserId).Update("waiting_time", strconv.FormatInt(cou[i].Waiting_time-1, 10))
+			if db.Error != nil {
+
+			}
+		} else if cou[i].Source_Type == "whatsapp" {
+			db1 := r.DBConn.Where("whatsapp_integration_id = ?", cou[i].IntegrationID).Find(&w)
+			if db1.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: w.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + cou[i].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + strconv.FormatInt(cou[i].Waiting_time-1, 10) + " minutes.",
+				},
+			}
+			r.PostMessage(ctx, w.AppId, cou[i].ConversationId, p)
+			db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", cou[i].AppUserId).Update("waiting_time", strconv.FormatInt(cou[i].Waiting_time-1, 10))
+			if db.Error != nil {
+
+			}
+		} else if cou[i].Source_Type == "twitter" {
+			db1 := r.DBConn.Where("twitter_integration_id = ?", cou[i].IntegrationID).Find(&tw)
+			if db1.Error != nil {
+				fmt.Println("error")
+			}
+			p := models.User{
+				Author: models.Author{
+					Type:        "business",
+					DisplayName: tw.ConfigurationName,
+					AvatarURL:   "https://www.gravatar.com/image.jpg",
+				},
+				Content: models.Content{
+					Type: "text",
+					Text: "Hello! " + cou[i].Name + " our agents are busy right now so when our agents will be available they contact you and your waiting time is " + strconv.FormatInt(cou[i].Waiting_time-1, 10) + " minutes.",
+				},
+			}
+			r.PostMessage(ctx, tw.AppId, cou[i].ConversationId, p)
+			db := r.DBConn.Table("receive_user_details").Where("app_user_id = ?", cou[i].AppUserId).Update("waiting_time", strconv.FormatInt(cou[i].Waiting_time-1, 10))
+			if db.Error != nil {
+
+			}
+		}
+	}
+
 	return &models.Response{Status: "1", Msg: "Customer Disabled Successfully.", ResponseCode: 200}, nil
 }
 
@@ -5787,3 +5968,18 @@ func (r *crudRepository) FacebookLikeAndComments(ctx context.Context, body []byt
 	}
 	return &models.Response{Status: "0", Msg: "Not Found", ResponseCode: 401}, nil
 }
+
+/**************************************Send waiting time to customers**************************************/
+// func (r *crudRepository) SendWaitingTimeToCustomers(ctx context.Context) (*models.Response, error) {
+// 	cou := []models.Count_Agent_queue{}
+// 	cust := []models.Count_customer{}
+// 	db := r.DBConn.Raw("select count(call_center_agent_uuid) from v_call_center_agents where agent_status='Available' and call_center_agent_uuid in (select agent_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "'))").Find(&cou)
+// 	if db.Error != nil {
+// 		fmt.Println(db.Error)
+// 	}
+// 	if rows := r.DBConn.Raw("select count(app_user_id) from receive_user_details where domain_uuid=(select domain_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')").Find(&cust).Error; rows != nil {
+
+// 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
+// 	}
+
+// }

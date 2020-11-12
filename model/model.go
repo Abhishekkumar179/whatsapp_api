@@ -272,6 +272,7 @@ type ReceiveUserDetails struct {
 	Domain_uuid              string    `json:"domain_uuid,omitempty"`
 	Agent_Request_uuid       string    `json:"agent_request_uuid,omitempty"`
 	Agent_Request_Time       int64     `json:"agent_request_time,omitempty" gorm:"default:0"`
+	Waiting_time             int64     `json:"waiting_time,omitempty"`
 }
 type SocialMediaTickets struct {
 	Ticket_uuid     string  `json:"ticket_uuid,omitempty" gorm:"type:uuid"`
@@ -492,7 +493,13 @@ type Count_Agent_queue struct {
 	Count int64 `json:"count,omitempty"`
 }
 type Count_customer struct {
-	Count int64 `json:"count,omitempty"`
+	Count          int64  `json:"count,omitempty"`
+	AppUserId      string `json:"app_user_id,omitempty"`
+	Waiting_time   int64  `json:"waiting_time,omitempty"`
+	ConversationId string `json:"conversation_id,omitempty"`
+	Name           string `json:"name,omitempty"`
+	IntegrationID  string `json:"integration_id,omitempty"`
+	Source_Type    string `json:"source_type,omitempty"`
 }
 type FacebookGetCode struct {
 	Code string

@@ -55,7 +55,7 @@ type Repository interface {
 	Unlink_appUser_to_Channel(ctx context.Context, appId string, appUserId string, channel string) ([]byte, error)
 	Upload_Attachments(ctx context.Context, displayName string, AvatarURL string, appId string, conversationId string, Type string, Text string, IntegrationID string, Size int64, file multipart.File, handler *multipart.FileHeader) (*models.Response, error)
 	TypingActivity(ctx context.Context, appId string, appUserId string, p models.User) ([]byte, error)
-	Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error)
+	Disable_AppUser(ctx context.Context, appUserId string, domain_uuid string) (*models.Response, error)
 	Reset_Unread_Count(ctx context.Context, appId string, appUserId string) (*models.Response, error)
 	Create_Queue(ctx context.Context, Id int64, Queue_uuid string, Map_with string, Name string, IntegrationID string, domain_uuid string) (*models.Response, error)
 	Assign_Agent_To_Queue(ctx context.Context, agent_name string, agent_uuid string, queue_name string, tenant_domain_uuid string, queue_uuid string) (*models.Response, error)
@@ -106,4 +106,5 @@ type Repository interface {
 	AssigncustomerToAgent(ctx context.Context, domain_uuid string, agent_uuid string, app_user_id string) (*models.Response, error)
 	Webhook_verify(ctx context.Context, mode string, token string, challenge string, body []byte) (string, error)
 	FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error)
+	//SendWaitingTimeToCustomers(ctx context.Context) (*models.Response, error)
 }

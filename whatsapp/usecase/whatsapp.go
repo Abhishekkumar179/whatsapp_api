@@ -336,9 +336,9 @@ func (r *crudUsecase) TypingActivity(ctx context.Context, appId string, appUserI
 }
 
 /**********************************************Disable_AppUser*************************************************/
-func (r *crudUsecase) Disable_AppUser(ctx context.Context, appUserId string) (*models.Response, error) {
+func (r *crudUsecase) Disable_AppUser(ctx context.Context, appUserId string, domain_uuid string) (*models.Response, error) {
 
-	return r.repository.Disable_AppUser(ctx, appUserId)
+	return r.repository.Disable_AppUser(ctx, appUserId, domain_uuid)
 
 }
 
@@ -701,3 +701,9 @@ func (r *crudUsecase) FacebookLikeAndComments(ctx context.Context, body []byte) 
 
 	return r.repository.FacebookLikeAndComments(ctx, body)
 }
+
+/*******************************************Send waiting time to customers***********************************/
+// func (r *crudUsecase) SendWaitingTimeToCustomers(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
+
+// 	return r.repository.SendWaitingTimeToCustomers(ctx)
+// }
