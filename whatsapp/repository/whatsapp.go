@@ -4535,11 +4535,11 @@ func (r *crudRepository) Create_Queue(ctx context.Context, Id int64, Queue_uuid 
 /***************************************************Assign_Agent********************************************/
 func (r *crudRepository) Assign_Agent_To_Queue(ctx context.Context, Agent_name string, Agent_uuid string, Queue_name string, tenant_domain_uuid string, Queue_uuid string) (*models.Response, error) {
 	u := models.AgentQueue{
-		AgentName:          Agent_name,
-		Agent_uuid:         Agent_uuid,
-		QueueName:          Queue_name,
-		Tenant_domain_uuid: tenant_domain_uuid,
-		Queue_uuid:         Queue_uuid,
+		AgentName:   Agent_name,
+		Agent_uuid:  Agent_uuid,
+		QueueName:   Queue_name,
+		Domain_uuid: tenant_domain_uuid,
+		Queue_uuid:  Queue_uuid,
 	}
 	if err := r.DBConn.Where("agent_uuid = ? AND queue_name = ?", Agent_uuid, Queue_name).Find(&u).Error; err != nil {
 		Queue := r.DBConn.Create(&u)
@@ -5213,9 +5213,10 @@ func (r *crudRepository) AssignAgentToFacebookApplication(ctx context.Context, d
 	r.DBConn.Model(&models.FacebookLoginAppConfigurationAgent{}).Where("flac_uuid=? and agent_uuid=?", flac_uuid, agent_uuid).Count(&l)
 	if l == 0 {
 		if err := r.DBConn.Create(&models.FacebookLoginAppConfigurationAgent{
-			DomainUUID: domain_uuid,
-			AgentUUID:  agent_uuid,
-			FlacUUID:   flac_uuid,
+			DomainUUID:                          domain_uuid,
+			AgentUUID:                           agent_uuid,
+			FlacUUID:                            flac_uuid,
+			Assigned_to_facebook_accounts_queue: true,
 		}).Error; err != nil {
 			return &models.Response{Status: "0", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 		}
@@ -5968,18 +5969,3 @@ func (r *crudRepository) FacebookLikeAndComments(ctx context.Context, body []byt
 	}
 	return &models.Response{Status: "0", Msg: "Not Found", ResponseCode: 401}, nil
 }
-
-/**************************************Send waiting time to customers**************************************/
-// func (r *crudRepository) SendWaitingTimeToCustomers(ctx context.Context) (*models.Response, error) {
-// 	cou := []models.Count_Agent_queue{}
-// 	cust := []models.Count_customer{}
-// 	db := r.DBConn.Raw("select count(call_center_agent_uuid) from v_call_center_agents where agent_status='Available' and call_center_agent_uuid in (select agent_uuid from agent_queues where queue_uuid=(select queue_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "'))").Find(&cou)
-// 	if db.Error != nil {
-// 		fmt.Println(db.Error)
-// 	}
-// 	if rows := r.DBConn.Raw("select count(app_user_id) from receive_user_details where domain_uuid=(select domain_uuid from queues where integration_id='" + f.Messages[0].Source.IntegrationID + "')").Find(&cust).Error; rows != nil {
-
-// 		return &models.Response{Status: "Not Found", Msg: "Record Not Found", ResponseCode: 404}, nil
-// 	}
-
-// }

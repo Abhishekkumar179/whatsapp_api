@@ -106,5 +106,4 @@ type Repository interface {
 	AssigncustomerToAgent(ctx context.Context, domain_uuid string, agent_uuid string, app_user_id string) (*models.Response, error)
 	Webhook_verify(ctx context.Context, mode string, token string, challenge string, body []byte) (string, error)
 	FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error)
-	//SendWaitingTimeToCustomers(ctx context.Context) (*models.Response, error)
 }

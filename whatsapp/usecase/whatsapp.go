@@ -697,13 +697,9 @@ func (r *crudUsecase) Webhook_verify(ctx context.Context, mode string, token str
 
 	return r.repository.Webhook_verify(ctx, mode, token, challenge, body)
 }
+
+/*******************************************Facebook Real time Like And comments********************************/
 func (r *crudUsecase) FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error) {
 
 	return r.repository.FacebookLikeAndComments(ctx, body)
 }
-
-/*******************************************Send waiting time to customers***********************************/
-// func (r *crudUsecase) SendWaitingTimeToCustomers(ctx context.Context, flow map[string]interface{}) (*models.Response, error) {
-
-// 	return r.repository.SendWaitingTimeToCustomers(ctx)
-// }

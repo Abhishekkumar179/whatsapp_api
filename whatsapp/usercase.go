@@ -106,5 +106,4 @@ type Usecase interface {
 	AssigncustomerToAgent(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
 	Webhook_verify(ctx context.Context, mode string, token string, challenge string, body []byte) (string, error)
 	FacebookLikeAndComments(ctx context.Context, body []byte) (*models.Response, error)
-	//SendWaitingTimeToCustomers(ctx context.Context, flow map[string]interface{}) (*models.Response, error)
 }

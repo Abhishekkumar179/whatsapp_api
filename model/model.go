@@ -472,11 +472,11 @@ type Queue struct {
 	Domain_uuid   string `json:"domain_uuid,omitempty"`
 }
 type AgentQueue struct {
-	QueueName          string `json:"queue_name,omitempty"`
-	AgentName          string `json:"agent_name,omitempty"`
-	Queue_uuid         string `json:"queue_uuid,omitempty"`
-	Agent_uuid         string `json:"agent_uuid,omitempty" gorm:"type:uuid"`
-	Tenant_domain_uuid string `json:"tenant_domain_uuid,omitempty" gorm:"type:uuid"`
+	QueueName   string `json:"queue_name,omitempty"`
+	AgentName   string `json:"agent_name,omitempty"`
+	Queue_uuid  string `json:"queue_uuid,omitempty"`
+	Agent_uuid  string `json:"agent_uuid,omitempty" gorm:"type:uuid"`
+	Domain_uuid string `json:"tenant_domain_uuid,omitempty" gorm:"type:uuid"`
 }
 type V_call_center_agents struct {
 	CallCenterAgentUUID uuid.UUID `json:"call_center_agent_uuid,omitempty" gorm:"type:uuid"`
@@ -517,15 +517,17 @@ type FacebookLoginAppConfiguration struct {
 	AppName    string `json:"app_name"`
 }
 type FacebookLoginAppConfigurationAgent struct {
-	DomainUUID string
-	FlacUUID   string
-	AgentUUID  string
+	DomainUUID                          string
+	FlacUUID                            string
+	AgentUUID                           string
+	Assigned_to_facebook_accounts_queue bool
 }
 type FacebookLoginAppConfigurationAgentList struct {
-	DomainUUID string
-	FlacUUID   string
-	AgentUUID  string
-	AgentName  string
+	DomainUUID                          string
+	FlacUUID                            string
+	AgentUUID                           string
+	AgentName                           string
+	Assigned_to_facebook_accounts_queue bool
 }
 type AccessToken struct {
 	AccessToken string `json:"access_token,omitempty"`
@@ -595,43 +597,3 @@ type Post struct {
 	PermaLinkUrl    string `json:"perma_link_url,omitempty"`
 	PromotionStatus string `json:"promotion_status,omitempty"`
 }
-
-// {
-// 	"object":"page",
-// "entry":
-// [
-// 	{
-// 		"id":"104315744750790",
-// 		"time":1604755296,
-// 	"changes":
-// 	[
-// 		{
-// 			"value":
-// 			{
-// 				"from":
-// 			{
-// 				"id":"104315744750790",
-// 				"name":"Demo"
-// 				},
-// 				"post":
-// 				{
-// 					"status_type":"mobile_status_update",
-// 					"is_published":true,
-// 					"updated_time":"2020-11-07T13:21:33+0000",
-// 					"permalink_url":"https://www.facebook.com/permalink.php?story_fbid=105776537938044&id=104315744750790",
-// 					"promotion_status":"inactive","id":"104315744750790_105776537938044"
-// 					},
-// 					"message":"hi",
-// 					"post_id":"104315744750790_105776537938044",
-// 					"comment_id":"105776537938044_149415636907467",
-// 					"created_time":1604755293,
-// 					"item":"comment",
-// 					"parent_id":"104315744750790_105776537938044",
-// 					"verb":"add"
-// 					},
-// 					"field":"feed"
-// 					}
-// 					]
-// 					}
-// 					]
-// 				}

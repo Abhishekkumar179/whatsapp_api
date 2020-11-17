@@ -2188,26 +2188,6 @@ func (r *CRUDController) FacebookLikeAndComments(c echo.Context) error {
 
 }
 
-/***********************************************Send waiting Time to customer******************************/
-// func (r *CRUDController) SendWaitingTimeToCustomers(c echo.Context) error {
-// 	var auth map[string]interface{}
-// 	err1 := json.NewDecoder(c.Request().Body).Decode(&auth)
-// 	if err1 != nil {
-// 		fmt.Println("err= ", err1)
-// 	}
-// 	ctx := c.Request().Context()
-// 	if ctx == nil {
-// 		ctx = context.Background()
-// 	}
-// 	authResponse, _ := r.usecase.SendWaitingTimeToCustomers(ctx, body)
-
-// 	if authResponse == nil {
-// 		return c.JSON(http.StatusUnauthorized, authResponse)
-// 	}
-// 	return c.JSON(http.StatusOK, authResponse)
-
-// }
-
 /***********************************************Router*****************************************************/
 
 func NewCRUDController(e *echo.Echo, crudusecase crud.Usecase) {
