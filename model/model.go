@@ -515,6 +515,7 @@ type FacebookLoginAppConfiguration struct {
 	AppId      string `json:"app_id"`
 	AppSecret  string `json:"app_secret"`
 	AppName    string `json:"app_name"`
+	AppToken   string `json:"app_token"`
 }
 type FacebookLoginAppConfigurationAgent struct {
 	DomainUUID                          string

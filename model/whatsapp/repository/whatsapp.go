@@ -3519,6 +3519,9 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 		return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 	}
 	fmt.Printf("%v \n", token)
+	if err := r.DBConn.Model(&t).Where("flac_uuid=?", t.FlacUUID).Update("app_tokon", token.AccessToken).Error; err != nil {
+		return &models.Response{Status: "Error", Msg: "tokon update failed", ResponseCode: http.StatusBadRequest}, nil
+	}
 	c.Response().Header().Set("access_token", token.AccessToken)
 	c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
 	c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+HTTPSERVERHOST+":"+PORT+"/uvoice-facebook-login-status")

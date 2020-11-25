@@ -72,6 +72,7 @@ func (r *crudRepository) chatScheduler() {
 
 	agent := []models.V_call_center_agents{}
 	for _, v := range u {
+		fmt.Println(v)
 		if db := r.DBConn.Table("v_call_center_agents").Select("agent_name,agent_status,call_center_agent_uuid").Where("domain_uuid=? and call_center_agent_uuid::text not in (select agent_uuid from customer_agents where domain_uuid=? ) and agent_status='Available' and call_center_agent_uuid::text not in (select agent_request_uuid from receive_user_details where domain_uuid=? and agent_request_time > extract(epoch from now())-30 ) and call_center_agent_uuid in (select agent_uuid from agent_queues where queue_uuid in (select queue_uuid from queues where integration_id=? ))", v.Domain_uuid, v.Domain_uuid, v.Domain_uuid, v.IntegrationID).Find(&agent); db.Error != nil {
 			fmt.Println(db.Error)
 		}
@@ -5143,6 +5144,10 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 			return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 		}
 		fmt.Printf("%v \n", token)
+		fmt.Printf("%v %v \n", token.AccessToken, t.FlacUUID)
+		if err := r.DBConn.Model(&t).Where("flac_uuid=?", t.FlacUUID).Update("app_tokon", token.AccessToken).Error; err != nil {
+			return &models.Response{Status: "Error", Msg: "tokon update failed", ResponseCode: http.StatusBadRequest}, nil
+		}
 		c.Response().Header().Set("access_token", token.AccessToken)
 		c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
 		c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+getserverhosturl()+":"+PORT+"/uvoice-facebook-login-status")
@@ -5163,7 +5168,10 @@ func (r *crudRepository) UVoiceFacebookLoginCallback(ctx context.Context, c echo
 			fmt.Printf("oauthConf.Exchange() failed with '%s'\n", err)
 			return &models.Response{Status: "Error", Msg: "Failed", ResponseCode: http.StatusBadRequest}, nil
 		}
-		fmt.Printf("%v \n", token)
+		fmt.Printf("%v %v \n", token.AccessToken, t.FlacUUID)
+		if err := r.DBConn.Model(&t).Where("flac_uuid=?", t.FlacUUID).Update("app_tokon", token.AccessToken).Error; err != nil {
+			return &models.Response{Status: "Error", Msg: "tokon update failed", ResponseCode: http.StatusBadRequest}, nil
+		}
 		c.Response().Header().Set("access_token", token.AccessToken)
 		c.SetCookie(&http.Cookie{Name: "uvoice_facebook_access_token", Value: token.AccessToken})
 		c.Redirect(http.StatusTemporaryRedirect, HTTPSECURE+getserverhost()+":"+PORT+"/uvoice-facebook-login-status")
