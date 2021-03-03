@@ -30,7 +30,7 @@ func NewServerUser(dbconn *gorm.DB) *ServerUserList {
 	}
 }
 
-var databaseLocation = "/home/startele/database"
+var databaseLocation = "/home/ubuntu/database"
 
 type ServerUserList struct {
 	Users    map[int]*User

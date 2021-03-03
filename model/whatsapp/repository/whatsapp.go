@@ -3377,7 +3377,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 	fmt.Println(Type, "type")
 	if Type == "image" {
 		fmt.Println("image")
-		IMAGE_DIR := "/home/startel/Downloads/temp_images/"
+		IMAGE_DIR := "/home/" + getServerOs() + "/Downloads/temp_images/"
 		dir_location := IMAGE_DIR
 		getFileName := handler.Filename
 
@@ -3411,7 +3411,7 @@ func (r *crudRepository) Upload_Photo_on_Post(ctx context.Context, pageId string
 		return nil, err
 	} else if Type == "video" {
 		fmt.Println("video")
-		VIDEO_DIR := "/home/startel/Downloads/temp_images/"
+		VIDEO_DIR := "/home/" + getServerOs() + "/Downloads/temp_images/"
 		dir_location := VIDEO_DIR
 		getFileName := handler.Filename
 

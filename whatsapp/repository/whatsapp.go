@@ -38,7 +38,8 @@ var UserOs string
 var HTTPSERVERHOST string
 var HTTPSERVERHOSTURL string
 
-const HTTPSECURE = "https://"
+var HTTPSECURE = "https://"
+
 const PORT = "30707"
 
 type crudRepository struct {
@@ -115,6 +116,9 @@ func getserverhost() string {
 }
 func getserverhosturl() string {
 	return HTTPSERVERHOSTURL
+}
+func getServerProtocol() string {
+	return HTTPSECURE
 }
 
 /******************************************Create_text_template**************************************/
